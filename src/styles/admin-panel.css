@@ -302,6 +302,10 @@
   min-width: 780px;
 }
 
+.admin-table-wide {
+  min-width: 780px;
+}
+
 .admin-table th,
 .admin-table td {
   text-align: left;
@@ -520,6 +524,49 @@
   }
 }
 
+@media (max-width: 480px) {
+  .admin-page {
+    padding: var(--spacing-lg) 0.5rem;
+  }
+
+  .admin-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .admin-hero {
+    padding: 0.75rem;
+  }
+
+  .admin-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table {
+    min-width: 0;
+  }
+
+  .admin-table-wide {
+    min-width: 0;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    white-space: normal;
+    word-break: break-word;
+    padding: 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .admin-attendance-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form input,
+  .admin-form select {
+    font-size: 16px;
+  }
+}
+
 /* ── Performance Dashboard ───────────────────────────────────────────────── */
 
 .perf-tabs {
@@ -637,5 +684,20 @@
 
   .perf-search {
     min-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .perf-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .perf-tabs {
+    gap: 6px;
+  }
+
+  .perf-tab {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
   }
 }

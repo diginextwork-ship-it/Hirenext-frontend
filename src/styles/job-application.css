@@ -129,3 +129,19 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .job-application-shell {
+    width: 100%;
+  }
+
+  .job-application-card {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  .application-field input,
+  .application-field select {
+    font-size: 16px;
+  }
+}

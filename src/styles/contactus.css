@@ -94,3 +94,17 @@
     padding: var(--spacing-xl);
   }
 }
+
+@media (max-width: 480px) {
+  .contactus-container {
+    width: 95%;
+  }
+
+  .contact-card {
+    padding: var(--spacing-lg);
+  }
+
+  .contact-card h2 {
+    font-size: 1.2rem;
+  }
+}

@@ -87,3 +87,18 @@
     gap: var(--spacing-md);
   }
 }
+
+@media (max-width: 480px) {
+  .schedule-call-form {
+    padding: var(--spacing-lg);
+  }
+
+  .schedule-call-container {
+    width: 100%;
+  }
+
+  .schedule-field input,
+  .schedule-field select {
+    font-size: 16px;
+  }
+}

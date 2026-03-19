@@ -189,3 +189,24 @@ video {
     padding: 0.45rem;
   }
 }
+
+@media (max-width: 480px) {
+  .ui-page {
+    padding: var(--spacing-lg) 0.5rem;
+  }
+
+  .ui-table th,
+  .ui-table td {
+    white-space: normal;
+    font-size: 0.78rem;
+    padding: 0.35rem;
+  }
+
+  .ui-grid-auto {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-card-body {
+    padding: 0.85rem;
+  }
+}

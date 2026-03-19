@@ -188,3 +188,56 @@
   justify-content: flex-end;
   gap: 10px;
 }
+
+@media (max-width: 768px) {
+  .recruiter-jobs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recruiter-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .recruiter-jobs-board-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .resume-modal {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .recruiter-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .recruiter-jobs-board {
+    padding: 10px;
+  }
+
+  .recruiter-job-card-item {
+    padding: 10px;
+  }
+
+  .job-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .recruiter-pagination {
+    gap: 6px;
+  }
+
+  .resume-modal-actions {
+    flex-direction: column;
+  }
+
+  .resume-modal-form input,
+  .resume-modal-form select,
+  .resume-modal-form textarea {
+    font-size: 16px;
+  }
+}

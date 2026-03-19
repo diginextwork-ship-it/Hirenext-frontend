@@ -24,7 +24,7 @@
 
 @keyframes slideInRight {
     from {
-        transform: translateX(420px);
+        transform: translateX(min(420px, 100vw));
         opacity: 0;
     }
 
@@ -41,7 +41,7 @@
     }
 
     to {
-        transform: translateX(420px);
+        transform: translateX(min(420px, 100vw));
         opacity: 0;
     }
 }
