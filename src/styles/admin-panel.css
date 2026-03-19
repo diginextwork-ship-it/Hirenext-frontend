@@ -569,6 +569,92 @@
 
 /* ── Performance Dashboard ───────────────────────────────────────────────── */
 
+/* Timeline filter bar */
+.perf-timeline-bar {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.perf-timeline-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.perf-timeline-btn {
+  padding: 0.45rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #374151;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.perf-timeline-btn:hover {
+  background: #fef2f2;
+  border-color: #c62828;
+}
+
+.perf-timeline-btn-active {
+  background: #c62828;
+  color: #fff;
+  border-color: #c62828;
+}
+
+.perf-timeline-btn-active:hover {
+  background: #b91c1c;
+}
+
+.perf-timeline-custom {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.perf-timeline-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.perf-timeline-input input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.perf-timeline-input input:focus {
+  border-color: #c62828;
+}
+
+.perf-timeline-label {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.perf-timeline-label strong {
+  color: #1f2937;
+}
+
+@media (max-width: 480px) {
+  .perf-timeline-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.82rem;
+  }
+}
+
 .perf-tabs {
   display: flex;
   gap: 8px;

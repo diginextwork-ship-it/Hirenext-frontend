@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import "../../styles/admin-panel.css";
@@ -9,6 +9,60 @@ const TABS = {
   RECRUITERS: "recruiters",
 };
 
+const PRESETS = {
+  TODAY: "today",
+  YESTERDAY: "yesterday",
+  THIS_MONTH: "this_month",
+  LAST_MONTH: "last_month",
+  CUSTOM: "custom",
+};
+
+function toDateStr(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function getPresetRange(preset) {
+  const now = new Date();
+  switch (preset) {
+    case PRESETS.TODAY:
+      return { start: toDateStr(now), end: toDateStr(now) };
+    case PRESETS.YESTERDAY: {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      return { start: toDateStr(y), end: toDateStr(y) };
+    }
+    case PRESETS.THIS_MONTH:
+      return {
+        start: toDateStr(new Date(now.getFullYear(), now.getMonth(), 1)),
+        end: toDateStr(now),
+      };
+    case PRESETS.LAST_MONTH: {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { start: toDateStr(first), end: toDateStr(last) };
+    }
+    default:
+      return null;
+  }
+}
+
+function formatLabel(preset) {
+  switch (preset) {
+    case PRESETS.TODAY:
+      return "Today";
+    case PRESETS.YESTERDAY:
+      return "Yesterday";
+    case PRESETS.THIS_MONTH:
+      return "This Month";
+    case PRESETS.LAST_MONTH:
+      return "Last Month";
+    case PRESETS.CUSTOM:
+      return "Custom Range";
+    default:
+      return "";
+  }
+}
+
 export default function AdminPerformance({ setCurrentPage }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,11 +72,32 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [sortField, setSortField] = useState("submitted");
   const [sortDir, setSortDir] = useState("desc");
 
+  // Timeline filter state
+  const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const dateRange = useMemo(() => {
+    if (timelinePreset === PRESETS.CUSTOM) {
+      return customStart && customEnd
+        ? { start: customStart, end: customEnd }
+        : null;
+    }
+    return getPresetRange(timelinePreset);
+  }, [timelinePreset, customStart, customEnd]);
+
   const fetchPerformance = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/performance`, {
+      const params = new URLSearchParams();
+      if (dateRange) {
+        params.set("startDate", dateRange.start);
+        params.set("endDate", dateRange.end);
+      }
+      const qs = params.toString();
+      const url = `${API_BASE_URL}/api/admin/performance${qs ? `?${qs}` : ""}`;
+      const response = await fetch(url, {
         headers: getAdminHeaders(),
       });
       const json = await readJsonResponse(
@@ -37,7 +112,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => {
     fetchPerformance();
@@ -107,6 +182,61 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     >
       {error && <div className="admin-alert admin-alert-error">{error}</div>}
+
+      {/* Timeline filter */}
+      <div className="perf-timeline-bar">
+        <div className="perf-timeline-presets">
+          {[
+            { key: PRESETS.TODAY, label: "Today" },
+            { key: PRESETS.YESTERDAY, label: "Yesterday" },
+            { key: PRESETS.THIS_MONTH, label: "This Month" },
+            { key: PRESETS.LAST_MONTH, label: "Last Month" },
+            { key: PRESETS.CUSTOM, label: "Custom" },
+          ].map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className={`perf-timeline-btn${timelinePreset === p.key ? " perf-timeline-btn-active" : ""}`}
+              onClick={() => setTimelinePreset(p.key)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {timelinePreset === PRESETS.CUSTOM && (
+          <div className="perf-timeline-custom">
+            <label className="perf-timeline-input">
+              From
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => setCustomStart(e.target.value)}
+              />
+            </label>
+            <label className="perf-timeline-input">
+              To
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => setCustomEnd(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
+
+        {dateRange && (
+          <p className="perf-timeline-label">
+            Showing: <strong>{formatLabel(timelinePreset)}</strong>
+            {" — "}
+            {dateRange.start === dateRange.end
+              ? dateRange.start
+              : `${dateRange.start} to ${dateRange.end}`}
+          </p>
+        )}
+      </div>
 
       {/* Tab navigation */}
       <div className="perf-tabs">
