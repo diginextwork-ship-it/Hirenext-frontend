@@ -4,7 +4,7 @@ import DashboardOverview from "./DashboardOverview";
 import RecruiterPerformanceTable from "./RecruiterPerformanceTable";
 import ResumeStatusManager from "./ResumeStatusManager";
 
-export default function TeamLeaderDashboard({ jobsManagementContent }) {
+export default function TeamLeaderDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [overviewData, setOverviewData] = useState(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
@@ -22,7 +22,9 @@ export default function TeamLeaderDashboard({ jobsManagementContent }) {
         setOverviewData(data);
       } catch (error) {
         if (!active) return;
-        setOverviewError(error.message || "Failed to load team leader overview.");
+        setOverviewError(
+          error.message || "Failed to load team leader overview.",
+        );
       } finally {
         if (active) setLoadingOverview(false);
       }
@@ -45,13 +47,6 @@ export default function TeamLeaderDashboard({ jobsManagementContent }) {
         </button>
         <button
           type="button"
-          className={activeTab === "jobs" ? "active" : ""}
-          onClick={() => setActiveTab("jobs")}
-        >
-          Jobs Management
-        </button>
-        <button
-          type="button"
           className={activeTab === "performance" ? "active" : ""}
           onClick={() => setActiveTab("performance")}
         >
@@ -61,15 +56,18 @@ export default function TeamLeaderDashboard({ jobsManagementContent }) {
 
       {activeTab === "overview" ? (
         <>
-          {overviewError ? <p className="job-message job-message-error">{overviewError}</p> : null}
+          {overviewError ? (
+            <p className="job-message job-message-error">{overviewError}</p>
+          ) : null}
           <DashboardOverview data={overviewData} loading={loadingOverview} />
         </>
       ) : null}
 
-      {activeTab === "jobs" ? jobsManagementContent : null}
       {activeTab === "performance" ? (
         <>
-          <ResumeStatusManager onStatusUpdated={() => setPerformanceRefreshKey((prev) => prev + 1)} />
+          <ResumeStatusManager
+            onStatusUpdated={() => setPerformanceRefreshKey((prev) => prev + 1)}
+          />
           <RecruiterPerformanceTable refreshKey={performanceRefreshKey} />
         </>
       ) : null}

@@ -507,27 +507,7 @@ export default function RecruiterLogin() {
               <RecruiterDashboard recruiterId={recruiter.rid} />
             ) : null}
 
-            {canManageJobAccess ? (
-              <TeamLeaderDashboard
-                jobsManagementContent={
-                  <>
-                    <JobsListTable
-                      jobs={jobs}
-                      isLoading={isLoadingJobs}
-                      onRefresh={fetchAllJobs}
-                      onEditAccess={handleOpenAccessModal}
-                      canEditAccess={canManageJobAccess}
-                    />
-                    <JobAccessControlModal
-                      jobId={activeAccessJobId}
-                      isOpen={isAccessModalOpen}
-                      onClose={handleCloseAccessModal}
-                      onSave={fetchAllJobs}
-                    />
-                  </>
-                }
-              />
-            ) : null}
+            {canManageJobAccess ? <TeamLeaderDashboard /> : null}
 
             {canCreateJobs && !canManageJobAccess ? (
               <>
