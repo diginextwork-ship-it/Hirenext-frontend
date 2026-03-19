@@ -158,6 +158,16 @@ export default function ResumeStatusActionModal({
               <strong>Candidate:</strong> {resume.candidateName || "N/A"}
             </p>
             <p>
+              <strong>Phone:</strong>{" "}
+              {resume.candidatePhone ? (
+                <a href={`tel:${resume.candidatePhone}`}>
+                  {resume.candidatePhone}
+                </a>
+              ) : (
+                "N/A"
+              )}
+            </p>
+            <p>
               <strong>Current Status:</strong>{" "}
               {String(currentStatus || "").replace(/_/g, " ")}
             </p>

@@ -206,6 +206,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                 <th>Resume ID</th>
                 <th>RID</th>
                 <th>Recruiter</th>
+                <th>Candidate Phone</th>
                 <th>File</th>
                 <th>ATS Match</th>
                 <th>Recruiter Note</th>
@@ -221,6 +222,15 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                   <td>{resume.resId}</td>
                   <td>{resume.rid}</td>
                   <td>{resume.recruiterName || "N/A"}</td>
+                  <td>
+                    {resume.candidatePhone ? (
+                      <a href={`tel:${resume.candidatePhone}`}>
+                        {resume.candidatePhone}
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </td>
                   <td>{resume.resumeFilename || "N/A"}</td>
                   <td>
                     {resume.atsMatchPercentage === null ||

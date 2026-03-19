@@ -329,6 +329,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                 <thead>
                   <tr>
                     <th>Candidate</th>
+                    <th>Phone</th>
                     <th>Job ID</th>
                     <th>Submitted Reason</th>
                     <th>Verified Reason</th>
@@ -368,6 +369,15 @@ export default function RecruiterDashboard({ recruiterId }) {
                     return (
                       <tr key={resume.resId}>
                         <td>{resume.candidateName || "N/A"}</td>
+                        <td>
+                          {resume.candidatePhone ? (
+                            <a href={`tel:${resume.candidatePhone}`}>
+                              {resume.candidatePhone}
+                            </a>
+                          ) : (
+                            "N/A"
+                          )}
+                        </td>
                         <td>{resume.jobJid ?? "N/A"}</td>
                         <td className="table-cell-wrap">
                           {resume.submittedReason || "-"}
