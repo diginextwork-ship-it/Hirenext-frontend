@@ -19,14 +19,16 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       page: "admintopresumes",
     },
     {
-      title: "Recruiter Uploads",
-      description: "Audit recruiter resume uploads.",
-      stat: `${dashboard.totalResumeCount} total uploads`,
-      page: "adminuploads",
+      title: "Performance Dashboard",
+      description:
+        "Track recruiter and team leader performance across all metrics.",
+      stat: "All metrics",
+      page: "adminperformance",
     },
     {
       title: "Candidate's Submitted Resumes",
-      description: "Review resumes submitted by candidates from the jobs search flow.",
+      description:
+        "Review resumes submitted by candidates from the jobs search flow.",
       stat: `${dashboard.candidateResumeCount} candidate uploads`,
       page: "admincandidateresumes",
     },
@@ -59,15 +61,12 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
           <p className="admin-kicker">Admin Control Center</p>
           <h1>Admin dashboard</h1>
           <p className="admin-hero-subtitle">
-            Organize recruiter access, track resume activity, and monitor ATS insights.
+            Organize recruiter access, track resume activity, and monitor ATS
+            insights.
           </p>
         </div>
         <div className="admin-page-actions">
-          <button
-            type="button"
-            className="admin-back-btn"
-            onClick={onLogout}
-          >
+          <button type="button" className="admin-back-btn" onClick={onLogout}>
             Logout
           </button>
           <button

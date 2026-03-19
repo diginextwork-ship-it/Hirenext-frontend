@@ -519,3 +519,123 @@
     white-space: nowrap;
   }
 }
+
+/* ── Performance Dashboard ───────────────────────────────────────────────── */
+
+.perf-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.perf-tab {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #374151;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.perf-tab:hover {
+  background: #fef2f2;
+  border-color: #c62828;
+}
+
+.perf-tab-active {
+  background: #c62828;
+  color: #fff;
+  border-color: #c62828;
+}
+
+.perf-tab-active:hover {
+  background: #b91c1c;
+}
+
+.perf-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.perf-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.perf-stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+.perf-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.perf-section {
+  margin-bottom: 1.5rem;
+}
+
+.perf-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: #1f2937;
+}
+
+.perf-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.perf-search {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  min-width: 240px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.perf-search:focus {
+  border-color: #c62828;
+}
+
+.perf-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.perf-sortable:hover {
+  color: #c62828;
+}
+
+@media (max-width: 640px) {
+  .perf-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .perf-search {
+    min-width: 100%;
+  }
+}

@@ -15,6 +15,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminCreateRecruiter from "./pages/admin/AdminCreateRecruiter";
 import AdminTopResumes from "./pages/admin/AdminTopResumes";
 import AdminResumeUploads from "./pages/admin/AdminResumeUploads";
+import AdminPerformance from "./pages/admin/AdminPerformance";
 import AdminCandidateResumes from "./pages/admin/AdminCandidateResumes";
 import AdminManualSelection from "./pages/admin/AdminManualSelection";
 import AdminRevenue from "./pages/admin/AdminRevenue";
@@ -37,6 +38,7 @@ const PAGE_TO_PATH = {
   admincreate: "/admin-panel/create-recruiter",
   admintopresumes: "/admin-panel/top-resumes",
   adminuploads: "/admin-panel/recruiter-uploads",
+  adminperformance: "/admin-panel/performance",
   admincandidateresumes: "/admin-panel/candidate-submitted-resumes",
   adminmanualselection: "/admin-panel/manual-selection",
   adminrevenue: "/admin-panel/revenue",
@@ -48,6 +50,7 @@ const ADMIN_ONLY_PAGES = new Set([
   "admincreate",
   "admintopresumes",
   "adminuploads",
+  "adminperformance",
   "admincandidateresumes",
   "adminmanualselection",
   "adminrevenue",
@@ -78,6 +81,7 @@ const getPageFromPath = (pathname) => {
   if (normalizedPath === "/admin-panel/top-resumes") return "admintopresumes";
   if (normalizedPath === "/admin-panel/recruiter-uploads")
     return "adminuploads";
+  if (normalizedPath === "/admin-panel/performance") return "adminperformance";
   if (normalizedPath === "/admin-panel/candidate-submitted-resumes")
     return "admincandidateresumes";
   if (normalizedPath === "/admin-panel/manual-selection")
@@ -177,6 +181,8 @@ export default function App() {
         return <AdminTopResumes setCurrentPage={setCurrentPage} />;
       case "adminuploads":
         return <AdminResumeUploads setCurrentPage={setCurrentPage} />;
+      case "adminperformance":
+        return <AdminPerformance setCurrentPage={setCurrentPage} />;
       case "admincandidateresumes":
         return <AdminCandidateResumes setCurrentPage={setCurrentPage} />;
       case "adminmanualselection":
