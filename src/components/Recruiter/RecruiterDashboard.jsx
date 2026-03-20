@@ -403,6 +403,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                     </th>
                     <th>Status</th>
                     <th>Updated</th>
+                    {(activeStatus === "joined" ||
+                      activeStatus === "billed" ||
+                      activeStatus === "left") && <th>Joining Info</th>}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -471,6 +474,28 @@ export default function RecruiterDashboard({ recruiterId }) {
                             resume.workflowUpdatedAt || resume.uploadedAt,
                           )}
                         </td>
+                        {(activeStatus === "joined" ||
+                          activeStatus === "billed" ||
+                          activeStatus === "left") && (
+                          <td className="table-cell-wrap">
+                            {resume.joiningDate ? (
+                              <div>
+                                <strong>Date:</strong>{" "}
+                                {new Date(
+                                  resume.joiningDate + "T00:00:00",
+                                ).toLocaleDateString()}
+                              </div>
+                            ) : null}
+                            {resume.joiningNote ? (
+                              <div>
+                                <strong>Note:</strong> {resume.joiningNote}
+                              </div>
+                            ) : null}
+                            {!resume.joiningDate && !resume.joiningNote
+                              ? "-"
+                              : null}
+                          </td>
+                        )}
                         <td>
                           <button
                             type="button"

@@ -15,6 +15,9 @@ export default function ResumeStatusActionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showJoiningConfirm, setShowJoiningConfirm] = useState(false);
+  const [joiningDate, setJoiningDate] = useState("");
+  const [joiningNote, setJoiningNote] = useState("");
   const { addNotification } = useNotification();
 
   useEffect(() => {
@@ -23,6 +26,9 @@ export default function ResumeStatusActionModal({
       setAdditionalInfo("");
       setErrorMessage("");
       setSuccessMessage("");
+      setShowJoiningConfirm(false);
+      setJoiningDate("");
+      setJoiningNote("");
     }
   }, [isOpen]);
 
@@ -48,11 +54,13 @@ export default function ResumeStatusActionModal({
       return [
         { value: "joined", label: "Joined", color: "success" },
         { value: "dropout", label: "Dropout", color: "warning" },
-        { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
-    if (normalized === "billed") {
-      return [{ value: "left", label: "Left", color: "warning" }];
+    if (normalized === "joined") {
+      return [
+        { value: "billed", label: "Billed", color: "primary" },
+        { value: "left", label: "Left", color: "warning" },
+      ];
     }
     return [];
   };
@@ -80,6 +88,12 @@ export default function ResumeStatusActionModal({
       return;
     }
 
+    if (selectedAction === "joined" && !showJoiningConfirm) {
+      setShowJoiningConfirm(true);
+      setErrorMessage("");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -101,6 +115,12 @@ export default function ResumeStatusActionModal({
           body: JSON.stringify({
             status: selectedAction,
             reason: additionalInfo.trim(),
+            ...(selectedAction === "joined" && joiningDate
+              ? { joining_date: joiningDate }
+              : {}),
+            ...(selectedAction === "joined" && joiningNote.trim()
+              ? { joining_note: joiningNote.trim() }
+              : {}),
           }),
         },
       );
@@ -200,6 +220,9 @@ export default function ResumeStatusActionModal({
                         setSelectedAction(action.value);
                         setAdditionalInfo("");
                         setErrorMessage("");
+                        setShowJoiningConfirm(false);
+                        setJoiningDate("");
+                        setJoiningNote("");
                       }}
                       disabled={isSubmitting}
                     >
@@ -209,7 +232,7 @@ export default function ResumeStatusActionModal({
                 </div>
               </div>
 
-              {selectedAction && (
+              {selectedAction && !showJoiningConfirm && (
                 <div className="form-group">
                   <label htmlFor="reason-input">{getReasonFieldLabel()}</label>
                   <textarea
@@ -224,6 +247,41 @@ export default function ResumeStatusActionModal({
                   <small className="form-text-muted">
                     This information will be saved for reference.
                   </small>
+                </div>
+              )}
+
+              {showJoiningConfirm && (
+                <div className="joining-confirm-section">
+                  <h4 style={{ margin: "0 0 12px" }}>
+                    Confirm Joining Details
+                  </h4>
+                  <div className="form-group">
+                    <label htmlFor="joining-date-input">
+                      Joining Date (optional)
+                    </label>
+                    <input
+                      id="joining-date-input"
+                      type="date"
+                      className="form-control"
+                      value={joiningDate}
+                      onChange={(e) => setJoiningDate(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="joining-note-input">
+                      Joining Note (optional)
+                    </label>
+                    <textarea
+                      id="joining-note-input"
+                      className="form-control"
+                      rows="3"
+                      placeholder="Enter any joining notes..."
+                      value={joiningNote}
+                      onChange={(e) => setJoiningNote(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -251,6 +309,16 @@ export default function ResumeStatusActionModal({
             >
               Cancel
             </button>
+            {selectedAction && showJoiningConfirm && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowJoiningConfirm(false)}
+                disabled={isSubmitting}
+              >
+                Back
+              </button>
+            )}
             {selectedAction && (
               <button
                 type="button"
@@ -258,7 +326,13 @@ export default function ResumeStatusActionModal({
                 onClick={handleSubmitAction}
                 disabled={isSubmitting || !additionalInfo.trim()}
               >
-                {isSubmitting ? "Updating..." : "Confirm Action"}
+                {isSubmitting
+                  ? "Updating..."
+                  : showJoiningConfirm
+                    ? "Confirm Joined"
+                    : selectedAction === "joined"
+                      ? "Next"
+                      : "Confirm Action"}
               </button>
             )}
           </div>

@@ -22,8 +22,10 @@ export default function AdminManualSelection({ setCurrentPage }) {
   const [statusMessage, setStatusMessage] = useState("");
 
   const selectedJob = useMemo(
-    () => jobs.find((item) => Number(item.jobJid) === Number(selectedJobId)) || null,
-    [jobs, selectedJobId]
+    () =>
+      jobs.find((item) => Number(item.jobJid) === Number(selectedJobId)) ||
+      null,
+    [jobs, selectedJobId],
   );
 
   const loadJobs = async () => {
@@ -35,14 +37,16 @@ export default function AdminManualSelection({ setCurrentPage }) {
       });
       const data = await readJsonResponse(
         response,
-        "Check VITE_API_BASE_URL and ensure backend admin routes are running."
+        "Check VITE_API_BASE_URL and ensure backend admin routes are running.",
       );
       if (!response.ok) {
         throw new Error(data?.message || "Failed to load job alerts.");
       }
       const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
       setJobs(nextJobs);
-      if (!nextJobs.some((item) => Number(item.jobJid) === Number(selectedJobId))) {
+      if (
+        !nextJobs.some((item) => Number(item.jobJid) === Number(selectedJobId))
+      ) {
         setSelectedJobId(nextJobs[0]?.jobJid || null);
       }
     } catch (error) {
@@ -67,21 +71,25 @@ export default function AdminManualSelection({ setCurrentPage }) {
       ]);
       const resumesData = await readJsonResponse(
         resumesResponse,
-        "Failed to parse job resumes response."
+        "Failed to parse job resumes response.",
       );
       const summaryData = await readJsonResponse(
         summaryResponse,
-        "Failed to parse selection summary response."
+        "Failed to parse selection summary response.",
       );
 
       if (!resumesResponse.ok) {
         throw new Error(resumesData?.message || "Failed to load job resumes.");
       }
       if (!summaryResponse.ok) {
-        throw new Error(summaryData?.message || "Failed to load selection summary.");
+        throw new Error(
+          summaryData?.message || "Failed to load selection summary.",
+        );
       }
 
-      setJobResumes(Array.isArray(resumesData.resumes) ? resumesData.resumes : []);
+      setJobResumes(
+        Array.isArray(resumesData.resumes) ? resumesData.resumes : [],
+      );
       setSummary(summaryData.summary || null);
     } catch (error) {
       setErrorMessage(error.message || "Failed to load job data.");
@@ -109,7 +117,8 @@ export default function AdminManualSelection({ setCurrentPage }) {
     setErrorMessage("");
     setStatusMessage("");
 
-    const selectionNote = window.prompt(`Optional note for ${resId}:`, "") || "";
+    const selectionNote =
+      window.prompt(`Optional note for ${resId}:`, "") || "";
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/admin/jobs/${selectedJobId}/resume-selections`,
@@ -122,9 +131,12 @@ export default function AdminManualSelection({ setCurrentPage }) {
             selection_note: selectionNote,
             selected_by_admin: "admin-panel",
           }),
-        }
+        },
       );
-      const data = await readJsonResponse(response, "Failed to parse selection update response.");
+      const data = await readJsonResponse(
+        response,
+        "Failed to parse selection update response.",
+      );
       if (!response.ok) {
         throw new Error(data?.message || "Failed to update selection.");
       }
@@ -155,8 +167,12 @@ export default function AdminManualSelection({ setCurrentPage }) {
         </button>
       }
     >
-      {errorMessage ? <div className="admin-alert admin-alert-error">{errorMessage}</div> : null}
-      {statusMessage ? <div className="admin-alert">{statusMessage}</div> : null}
+      {errorMessage ? (
+        <div className="admin-alert admin-alert-error">{errorMessage}</div>
+      ) : null}
+      {statusMessage ? (
+        <div className="admin-alert">{statusMessage}</div>
+      ) : null}
 
       <div className="admin-dashboard-card admin-card-large">
         <h2 style={{ marginBottom: "8px" }}>Job alerts</h2>
@@ -186,7 +202,9 @@ export default function AdminManualSelection({ setCurrentPage }) {
                       onClick={() => setSelectedJobId(job.jobJid)}
                       style={{
                         cursor: "pointer",
-                        backgroundColor: isActive ? "rgba(198, 40, 40, 0.08)" : "transparent",
+                        backgroundColor: isActive
+                          ? "rgba(198, 40, 40, 0.08)"
+                          : "transparent",
                       }}
                     >
                       <td>#{job.jobJid}</td>
@@ -207,22 +225,29 @@ export default function AdminManualSelection({ setCurrentPage }) {
       {selectedJob ? (
         <div className="admin-dashboard-card admin-card-large">
           <h2 style={{ marginBottom: "8px" }}>
-            Resume pool for Job #{selectedJob.jobJid} ({selectedJob.roleName || "N/A"} -{" "}
-            {selectedJob.companyName || "N/A"})
+            Resume pool for Job #{selectedJob.jobJid} (
+            {selectedJob.roleName || "N/A"} - {selectedJob.companyName || "N/A"}
+            )
           </h2>
           <p className="admin-muted" style={{ marginBottom: "8px" }}>
-            Selected {summary?.selectedCount ?? 0} of {summary?.positionsOpen ?? selectedJob.positionsOpen ?? 1}
+            Selected {summary?.selectedCount ?? 0} of{" "}
+            {summary?.positionsOpen ?? selectedJob.positionsOpen ?? 1}
             {" | "}Remaining {summary?.remainingSlots ?? 0}
           </p>
           {(summary?.remainingSlots ?? 0) < 0 ? (
-            <div className="admin-alert admin-alert-error" style={{ marginBottom: "8px" }}>
+            <div
+              className="admin-alert admin-alert-error"
+              style={{ marginBottom: "8px" }}
+            >
               Selected count exceeds positions open for this job alert.
             </div>
           ) : null}
 
           {jobResumes.length === 0 ? (
             <p className="admin-chart-empty">
-              {isLoadingResumes ? "Loading resumes..." : "No resumes submitted for this job yet."}
+              {isLoadingResumes
+                ? "Loading resumes..."
+                : "No resumes submitted for this job yet."}
             </p>
           ) : (
             <div className="admin-table-wrap">
@@ -235,6 +260,7 @@ export default function AdminManualSelection({ setCurrentPage }) {
                     <th>Filename</th>
                     <th>ATS Match</th>
                     <th>Status</th>
+                    <th>Joining Info</th>
                     <th>Updated</th>
                     <th>Actions</th>
                   </tr>
@@ -246,7 +272,9 @@ export default function AdminManualSelection({ setCurrentPage }) {
                       <td>{resume.rid}</td>
                       <td>
                         <div>{resume.recruiterName || "N/A"}</div>
-                        <div className="admin-muted">{resume.recruiterEmail || "N/A"}</div>
+                        <div className="admin-muted">
+                          {resume.recruiterEmail || "N/A"}
+                        </div>
                       </td>
                       <td>{resume.resumeFilename || "N/A"}</td>
                       <td>
@@ -255,13 +283,53 @@ export default function AdminManualSelection({ setCurrentPage }) {
                           : `${resume.atsMatchPercentage}%`}
                       </td>
                       <td>{resume.selection?.status || "pending"}</td>
-                      <td>{formatDateTime(resume.selection?.selectedAt || resume.uploadedAt)}</td>
+                      <td className="table-cell-wrap">
+                        {["joined", "billed", "left"].includes(
+                          String(resume.selection?.status || "").toLowerCase(),
+                        ) ? (
+                          <>
+                            {resume.selection?.joiningDate ? (
+                              <div>
+                                <strong>Date:</strong>{" "}
+                                {new Date(
+                                  resume.selection.joiningDate + "T00:00:00",
+                                ).toLocaleDateString()}
+                              </div>
+                            ) : null}
+                            {resume.selection?.joiningNote ? (
+                              <div>
+                                <strong>Note:</strong>{" "}
+                                {resume.selection.joiningNote}
+                              </div>
+                            ) : null}
+                            {!resume.selection?.joiningDate &&
+                            !resume.selection?.joiningNote
+                              ? "-"
+                              : null}
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
                       <td>
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        {formatDateTime(
+                          resume.selection?.selectedAt || resume.uploadedAt,
+                        )}
+                      </td>
+                      <td>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "6px",
+                            flexWrap: "wrap",
+                          }}
+                        >
                           <button
                             type="button"
                             className="admin-refresh-btn"
-                            onClick={() => updateSelection(resume.resId, "selected")}
+                            onClick={() =>
+                              updateSelection(resume.resId, "selected")
+                            }
                             disabled={isUpdatingSelection}
                           >
                             Select
@@ -269,7 +337,9 @@ export default function AdminManualSelection({ setCurrentPage }) {
                           <button
                             type="button"
                             className="admin-back-btn"
-                            onClick={() => updateSelection(resume.resId, "rejected")}
+                            onClick={() =>
+                              updateSelection(resume.resId, "rejected")
+                            }
                             disabled={isUpdatingSelection}
                           >
                             Reject
@@ -277,7 +347,9 @@ export default function AdminManualSelection({ setCurrentPage }) {
                           <button
                             type="button"
                             className="admin-back-btn"
-                            onClick={() => updateSelection(resume.resId, "on_hold")}
+                            onClick={() =>
+                              updateSelection(resume.resId, "on_hold")
+                            }
                             disabled={isUpdatingSelection}
                           >
                             Hold

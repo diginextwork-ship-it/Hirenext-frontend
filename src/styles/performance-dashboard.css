@@ -855,6 +855,27 @@
   cursor: not-allowed;
 }
 
+.joining-confirm-section {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.joining-confirm-section h4 {
+  color: #166534;
+  font-size: 1rem;
+}
+
+.joining-confirm-section .form-group {
+  margin-bottom: 12px;
+}
+
+.joining-confirm-section .form-group:last-child {
+  margin-bottom: 0;
+}
+
 .job-message {
   padding: 12px 14px;
   border-radius: 8px;

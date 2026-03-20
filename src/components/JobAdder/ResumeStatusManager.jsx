@@ -271,6 +271,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                 <th>Timing Info</th>
                 <th>Status</th>
                 <th>Action</th>
+                <th>Joining Info</th>
                 <th>Updated</th>
               </tr>
             </thead>
@@ -429,6 +430,32 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                         </div>
                       </div>
                     ) : null}
+                  </td>
+                  <td className="table-cell-wrap">
+                    {resume.status === "joined" ||
+                    resume.status === "billed" ||
+                    resume.status === "left" ? (
+                      <>
+                        {resume.joiningDate ? (
+                          <div>
+                            <strong>Date:</strong>{" "}
+                            {new Date(
+                              resume.joiningDate + "T00:00:00",
+                            ).toLocaleDateString()}
+                          </div>
+                        ) : null}
+                        {resume.joiningNote ? (
+                          <div>
+                            <strong>Note:</strong> {resume.joiningNote}
+                          </div>
+                        ) : null}
+                        {!resume.joiningDate && !resume.joiningNote
+                          ? "-"
+                          : null}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                   <td>
                     {formatDateTime(resume.updatedAt || resume.uploadedAt)}

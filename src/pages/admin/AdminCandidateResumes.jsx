@@ -270,6 +270,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                   <th>File</th>
                   <th>Submitted At</th>
                   <th>Status</th>
+                  <th>Joining Info</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -365,6 +366,34 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     </td>
                     <td>{formatDateTime(resume.uploadedAt)}</td>
                     <td>{resume.selection?.status || "pending"}</td>
+                    <td className="table-cell-wrap">
+                      {["joined", "billed", "left"].includes(
+                        String(resume.selection?.status || "").toLowerCase(),
+                      ) ? (
+                        <>
+                          {resume.selection?.joiningDate ? (
+                            <div>
+                              <strong>Date:</strong>{" "}
+                              {new Date(
+                                resume.selection.joiningDate + "T00:00:00",
+                              ).toLocaleDateString()}
+                            </div>
+                          ) : null}
+                          {resume.selection?.joiningNote ? (
+                            <div>
+                              <strong>Note:</strong>{" "}
+                              {resume.selection.joiningNote}
+                            </div>
+                          ) : null}
+                          {!resume.selection?.joiningDate &&
+                          !resume.selection?.joiningNote
+                            ? "-"
+                            : null}
+                        </>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td>
                       <button
                         type="button"
