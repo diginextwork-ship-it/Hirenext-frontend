@@ -56,7 +56,7 @@ export default function ResumeStatusActionModal({
         { value: "dropout", label: "Dropout", color: "warning" },
       ];
     }
-    if (normalized === "joined") {
+    if (normalized === "joined" || normalized === "join") {
       return [
         { value: "billed", label: "Billed", color: "primary" },
         { value: "left", label: "Left", color: "warning" },
