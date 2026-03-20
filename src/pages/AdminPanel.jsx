@@ -52,6 +52,13 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       stat: "Present, absent, half day",
       page: "adminattendance",
     },
+    {
+      title: "Process Billing",
+      description:
+        "Manually trigger the billing job to move eligible joined candidates (90+ days) to billed status.",
+      stat: "Billing management",
+      page: "adminbilling",
+    },
   ];
 
   return (

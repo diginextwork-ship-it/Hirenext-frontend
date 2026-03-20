@@ -320,6 +320,18 @@ export default function AdminPerformance({ setCurrentPage }) {
                 {summary.totalRejected ?? 0}
               </span>
             </div>
+            <div className="perf-stat-card">
+              <span className="perf-stat-label">Billed</span>
+              <span className="perf-stat-value" style={{ color: "#166534" }}>
+                {summary.totalBilled ?? 0}
+              </span>
+            </div>
+            <div className="perf-stat-card">
+              <span className="perf-stat-label">Left</span>
+              <span className="perf-stat-value" style={{ color: "#9a3412" }}>
+                {summary.totalLeft ?? 0}
+              </span>
+            </div>
           </div>
 
           {/* Top 5 recruiters by submissions */}
@@ -338,6 +350,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Verified</th>
                       <th>Selected</th>
                       <th>Joined</th>
+                      <th>Billed</th>
+                      <th>Left</th>
                       <th>Points</th>
                     </tr>
                   </thead>
@@ -350,6 +364,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{r.verified}</td>
                         <td>{r.selected}</td>
                         <td>{r.joined}</td>
+                        <td>{r.billed ?? 0}</td>
+                        <td>{r.left ?? 0}</td>
                         <td>{r.points}</td>
                       </tr>
                     ))}
@@ -523,6 +539,18 @@ export default function AdminPerformance({ setCurrentPage }) {
                     </th>
                     <th
                       className="perf-sortable"
+                      onClick={() => handleSort("billed")}
+                    >
+                      Billed{sortIndicator("billed")}
+                    </th>
+                    <th
+                      className="perf-sortable"
+                      onClick={() => handleSort("left")}
+                    >
+                      Left{sortIndicator("left")}
+                    </th>
+                    <th
+                      className="perf-sortable"
                       onClick={() => handleSort("on_hold")}
                     >
                       On Hold{sortIndicator("on_hold")}
@@ -537,6 +565,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Selection %</th>
                     <th>Joining %</th>
                     <th>Dropout %</th>
+                    <th>Billing %</th>
+                    <th>Left %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -551,12 +581,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.rejected}</td>
                       <td>{r.joined}</td>
                       <td>{r.dropout}</td>
+                      <td>{r.billed ?? 0}</td>
+                      <td>{r.left ?? 0}</td>
                       <td>{r.on_hold}</td>
                       <td>{r.points}</td>
                       <td>{r.verificationRate}%</td>
                       <td>{r.selectionRate}%</td>
                       <td>{r.joiningRate}%</td>
                       <td>{r.dropoutRate}%</td>
+                      <td>{r.billingRate ?? 0}%</td>
+                      <td>{r.leftRate ?? 0}%</td>
                     </tr>
                   ))}
                 </tbody>

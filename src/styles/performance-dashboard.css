@@ -305,6 +305,14 @@
   border-left-color: #ec4899;
 }
 
+.metric-card.teal {
+  border-left-color: #14b8a6;
+}
+
+.metric-card.orange {
+  border-left-color: #f97316;
+}
+
 .metric-card h4 {
   margin: 0;
 }
@@ -481,6 +489,105 @@
 .status-pill.status-verified {
   background: #dbeafe;
   color: #1d4ed8;
+}
+
+.status-pill.status-billed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pill.status-left {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.left-reason-tooltip {
+  display: inline-block;
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dashed #9a3412;
+}
+
+.left-reason-tooltip .left-reason-text {
+  visibility: hidden;
+  background: #1f2937;
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: normal;
+  min-width: 180px;
+  max-width: 280px;
+  text-align: center;
+}
+
+.left-reason-tooltip:hover .left-reason-text {
+  visibility: visible;
+}
+
+.billing-rate-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.billing-rate-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.billing-rate-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #14b8a6, #10b981);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.billing-rate-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+  min-width: 42px;
+  text-align: right;
+}
+
+.action-btn-warning {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.action-btn-warning.active {
+  background: #ffedd5;
+  border-color: #ea580c;
+  color: #ea580c;
+}
+
+.process-billing-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  background: #14b8a6;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.process-billing-btn:hover {
+  background: #0d9488;
+}
+
+.process-billing-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .resume-action-btn.resume-action-verify.active {

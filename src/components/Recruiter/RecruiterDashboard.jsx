@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
-import { fetchRecruiterDashboard } from "../../services/performanceService";
+import {
+  fetchRecruiterDashboard,
+  markResumeLeft,
+} from "../../services/performanceService";
 import { getAuthToken } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
 
@@ -29,6 +32,11 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [activeStatus, setActiveStatus] = useState("");
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [selectedResumeForAction, setSelectedResumeForAction] = useState(null);
+  const [leftModalOpen, setLeftModalOpen] = useState(false);
+  const [leftModalResume, setLeftModalResume] = useState(null);
+  const [leftReason, setLeftReason] = useState("");
+  const [leftSubmitting, setLeftSubmitting] = useState(false);
+  const [leftError, setLeftError] = useState("");
 
   useEffect(() => {
     if (!recruiterId) return;
@@ -132,6 +140,8 @@ export default function RecruiterDashboard({ recruiterId }) {
     if (normalized === "rejected" || normalized === "reject") return "rejected";
     if (normalized === "joined") return "joined";
     if (normalized === "dropout") return "dropout";
+    if (normalized === "billed") return "billed";
+    if (normalized === "left") return "left";
     return "";
   };
 
@@ -294,7 +304,48 @@ export default function RecruiterDashboard({ recruiterId }) {
           clickable
           onClick={() => handleStatusCardClick("dropout")}
         />
+        <PerformanceMetricCard
+          title="Billed"
+          color="teal"
+          value={toDisplay(data.stats?.billed)}
+          clickable
+          onClick={() => handleStatusCardClick("billed")}
+        />
+        <PerformanceMetricCard
+          title="Left"
+          color="orange"
+          value={toDisplay(data.stats?.left)}
+          clickable
+          onClick={() => handleStatusCardClick("left")}
+        />
       </div>
+
+      {data.calculatedMetrics ? (
+        <div className="metric-grid" style={{ marginTop: 12 }}>
+          <article className="metric-card teal">
+            <h4>Billing Rate</h4>
+            <div className="billing-rate-bar">
+              <div className="billing-rate-track">
+                <div
+                  className="billing-rate-fill"
+                  style={{
+                    width: `${Math.min(Number(data.calculatedMetrics.billingRate) || 0, 100)}%`,
+                  }}
+                />
+              </div>
+              <span className="billing-rate-label">
+                {data.calculatedMetrics.billingRate ?? 0}%
+              </span>
+            </div>
+          </article>
+          <article className="metric-card orange">
+            <h4>Left Rate</h4>
+            <p className="metric-value">
+              {data.calculatedMetrics.leftRate ?? 0}%
+            </p>
+          </article>
+        </div>
+      ) : null}
 
       {activeStatus ? (
         <section className="chart-card ui-mt-md">
@@ -344,7 +395,11 @@ export default function RecruiterDashboard({ recruiterId }) {
                               ? "Dropout Reason"
                               : activeStatus === "rejected"
                                 ? "Rejection Reason"
-                                : "Current Reason"}
+                                : activeStatus === "billed"
+                                  ? "Billing Info"
+                                  : activeStatus === "left"
+                                    ? "Left Reason"
+                                    : "Current Reason"}
                     </th>
                     <th>Status</th>
                     <th>Updated</th>
@@ -364,6 +419,10 @@ export default function RecruiterDashboard({ recruiterId }) {
                       currentReasonField = resume.dropoutReason;
                     } else if (activeStatus === "rejected") {
                       currentReasonField = resume.rejectReason;
+                    } else if (activeStatus === "billed") {
+                      currentReasonField = resume.billedReason || "Auto-billed";
+                    } else if (activeStatus === "left") {
+                      currentReasonField = resume.leftReason;
                     }
 
                     return (
@@ -393,6 +452,19 @@ export default function RecruiterDashboard({ recruiterId }) {
                             /_/g,
                             " ",
                           )}
+                          {normalizeStatus(resume.workflowStatus) === "left" &&
+                          resume.leftReason ? (
+                            <span
+                              className="left-reason-tooltip"
+                              title={resume.leftReason}
+                            >
+                              {" "}
+                              ℹ️
+                              <span className="left-reason-text">
+                                {resume.leftReason}
+                              </span>
+                            </span>
+                          ) : null}
                         </td>
                         <td>
                           {formatDateTime(
@@ -413,6 +485,22 @@ export default function RecruiterDashboard({ recruiterId }) {
                           >
                             Take Action
                           </button>
+                          {normalizeStatus(resume.workflowStatus) ===
+                          "billed" ? (
+                            <button
+                              type="button"
+                              className="action-btn action-btn-warning"
+                              style={{ marginLeft: 6 }}
+                              onClick={() => {
+                                setLeftModalResume(resume);
+                                setLeftReason("");
+                                setLeftError("");
+                                setLeftModalOpen(true);
+                              }}
+                            >
+                              Mark as Left
+                            </button>
+                          ) : null}
                         </td>
                       </tr>
                     );
@@ -468,6 +556,107 @@ export default function RecruiterDashboard({ recruiterId }) {
           }
         }}
       />
+
+      {leftModalOpen && leftModalResume ? (
+        <div
+          className="modal-overlay"
+          onClick={() => !leftSubmitting && setLeftModalOpen(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "500px" }}
+          >
+            <div className="modal-header">
+              <h3>Mark Candidate as Left</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setLeftModalOpen(false)}
+                disabled={leftSubmitting}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="resume-info-preview">
+                <p>
+                  <strong>Candidate:</strong>{" "}
+                  {leftModalResume.candidateName || "N/A"}
+                </p>
+                <p>
+                  <strong>Job ID:</strong> {leftModalResume.jobJid || "N/A"}
+                </p>
+                <p>
+                  <strong>Current Status:</strong> Billed
+                </p>
+              </div>
+              <div className="form-group">
+                <label htmlFor="left-reason-input">
+                  Reason for leaving (required)
+                </label>
+                <textarea
+                  id="left-reason-input"
+                  className="form-control"
+                  rows="4"
+                  placeholder="Enter why the candidate left..."
+                  value={leftReason}
+                  onChange={(e) => setLeftReason(e.target.value)}
+                  disabled={leftSubmitting}
+                />
+              </div>
+              {leftError ? (
+                <div className="job-message job-message-error">{leftError}</div>
+              ) : null}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setLeftModalOpen(false)}
+                disabled={leftSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={leftSubmitting || !leftReason.trim()}
+                onClick={async () => {
+                  setLeftSubmitting(true);
+                  setLeftError("");
+                  try {
+                    await markResumeLeft(leftModalResume.jobJid, {
+                      resId: leftModalResume.resId,
+                      note: leftReason.trim(),
+                    });
+                    setLeftModalOpen(false);
+                    setLeftModalResume(null);
+                    setLeftReason("");
+                    setStatusLoading(true);
+                    try {
+                      const resumes = await fetchRecruiterResumes();
+                      setStatusResumes(resumes);
+                    } catch (reloadErr) {
+                      setStatusError(
+                        reloadErr.message || "Failed to reload resumes.",
+                      );
+                    } finally {
+                      setStatusLoading(false);
+                    }
+                  } catch (err) {
+                    setLeftError(err.message || "Failed to mark as left.");
+                  } finally {
+                    setLeftSubmitting(false);
+                  }
+                }}
+              >
+                {leftSubmitting ? "Submitting..." : "Confirm Left"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

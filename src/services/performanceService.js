@@ -16,7 +16,11 @@ const withAuthHeaders = (extra = {}) => {
   return token ? { Authorization: `Bearer ${token}`, ...extra } : extra;
 };
 
-const request = async (url, options = {}, fallbackMessage = "Request failed.") => {
+const request = async (
+  url,
+  options = {},
+  fallbackMessage = "Request failed.",
+) => {
   const response = await fetch(url, {
     ...options,
     headers: withAuthHeaders(options.headers || {}),
@@ -29,9 +33,17 @@ const request = async (url, options = {}, fallbackMessage = "Request failed.") =
 };
 
 export const fetchRecruiterStatus = (rid) =>
-  request(`${API_BASE_URL}/api/status/recruiter/${encodeURIComponent(rid)}`, {}, "Failed to fetch recruiter stats.");
+  request(
+    `${API_BASE_URL}/api/status/recruiter/${encodeURIComponent(rid)}`,
+    {},
+    "Failed to fetch recruiter stats.",
+  );
 
-export const fetchAllRecruiterStatuses = ({ sortBy = "submitted", sortOrder = "desc", search = "" } = {}) => {
+export const fetchAllRecruiterStatuses = ({
+  sortBy = "submitted",
+  sortOrder = "desc",
+  search = "",
+} = {}) => {
   const params = new URLSearchParams();
   params.set("sortBy", sortBy);
   params.set("sortOrder", sortOrder);
@@ -39,23 +51,32 @@ export const fetchAllRecruiterStatuses = ({ sortBy = "submitted", sortOrder = "d
   return request(
     `${API_BASE_URL}/api/status/all?${params.toString()}`,
     {},
-    "Failed to fetch all recruiter stats."
+    "Failed to fetch all recruiter stats.",
   );
 };
 
 export const fetchTeamLeaderDashboard = () =>
-  request(`${API_BASE_URL}/api/dashboard/team-leader`, {}, "Failed to fetch team leader dashboard.");
+  request(
+    `${API_BASE_URL}/api/dashboard/team-leader`,
+    {},
+    "Failed to fetch team leader dashboard.",
+  );
 
-export const fetchRecruiterDashboard = (rid, { startDate = "", endDate = "" } = {}) => {
+export const fetchRecruiterDashboard = (
+  rid,
+  { startDate = "", endDate = "" } = {},
+) => {
   const params = new URLSearchParams();
-  if (String(startDate || "").trim()) params.set("startDate", String(startDate).trim());
-  if (String(endDate || "").trim()) params.set("endDate", String(endDate).trim());
+  if (String(startDate || "").trim())
+    params.set("startDate", String(startDate).trim());
+  if (String(endDate || "").trim())
+    params.set("endDate", String(endDate).trim());
   const query = params.toString();
 
   return request(
     `${API_BASE_URL}/api/dashboard/recruiter/${encodeURIComponent(rid)}${query ? `?${query}` : ""}`,
     {},
-    "Failed to fetch recruiter dashboard."
+    "Failed to fetch recruiter dashboard.",
   );
 };
 
@@ -63,7 +84,7 @@ export const fetchJobResumeStatuses = (jobId) =>
   request(
     `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/resume-statuses`,
     {},
-    "Failed to fetch job resumes."
+    "Failed to fetch job resumes.",
   );
 
 export const updateJobResumeStatus = (jobId, payload) =>
@@ -74,5 +95,26 @@ export const updateJobResumeStatus = (jobId, payload) =>
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),
     },
-    "Failed to update resume status."
+    "Failed to update resume status.",
+  );
+
+export const markResumeLeft = (jobId, payload) =>
+  request(
+    `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/resume-statuses/left`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    },
+    "Failed to mark candidate as left.",
+  );
+
+export const triggerBillingProcess = () =>
+  request(
+    `${API_BASE_URL}/api/admin/billing/process`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    "Failed to process billing.",
   );

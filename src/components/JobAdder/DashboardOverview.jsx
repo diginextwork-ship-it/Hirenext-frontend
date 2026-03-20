@@ -13,12 +13,35 @@ export default function DashboardOverview({ data, loading }) {
   return (
     <section className="dashboard-overview">
       <div className="summary-cards">
-        <SummaryCard title="Total Jobs" value={Number(overview.totalJobs) || 0} />
+        <SummaryCard
+          title="Total Jobs"
+          value={Number(overview.totalJobs) || 0}
+        />
         <SummaryCard title="Open Jobs" value={Number(overview.openJobs) || 0} />
-        <SummaryCard title="Restricted Jobs" value={Number(overview.restrictedJobs) || 0} />
-        <SummaryCard title="Total Recruiters" value={Number(overview.totalRecruiters) || 0} />
-        <SummaryCard title="Active Recruiters" value={Number(overview.activeRecruiters) || 0} />
-        <SummaryCard title="Total Submissions" value={Number(overview.totalSubmissions) || 0} />
+        <SummaryCard
+          title="Restricted Jobs"
+          value={Number(overview.restrictedJobs) || 0}
+        />
+        <SummaryCard
+          title="Total Recruiters"
+          value={Number(overview.totalRecruiters) || 0}
+        />
+        <SummaryCard
+          title="Active Recruiters"
+          value={Number(overview.activeRecruiters) || 0}
+        />
+        <SummaryCard
+          title="Total Submissions"
+          value={Number(overview.totalSubmissions) || 0}
+        />
+        <SummaryCard
+          title="Total Billed"
+          value={Number(overview.totalBilled) || 0}
+        />
+        <SummaryCard
+          title="Total Left"
+          value={Number(overview.totalLeft) || 0}
+        />
       </div>
 
       <div className="dashboard-panels">

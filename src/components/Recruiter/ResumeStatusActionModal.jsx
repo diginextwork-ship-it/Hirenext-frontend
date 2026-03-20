@@ -51,6 +51,9 @@ export default function ResumeStatusActionModal({
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
+    if (normalized === "billed") {
+      return [{ value: "left", label: "Left", color: "warning" }];
+    }
     return [];
   };
 
@@ -60,6 +63,7 @@ export default function ResumeStatusActionModal({
     if (selectedAction === "joined") return "Joining Reason";
     if (selectedAction === "dropout") return "Dropout Reason";
     if (selectedAction === "rejected") return "Rejection Reason";
+    if (selectedAction === "left") return "Reason for Leaving";
     return "Additional Information";
   };
 

@@ -3,6 +3,7 @@ import { fetchMyJobs } from "../../services/jobAccessService";
 import {
   fetchJobResumeStatuses,
   updateJobResumeStatus,
+  markResumeLeft,
 } from "../../services/performanceService";
 import { useNotification } from "../../context/NotificationContext";
 
@@ -28,6 +29,8 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
   const [message, setMessage] = useState("");
   const [verifyingResumeId, setVerifyingResumeId] = useState("");
   const [verifyNote, setVerifyNote] = useState("");
+  const [leftResumeId, setLeftResumeId] = useState("");
+  const [leftNote, setLeftNote] = useState("");
   const { addNotification } = useNotification();
 
   const selectedJob = useMemo(
@@ -81,6 +84,8 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
     setMessage("");
     setVerifyingResumeId("");
     setVerifyNote("");
+    setLeftResumeId("");
+    setLeftNote("");
     loadJobResumes(selectedJobId);
   }, [selectedJobId]);
 
@@ -118,8 +123,61 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
   const openVerifyComposer = (resume) => {
     setVerifyingResumeId(resume?.resId || "");
     setVerifyNote(resume?.verifiedReason || "");
+    setLeftResumeId("");
+    setLeftNote("");
     setMessage("");
     setError("");
+  };
+
+  const openLeftComposer = (resume) => {
+    setLeftResumeId(resume?.resId || "");
+    setLeftNote("");
+    setVerifyingResumeId("");
+    setVerifyNote("");
+    setMessage("");
+    setError("");
+  };
+
+  const handleMarkLeft = async (resume) => {
+    if (!selectedJobId || !resume?.resId) return;
+    const trimmedNote = leftNote.trim();
+    if (!trimmedNote) {
+      setError("A reason is required to mark a candidate as left.");
+      return;
+    }
+    setMessage("");
+    setError("");
+    try {
+      await updateJobResumeStatus(selectedJobId, {
+        resId: resume.resId,
+        status: "left",
+        note: trimmedNote,
+      });
+      setResumes((prev) =>
+        prev.map((item) =>
+          item.resId === resume.resId
+            ? {
+                ...item,
+                status: "left",
+                leftReason: trimmedNote,
+                updatedAt: new Date().toISOString(),
+                updatedBy: "You",
+              }
+            : item,
+        ),
+      );
+      setLeftResumeId("");
+      setLeftNote("");
+      addNotification(
+        `Marked as Left: Resume ID ${resume.resId} (Job ID: ${selectedJobId})`,
+        "success",
+        5000,
+      );
+      setMessage(`Marked ${resume.resId} as Left.`);
+      onStatusUpdated?.();
+    } catch (updateError) {
+      setError(updateError.message || "Failed to mark candidate as left.");
+    }
   };
 
   const handleVerifyResume = async (resume) => {
@@ -250,6 +308,18 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                     >
                       {formatLabel(resume.status || "pending")}
                     </span>
+                    {resume.status === "left" && resume.leftReason ? (
+                      <span
+                        className="left-reason-tooltip"
+                        title={resume.leftReason}
+                      >
+                        {" "}
+                        ℹ️
+                        <span className="left-reason-text">
+                          {resume.leftReason}
+                        </span>
+                      </span>
+                    ) : null}
                   </td>
                   <td>
                     <div className="resume-status-actions">
@@ -280,6 +350,15 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                       >
                         Reject
                       </button>
+                      {resume.status === "billed" ? (
+                        <button
+                          type="button"
+                          className="resume-action-btn action-btn-warning"
+                          onClick={() => openLeftComposer(resume)}
+                        >
+                          Mark as Left
+                        </button>
+                      ) : null}
                     </div>
                     {verifyingResumeId === resume.resId ? (
                       <div className="resume-verify-box">
@@ -309,6 +388,40 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                             onClick={() => {
                               setVerifyingResumeId("");
                               setVerifyNote("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {leftResumeId === resume.resId ? (
+                      <div className="resume-verify-box">
+                        <label htmlFor={`left-note-${resume.resId}`}>
+                          Reason for leaving (required)
+                        </label>
+                        <textarea
+                          id={`left-note-${resume.resId}`}
+                          value={leftNote}
+                          onChange={(event) => setLeftNote(event.target.value)}
+                          rows={3}
+                          placeholder="Enter reason why the candidate left..."
+                        />
+                        <div className="resume-status-actions">
+                          <button
+                            type="button"
+                            className="resume-action-btn action-btn-warning active"
+                            onClick={() => handleMarkLeft(resume)}
+                            disabled={!leftNote.trim()}
+                          >
+                            Confirm Left
+                          </button>
+                          <button
+                            type="button"
+                            className="resume-action-btn"
+                            onClick={() => {
+                              setLeftResumeId("");
+                              setLeftNote("");
                             }}
                           >
                             Cancel

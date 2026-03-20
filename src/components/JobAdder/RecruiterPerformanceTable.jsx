@@ -90,6 +90,16 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                   <th>Joined</th>
                   <th>Dropout</th>
                   <th>
+                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("billed")}>
+                      Billed
+                    </button>
+                  </th>
+                  <th>
+                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("left")}>
+                      Left
+                    </button>
+                  </th>
+                  <th>
                     <button type="button" className="table-sort-btn" onClick={() => toggleSort("points")}>
                       Points
                     </button>
@@ -108,6 +118,12 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                     <td className="metric-value">{metricDisplay(item.stats?.reject)}</td>
                     <td className="metric-value">{metricDisplay(item.stats?.joined)}</td>
                     <td className="metric-value">{metricDisplay(item.stats?.dropout)}</td>
+                    <td className="metric-value">
+                      <span className="status-pill status-billed">{metricDisplay(item.stats?.billed)}</span>
+                    </td>
+                    <td className="metric-value">
+                      <span className="status-pill status-left">{metricDisplay(item.stats?.left)}</span>
+                    </td>
                     <td>{item.points || 0}</td>
                   </tr>
                 ))}
@@ -118,6 +134,8 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
           <div className="table-summary">
             <p>Total Submissions: {summary?.totalSubmitted ?? derived.totalSubmitted}</p>
             <p>Average per Recruiter: {summary?.avgSubmittedPerRecruiter ?? derived.avg}</p>
+            <p>Total Billed: {summary?.totalBilled ?? 0}</p>
+            <p>Total Left: {summary?.totalLeft ?? 0}</p>
           </div>
         </>
       ) : null}
