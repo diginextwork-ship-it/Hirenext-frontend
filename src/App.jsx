@@ -1,28 +1,43 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { NotificationProvider } from "./context/NotificationContext";
 import NotificationContainer from "./context/NotificationContainer";
-import Home from "./pages/Home";
-import AboutUs from "./pages/AboutUs";
-import Contact from "./pages/contact";
-import Gallery from "./pages/Gallery";
-import JobSearch from "./pages/JobSearch";
-import JobApplication from "./pages/JobApplication";
-import RecruiterLogin from "./pages/RecruiterLogin";
-import AdminLogin from "./pages/AdminLogin";
-import AdminPanel from "./pages/AdminPanel";
-import AdminCreateRecruiter from "./pages/admin/AdminCreateRecruiter";
-import AdminResumeUploads from "./pages/admin/AdminResumeUploads";
-import AdminPerformance from "./pages/admin/AdminPerformance";
-import AdminCandidateResumes from "./pages/admin/AdminCandidateResumes";
-import AdminManualSelection from "./pages/admin/AdminManualSelection";
-import AdminRevenue from "./pages/admin/AdminRevenue";
-import AdminAttendance from "./pages/admin/AdminAttendance";
-import AdminBilling from "./pages/admin/AdminBilling";
-import ErrorPage from "./pages/ErrorPage";
-import ScheduleCall from "./pages/ScheduleCall";
-import { clearAuthSession, getAuthSession } from "./auth/session";
+import PageFallback from "./components/PageFallback";
+import {
+  clearAuthSession,
+  getAuthSession,
+  SESSION_EXPIRED_EVENT,
+} from "./auth/session";
+
+// Lazy-loaded pages — each gets its own chunk
+const Home = lazy(() => import("./pages/Home"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const Contact = lazy(() => import("./pages/contact"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const JobSearch = lazy(() => import("./pages/JobSearch"));
+const JobApplication = lazy(() => import("./pages/JobApplication"));
+const RecruiterLogin = lazy(() => import("./pages/RecruiterLogin"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const AdminCreateRecruiter = lazy(
+  () => import("./pages/admin/AdminCreateRecruiter"),
+);
+const AdminResumeUploads = lazy(
+  () => import("./pages/admin/AdminResumeUploads"),
+);
+const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
+const AdminCandidateResumes = lazy(
+  () => import("./pages/admin/AdminCandidateResumes"),
+);
+const AdminManualSelection = lazy(
+  () => import("./pages/admin/AdminManualSelection"),
+);
+const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
+const AdminAttendance = lazy(() => import("./pages/admin/AdminAttendance"));
+const AdminBilling = lazy(() => import("./pages/admin/AdminBilling"));
+const ErrorPage = lazy(() => import("./pages/ErrorPage"));
+const ScheduleCall = lazy(() => import("./pages/ScheduleCall"));
 
 const PAGE_TO_PATH = {
   home: "/",
@@ -105,6 +120,22 @@ export default function App() {
   );
   const guardedPage =
     ADMIN_ONLY_PAGES.has(currentPage) && !isAdmin ? "adminlogin" : currentPage;
+
+  // Listen for session-expired events from authFetch
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setAuthSession(null);
+      setCurrentPageState("home");
+      const homePath = PAGE_TO_PATH.home;
+      if (normalizePath(window.location.pathname) !== homePath) {
+        window.history.replaceState({ page: "home" }, "", homePath);
+      }
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () =>
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -206,7 +237,7 @@ export default function App() {
   };
 
   if (guardedPage === "notfound") {
-    return renderPage();
+    return <Suspense fallback={<PageFallback />}>{renderPage()}</Suspense>;
   }
 
   return (
@@ -215,7 +246,7 @@ export default function App() {
         {currentPage === "home" ? (
           <Navbar setCurrentPage={setCurrentPage} currentPage={currentPage} />
         ) : null}
-        {renderPage()}
+        <Suspense fallback={<PageFallback />}>{renderPage()}</Suspense>
         <Footer
           setCurrentPage={setCurrentPage}
           minimal={currentPage !== "home"}

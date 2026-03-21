@@ -1,0 +1,1 @@
+import{c as t,a as o}from"./authFetch-BV6kXlWq.js";import{A as n}from"./api-Bi1tCWC1.js";const r=t,i=async(e,a)=>o(`${n}/api/admin/resumes/${encodeURIComponent(e)}/verified-reason`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({verified_reason:a||null})},"Failed to update team leader note.");export{r as g,i as u};

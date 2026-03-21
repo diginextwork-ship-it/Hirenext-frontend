@@ -1,39 +1,8 @@
+import { authFetch } from "../auth/authFetch";
 import { API_BASE_URL } from "../config/api";
-import { getAuthToken } from "../auth/session";
-
-const readJsonResponse = async (response) => {
-  const $raw = await response.text();
-  if (!$raw) return {};
-  try {
-    return JSON.parse($raw);
-  } catch {
-    throw new Error(`Server returned non-JSON response (${response.status}).`);
-  }
-};
-
-const withAuthHeaders = (extra = {}) => {
-  const token = getAuthToken();
-  return token ? { Authorization: `Bearer ${token}`, ...extra } : extra;
-};
-
-const request = async (
-  url,
-  options = {},
-  fallbackMessage = "Request failed.",
-) => {
-  const response = await fetch(url, {
-    ...options,
-    headers: withAuthHeaders(options.headers || {}),
-  });
-  const data = await readJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(data?.error || data?.message || fallbackMessage);
-  }
-  return data;
-};
 
 export const submitReimbursement = (amount, description) =>
-  request(
+  authFetch(
     `${API_BASE_URL}/api/reimbursements`,
     {
       method: "POST",
@@ -44,21 +13,21 @@ export const submitReimbursement = (amount, description) =>
   );
 
 export const fetchMyReimbursements = () =>
-  request(
+  authFetch(
     `${API_BASE_URL}/api/reimbursements/my`,
     {},
     "Failed to fetch reimbursements.",
   );
 
 export const fetchAdminReimbursements = () =>
-  request(
+  authFetch(
     `${API_BASE_URL}/api/admin/reimbursements`,
     {},
     "Failed to fetch reimbursements.",
   );
 
 export const decideReimbursement = (id, decision, adminNote = "") =>
-  request(
+  authFetch(
     `${API_BASE_URL}/api/admin/reimbursements/${encodeURIComponent(id)}/decision`,
     {
       method: "POST",

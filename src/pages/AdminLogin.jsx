@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { API_BASE_URL, readJsonResponse } from "./admin/adminApi";
+import { API_BASE_URL } from "../config/api";
+import { readJsonResponse } from "../auth/authFetch";
 import { saveAuthSession } from "../auth/session";
 import "../styles/recruiter-login.css";
 
@@ -19,7 +20,10 @@ export default function AdminLogin({ onLoginSuccess }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ adminKey }),
       });
-      const data = await readJsonResponse(response, "Check VITE_API_BASE_URL and backend route setup.");
+      const data = await readJsonResponse(
+        response,
+        "Check VITE_API_BASE_URL and backend route setup.",
+      );
       if (!response.ok) {
         throw new Error(data?.message || "Invalid admin credentials.");
       }
@@ -53,10 +57,16 @@ export default function AdminLogin({ onLoginSuccess }) {
               placeholder="Enter admin key"
               required
             />
-            <button type="submit" className="recruiter-login-btn" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="recruiter-login-btn"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Logging in..." : "Login"}
             </button>
-            {message ? <p className="job-message job-message-error">{message}</p> : null}
+            {message ? (
+              <p className="job-message job-message-error">{message}</p>
+            ) : null}
           </form>
         </div>
       </section>
