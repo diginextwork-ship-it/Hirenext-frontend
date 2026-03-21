@@ -459,7 +459,13 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         {resume.job?.companyName || "N/A"}
                       </div>
                     </td>
-                    <td style={{ minWidth: "260px", whiteSpace: "normal" }}>
+                    <td
+                      style={{
+                        maxWidth: "200px",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       {resume.job?.jobDescription ||
                         resume.job?.skills ||
                         "N/A"}
@@ -474,13 +480,13 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     </td>
                     <td
                       className="table-cell-wrap"
-                      style={{ maxWidth: "200px" }}
+                      style={{ maxWidth: "160px", wordBreak: "break-word" }}
                     >
                       {resume.submittedReason || "-"}
                     </td>
                     <td
                       className="table-cell-wrap"
-                      style={{ maxWidth: "200px" }}
+                      style={{ maxWidth: "160px", wordBreak: "break-word" }}
                     >
                       {resume.verifiedReason || "-"}
                       <button
@@ -497,7 +503,13 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         Edit
                       </button>
                     </td>
-                    <td style={{ minWidth: "240px", whiteSpace: "normal" }}>
+                    <td
+                      style={{
+                        maxWidth: "200px",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       {resume.hasPriorExperience === null ? (
                         "N/A"
                       ) : resume.hasPriorExperience ? (

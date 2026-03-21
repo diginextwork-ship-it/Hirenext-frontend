@@ -4,6 +4,8 @@
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-family: "Outfit", sans-serif;
   color: var(--text-primary);
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .admin-panel-page {
@@ -177,10 +179,14 @@
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-card-large {
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .admin-form {
@@ -288,7 +294,9 @@
 
 .admin-table-wrap {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 1rem;
 }
 
@@ -315,7 +323,7 @@
 }
 
 .admin-job-cell {
-  min-width: 220px;
+  min-width: 140px;
 }
 
 .admin-resume-grid {
@@ -520,7 +528,6 @@
   .admin-table td {
     padding: 0.55rem;
     font-size: 0.86rem;
-    white-space: nowrap;
   }
 }
 
