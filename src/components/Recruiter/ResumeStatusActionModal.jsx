@@ -44,24 +44,7 @@ export default function ResumeStatusActionModal({
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
-    if (normalized === "walk_in") {
-      return [
-        { value: "selected", label: "Selected", color: "primary" },
-        { value: "rejected", label: "Reject", color: "danger" },
-      ];
-    }
-    if (normalized === "selected") {
-      return [
-        { value: "joined", label: "Joined", color: "success" },
-        { value: "dropout", label: "Dropout", color: "warning" },
-      ];
-    }
-    if (normalized === "joined" || normalized === "join") {
-      return [
-        { value: "billed", label: "Billed", color: "primary" },
-        { value: "left", label: "Left", color: "warning" },
-      ];
-    }
+    // After walk_in, only admin can advance candidates further
     return [];
   };
 

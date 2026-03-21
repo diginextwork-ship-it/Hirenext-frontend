@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
-import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import {
+  API_BASE_URL,
+  getAdminHeaders,
+  readJsonResponse,
+  adminAdvanceStatus,
+  adminDeleteRecruiter,
+} from "./adminApi";
 import { getAuthSession } from "../../auth/session";
 import "../../styles/admin-panel.css";
 
@@ -20,13 +26,39 @@ const PRESETS = {
 
 const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified" },
+  { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn" },
   { key: "selected", label: "Selected", summaryKey: "totalSelected" },
   { key: "joined", label: "Joined", summaryKey: "totalJoined" },
-  { key: "dropout", label: "Dropout", summaryKey: "totalDropout" },
+  {
+    key: "dropout",
+    label: "Dropout",
+    summaryKey: "totalDropout",
+    color: "#b45309",
+  },
   { key: "rejected", label: "Rejected", summaryKey: "totalRejected" },
-  { key: "billed", label: "Billed", summaryKey: "totalBilled", color: "#166534" },
+  {
+    key: "billed",
+    label: "Billed",
+    summaryKey: "totalBilled",
+    color: "#166534",
+  },
   { key: "left", label: "Left", summaryKey: "totalLeft", color: "#9a3412" },
 ];
+
+const ADMIN_ACTIONS_BY_STATUS = {
+  walk_in: [
+    { value: "selected", label: "Selected", color: "#0f766e" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  selected: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#b45309" },
+  ],
+  joined: [
+    { value: "billed", label: "Billed", color: "#0f766e" },
+    { value: "left", label: "Left", color: "#9a3412" },
+  ],
+};
 
 function toDateStr(d) {
   return d.toISOString().slice(0, 10);
@@ -75,7 +107,9 @@ function formatLabel(preset) {
 }
 
 function formatStatusLabel(status) {
-  const normalized = String(status || "").trim().toLowerCase();
+  const normalized = String(status || "")
+    .trim()
+    .toLowerCase();
   if (!normalized) return "Unknown";
   return normalized
     .split("_")
@@ -92,6 +126,20 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [sortField, setSortField] = useState("submitted");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
+
+  // Admin status action modal state
+  const [actionModalItem, setActionModalItem] = useState(null);
+  const [actionTarget, setActionTarget] = useState("");
+  const [actionReason, setActionReason] = useState("");
+  const [actionJoiningDate, setActionJoiningDate] = useState("");
+  const [actionJoiningNote, setActionJoiningNote] = useState("");
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteDeleting, setDeleteDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Timeline filter state
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
@@ -201,6 +249,82 @@ export default function AdminPerformance({ setCurrentPage }) {
     );
   };
 
+  const openActionModal = (item, targetStatus) => {
+    setActionModalItem(item);
+    setActionTarget(targetStatus);
+    setActionReason("");
+    setActionJoiningDate("");
+    setActionJoiningNote("");
+    setActionError("");
+  };
+
+  const closeActionModal = () => {
+    if (actionSubmitting) return;
+    setActionModalItem(null);
+    setActionTarget("");
+    setActionReason("");
+    setActionJoiningDate("");
+    setActionJoiningNote("");
+    setActionError("");
+  };
+
+  const handleAdminAdvanceStatus = async () => {
+    if (!actionModalItem || !actionTarget) return;
+    const needsReason = actionTarget !== "joined";
+    if (needsReason && !actionReason.trim()) {
+      setActionError("Please provide a reason.");
+      return;
+    }
+    setActionSubmitting(true);
+    setActionError("");
+    try {
+      await adminAdvanceStatus(actionModalItem.resId, {
+        status: actionTarget,
+        reason: actionReason.trim() || undefined,
+        ...(actionTarget === "joined" && actionJoiningDate
+          ? { joining_date: actionJoiningDate }
+          : {}),
+        ...(actionTarget === "joined" && actionJoiningNote.trim()
+          ? { joining_note: actionJoiningNote.trim() }
+          : {}),
+      });
+      closeActionModal();
+      fetchPerformance();
+    } catch (err) {
+      setActionError(err.message || "Failed to advance status.");
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+
+  const availableActions = ADMIN_ACTIONS_BY_STATUS[selectedStatusKey] || [];
+
+  const openDeleteModal = (item) => {
+    setDeleteTarget(item);
+    setDeleteError("");
+  };
+
+  const closeDeleteModal = () => {
+    if (deleteDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.rid) return;
+    setDeleteDeleting(true);
+    setDeleteError("");
+    try {
+      await adminDeleteRecruiter(deleteTarget.rid);
+      closeDeleteModal();
+      fetchPerformance();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete.");
+    } finally {
+      setDeleteDeleting(false);
+    }
+  };
+
   return (
     <AdminLayout
       title="Performance Dashboard"
@@ -296,7 +420,6 @@ export default function AdminPerformance({ setCurrentPage }) {
       {activeTab === TABS.OVERVIEW && (
         <div className="perf-overview">
           <div className="perf-summary-grid">
-           
             <div className="perf-stat-card">
               <span className="perf-stat-label">Resumes Submitted</span>
               <span className="perf-stat-value">
@@ -356,6 +479,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Job ID</th>
                       <th>Resume File</th>
                       <th>Status</th>
+                      {availableActions.length > 0 && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -379,6 +503,35 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.status)}</td>
+                        {availableActions.length > 0 && (
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "6px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {availableActions.map((action) => (
+                                <button
+                                  key={action.value}
+                                  type="button"
+                                  className="admin-refresh-btn"
+                                  style={{
+                                    backgroundColor: action.color,
+                                    color: "#fff",
+                                    border: "none",
+                                  }}
+                                  onClick={() =>
+                                    openActionModal(item, action.value)
+                                  }
+                                >
+                                  {action.label}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -500,6 +653,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Restricted Jobs</th>
                     <th>Total Positions</th>
                     <th>Points</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -513,6 +667,27 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{tl.restrictedJobs}</td>
                       <td>{tl.totalPositions}</td>
                       <td>{tl.points}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-back-btn"
+                          style={{
+                            backgroundColor: "#dc2626",
+                            color: "#fff",
+                            border: "none",
+                          }}
+                          onClick={() =>
+                            openDeleteModal({
+                              rid: tl.rid,
+                              name: tl.name,
+                              email: tl.email,
+                              role: "Team Leader",
+                            })
+                          }
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -618,6 +793,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     >
                       Points{sortIndicator("points")}
                     </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -636,6 +812,27 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.left ?? 0}</td>
                       <td>{r.on_hold}</td>
                       <td>{r.points}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-back-btn"
+                          style={{
+                            backgroundColor: "#dc2626",
+                            color: "#fff",
+                            border: "none",
+                          }}
+                          onClick={() =>
+                            openDeleteModal({
+                              rid: r.rid,
+                              name: r.name,
+                              email: r.email,
+                              role: "Recruiter",
+                            })
+                          }
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -650,6 +847,245 @@ export default function AdminPerformance({ setCurrentPage }) {
           )}
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{ marginTop: 0, marginBottom: "10px", color: "#dc2626" }}
+            >
+              Delete {deleteTarget.role}
+            </h3>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to permanently delete{" "}
+              <strong>{deleteTarget.name}</strong> ({deleteTarget.rid})?
+            </p>
+            <p className="admin-muted" style={{ margin: "0 0 8px" }}>
+              Email: {deleteTarget.email || "N/A"}
+            </p>
+            <p
+              style={{ margin: "0 0 12px", color: "#b91c1c", fontWeight: 600 }}
+            >
+              This will permanently remove this user and all their associated
+              data including resumes, phone numbers, attendance records, and
+              performance history. This action cannot be undone.
+            </p>
+            {deleteError ? (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginBottom: "10px" }}
+              >
+                {deleteError}
+              </div>
+            ) : null}
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeDeleteModal}
+                disabled={deleteDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                style={{ backgroundColor: "#dc2626", border: "none" }}
+                onClick={handleDeleteConfirm}
+                disabled={deleteDeleting}
+              >
+                {deleteDeleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Admin status action modal */}
+      {actionModalItem && actionTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeActionModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: "10px" }}>
+              Move to {formatStatusLabel(actionTarget)}
+            </h3>
+            <div style={{ marginBottom: "12px" }}>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Candidate:</strong>{" "}
+                {actionModalItem.candidateName ||
+                  actionModalItem.resumeFilename ||
+                  actionModalItem.resId}
+              </p>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Job ID:</strong> {actionModalItem.jobJid ?? "N/A"}
+              </p>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Current Status:</strong>{" "}
+                {formatStatusLabel(selectedStatusKey)}
+              </p>
+            </div>
+
+            {actionTarget === "joined" ? (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Joining Date (optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={actionJoiningDate}
+                    onChange={(e) => setActionJoiningDate(e.target.value)}
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Joining Note (optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={actionJoiningNote}
+                    onChange={(e) => setActionJoiningNote(e.target.value)}
+                    placeholder="Enter any joining notes..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Reason (optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder="Enter reason..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <div style={{ marginBottom: "10px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: 600,
+                    marginBottom: "4px",
+                  }}
+                >
+                  {actionTarget === "rejected"
+                    ? "Rejection Reason"
+                    : actionTarget === "dropout"
+                      ? "Dropout Reason"
+                      : actionTarget === "left"
+                        ? "Reason for Leaving"
+                        : "Reason"}
+                </label>
+                <textarea
+                  rows={4}
+                  value={actionReason}
+                  onChange={(e) => setActionReason(e.target.value)}
+                  placeholder="Enter reason..."
+                  disabled={actionSubmitting}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #ccc",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+            )}
+
+            {actionError ? (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginBottom: "10px" }}
+              >
+                {actionError}
+              </div>
+            ) : null}
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeActionModal}
+                disabled={actionSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                onClick={handleAdminAdvanceStatus}
+                disabled={
+                  actionSubmitting ||
+                  (actionTarget !== "joined" && !actionReason.trim())
+                }
+              >
+                {actionSubmitting
+                  ? "Updating..."
+                  : `Confirm ${formatStatusLabel(actionTarget)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminLayout>
   );
 }

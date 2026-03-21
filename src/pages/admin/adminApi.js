@@ -19,3 +19,28 @@ export const updateTeamLeaderNote = async (resId, verifiedReason) =>
     },
     "Failed to update team leader note.",
   );
+
+export const adminAdvanceStatus = async (resId, payload) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/advance-status`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    "Failed to advance resume status.",
+  );
+
+export const adminDeleteRecruiter = async (rid) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}`,
+    { method: "DELETE" },
+    "Failed to delete recruiter.",
+  );
+
+export const adminDeleteCandidate = async (resId) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/candidates/${encodeURIComponent(resId)}`,
+    { method: "DELETE" },
+    "Failed to delete candidate.",
+  );

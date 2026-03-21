@@ -6,6 +6,7 @@ import {
   getAdminHeaders,
   readJsonResponse,
   updateTeamLeaderNote,
+  adminDeleteCandidate,
 } from "./adminApi";
 import "../../styles/admin-panel.css";
 
@@ -37,6 +38,9 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [editingNote, setEditingNote] = useState(null);
   const [noteValue, setNoteValue] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteDeleting, setDeleteDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -96,6 +100,32 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     if (isSavingNote) return;
     setEditingNote(null);
     setNoteValue("");
+  };
+
+  const openDeleteCandidateModal = (resume) => {
+    setDeleteTarget(resume);
+    setDeleteError("");
+  };
+
+  const closeDeleteCandidateModal = () => {
+    if (deleteDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+
+  const handleDeleteCandidate = async () => {
+    if (!deleteTarget?.resId) return;
+    setDeleteDeleting(true);
+    setDeleteError("");
+    try {
+      await adminDeleteCandidate(deleteTarget.resId);
+      closeDeleteCandidateModal();
+      await loadCandidateResumes();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete candidate.");
+    } finally {
+      setDeleteDeleting(false);
+    }
   };
 
   const saveTeamLeaderNote = async () => {
@@ -395,24 +425,46 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                       )}
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="admin-refresh-btn admin-shortlist-btn"
-                        onClick={() => openShortlistModal(resume)}
-                        disabled={
-                          isShortlisting ||
-                          !resume.jobJid ||
-                          String(
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "6px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="admin-refresh-btn admin-shortlist-btn"
+                          onClick={() => openShortlistModal(resume)}
+                          disabled={
+                            isShortlisting ||
+                            !resume.jobJid ||
+                            String(
+                              resume.selection?.status || "",
+                            ).toLowerCase() === "selected"
+                          }
+                        >
+                          {String(
                             resume.selection?.status || "",
                           ).toLowerCase() === "selected"
-                        }
-                      >
-                        {String(
-                          resume.selection?.status || "",
-                        ).toLowerCase() === "selected"
-                          ? "Shortlisted"
-                          : "Shortlist"}
-                      </button>
+                            ? "Shortlisted"
+                            : "Shortlist"}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-back-btn"
+                          style={{
+                            backgroundColor: "#dc2626",
+                            color: "#fff",
+                            border: "none",
+                            padding: "4px 10px",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => openDeleteCandidateModal(resume)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -517,6 +569,78 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 disabled={isSavingNote}
               >
                 {isSavingNote ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDeleteCandidateModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{ marginTop: 0, marginBottom: "10px", color: "#dc2626" }}
+            >
+              Delete Candidate
+            </h3>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to permanently delete{" "}
+              <strong>{deleteTarget.applicantName || "this candidate"}</strong>?
+            </p>
+            <p className="admin-muted" style={{ margin: "0 0 4px" }}>
+              Resume ID: {deleteTarget.resId} | Email:{" "}
+              {deleteTarget.applicantEmail || "N/A"}
+            </p>
+            {deleteTarget.jobJid ? (
+              <p className="admin-muted" style={{ margin: "0 0 4px" }}>
+                Job: #{deleteTarget.jobJid} —{" "}
+                {deleteTarget.job?.roleName || "N/A"} at{" "}
+                {deleteTarget.job?.companyName || "N/A"}
+              </p>
+            ) : null}
+            <p
+              style={{
+                margin: "8px 0 12px",
+                color: "#b91c1c",
+                fontWeight: 600,
+              }}
+            >
+              This will permanently remove this candidate's resume, phone
+              number, and all associated data. This action cannot be undone.
+            </p>
+            {deleteError ? (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginBottom: "10px" }}
+              >
+                {deleteError}
+              </div>
+            ) : null}
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeDeleteCandidateModal}
+                disabled={deleteDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                style={{ backgroundColor: "#dc2626", border: "none" }}
+                onClick={handleDeleteCandidate}
+                disabled={deleteDeleting}
+              >
+                {deleteDeleting ? "Deleting..." : "Delete Permanently"}
               </button>
             </div>
           </div>

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
-import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import {
+  API_BASE_URL,
+  getAdminHeaders,
+  readJsonResponse,
+  adminDeleteRecruiter,
+} from "./adminApi";
 import "../../styles/admin-panel.css";
 
 const toCurrency = (value) =>
@@ -44,6 +49,9 @@ export default function AdminAttendance({ setCurrentPage }) {
   const [savingRid, setSavingRid] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteDeleting, setDeleteDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const loadAttendance = async (selectedDate = attendanceDate) => {
     setIsLoading(true);
@@ -53,9 +61,12 @@ export default function AdminAttendance({ setCurrentPage }) {
         `${API_BASE_URL}/api/admin/attendance?date=${encodeURIComponent(selectedDate)}`,
         {
           headers: getAdminHeaders(),
-        }
+        },
       );
-      const data = await readJsonResponse(response, "Failed to parse attendance response.");
+      const data = await readJsonResponse(
+        response,
+        "Failed to parse attendance response.",
+      );
       if (!response.ok) {
         throw new Error(data?.message || "Failed to fetch attendance.");
       }
@@ -80,15 +91,45 @@ export default function AdminAttendance({ setCurrentPage }) {
     loadAttendance(attendanceDate);
   }, [attendanceDate]);
 
+  const openDeleteStaffModal = (member) => {
+    setDeleteTarget(member);
+    setDeleteError("");
+  };
+
+  const closeDeleteStaffModal = () => {
+    if (deleteDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+
+  const handleDeleteStaff = async () => {
+    if (!deleteTarget?.rid) return;
+    setDeleteDeleting(true);
+    setDeleteError("");
+    try {
+      await adminDeleteRecruiter(deleteTarget.rid);
+      closeDeleteStaffModal();
+      await loadAttendance(attendanceDate);
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete staff member.");
+    } finally {
+      setDeleteDeleting(false);
+    }
+  };
+
   const totals = useMemo(
     () => [
       { label: "Total Staff", value: summary.totalStaff, color: "#1f2937" },
       { label: "Present", value: summary.presentCount, color: "#166534" },
       { label: "Half Day", value: summary.halfDayCount, color: "#b45309" },
       { label: "Absent", value: summary.absentCount, color: "#b91c1c" },
-      { label: "Salary Expense", value: toCurrency(summary.dailyExpense), color: "#1d4ed8" },
+      {
+        label: "Salary Expense",
+        value: toCurrency(summary.dailyExpense),
+        color: "#1d4ed8",
+      },
     ],
-    [summary]
+    [summary],
   );
 
   const handleMarkAttendance = async (recruiterRid, status) => {
@@ -108,7 +149,10 @@ export default function AdminAttendance({ setCurrentPage }) {
           markedBy: "admin-panel",
         }),
       });
-      const data = await readJsonResponse(response, "Failed to parse attendance update response.");
+      const data = await readJsonResponse(
+        response,
+        "Failed to parse attendance update response.",
+      );
       if (!response.ok) {
         throw new Error(data?.message || "Failed to update attendance.");
       }
@@ -138,8 +182,12 @@ export default function AdminAttendance({ setCurrentPage }) {
         </button>
       }
     >
-      {errorMessage ? <div className="admin-alert admin-alert-error">{errorMessage}</div> : null}
-      {statusMessage ? <div className="admin-alert">{statusMessage}</div> : null}
+      {errorMessage ? (
+        <div className="admin-alert admin-alert-error">{errorMessage}</div>
+      ) : null}
+      {statusMessage ? (
+        <div className="admin-alert">{statusMessage}</div>
+      ) : null}
 
       <div className="admin-dashboard-card admin-card-large">
         <div className="admin-attendance-toolbar">
@@ -153,7 +201,8 @@ export default function AdminAttendance({ setCurrentPage }) {
             />
           </div>
           <div className="admin-muted">
-            Changing a status from `present` to `absent` removes that linked salary expense.
+            Changing a status from `present` to `absent` removes that linked
+            salary expense.
           </div>
         </div>
       </div>
@@ -162,7 +211,9 @@ export default function AdminAttendance({ setCurrentPage }) {
         {totals.map((item) => (
           <div key={item.label} className="admin-dashboard-card">
             <div className="admin-muted">{item.label}</div>
-            <h3 style={{ margin: "8px 0 0", color: item.color }}>{item.value}</h3>
+            <h3 style={{ margin: "8px 0 0", color: item.color }}>
+              {item.value}
+            </h3>
           </div>
         ))}
       </div>
@@ -170,7 +221,9 @@ export default function AdminAttendance({ setCurrentPage }) {
       <div className="admin-dashboard-card admin-card-large">
         <h2 style={{ marginTop: 0 }}>Daily attendance</h2>
         {staff.length === 0 ? (
-          <p className="admin-chart-empty">No recruiters or team leaders found.</p>
+          <p className="admin-chart-empty">
+            No recruiters or team leaders found.
+          </p>
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-table admin-table-wide">
@@ -191,15 +244,23 @@ export default function AdminAttendance({ setCurrentPage }) {
                   <tr key={member.rid}>
                     <td>{member.rid}</td>
                     <td>{member.name || "Unknown"}</td>
-                    <td style={{ textTransform: "capitalize" }}>{member.role}</td>
+                    <td style={{ textTransform: "capitalize" }}>
+                      {member.role}
+                    </td>
                     <td>{toCurrency(member.dailySalary)}</td>
                     <td>
-                      <span className={`admin-attendance-badge admin-attendance-${member.status}`}>
-                        {member.status === "half_day" ? "Half Day" : member.status}
+                      <span
+                        className={`admin-attendance-badge admin-attendance-${member.status}`}
+                      >
+                        {member.status === "half_day"
+                          ? "Half Day"
+                          : member.status}
                       </span>
                     </td>
                     <td>{toCurrency(member.salaryAmount)}</td>
-                    <td>{formatDateTime(member.updatedAt || member.markedAt)}</td>
+                    <td>
+                      {formatDateTime(member.updatedAt || member.markedAt)}
+                    </td>
                     <td>
                       <div className="admin-attendance-actions">
                         {STATUS_OPTIONS.map((option) => {
@@ -210,13 +271,31 @@ export default function AdminAttendance({ setCurrentPage }) {
                               key={option.value}
                               type="button"
                               className={`admin-attendance-btn ${isActive ? "is-active" : ""}`}
-                              onClick={() => handleMarkAttendance(member.rid, option.value)}
+                              onClick={() =>
+                                handleMarkAttendance(member.rid, option.value)
+                              }
                               disabled={isSaving}
                             >
-                              {isSaving && isActive ? "Saving..." : option.label}
+                              {isSaving && isActive
+                                ? "Saving..."
+                                : option.label}
                             </button>
                           );
                         })}
+                        <button
+                          type="button"
+                          className="admin-back-btn"
+                          style={{
+                            backgroundColor: "#dc2626",
+                            color: "#fff",
+                            border: "none",
+                            padding: "4px 10px",
+                            fontSize: "12px",
+                          }}
+                          onClick={() => openDeleteStaffModal(member)}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -226,6 +305,75 @@ export default function AdminAttendance({ setCurrentPage }) {
           </div>
         )}
       </div>
+
+      {deleteTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDeleteStaffModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{ marginTop: 0, marginBottom: "10px", color: "#dc2626" }}
+            >
+              Delete{" "}
+              {deleteTarget.role === "team_leader"
+                ? "Team Leader"
+                : "Recruiter"}
+            </h3>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to permanently delete{" "}
+              <strong>{deleteTarget.name || "Unknown"}</strong> (
+              {deleteTarget.rid})?
+            </p>
+            <p className="admin-muted" style={{ margin: "0 0 4px" }}>
+              Role: {deleteTarget.role || "N/A"}
+            </p>
+            <p
+              style={{
+                margin: "8px 0 12px",
+                color: "#b91c1c",
+                fontWeight: 600,
+              }}
+            >
+              This will permanently remove this user and all their associated
+              data including resumes, phone numbers, attendance records, and
+              performance history. This action cannot be undone.
+            </p>
+            {deleteError ? (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginBottom: "10px" }}
+              >
+                {deleteError}
+              </div>
+            ) : null}
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeDeleteStaffModal}
+                disabled={deleteDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                style={{ backgroundColor: "#dc2626", border: "none" }}
+                onClick={handleDeleteStaff}
+                disabled={deleteDeleting}
+              >
+                {deleteDeleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminLayout>
   );
 }
