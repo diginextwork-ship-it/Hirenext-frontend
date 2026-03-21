@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import { getAuthSession } from "../../auth/session";
 import "../../styles/admin-panel.css";
 
 const TABS = {
@@ -16,6 +17,16 @@ const PRESETS = {
   LAST_MONTH: "last_month",
   CUSTOM: "custom",
 };
+
+const STATUS_CARDS = [
+  { key: "verified", label: "Verified", summaryKey: "totalVerified" },
+  { key: "selected", label: "Selected", summaryKey: "totalSelected" },
+  { key: "joined", label: "Joined", summaryKey: "totalJoined" },
+  { key: "dropout", label: "Dropout", summaryKey: "totalDropout" },
+  { key: "rejected", label: "Rejected", summaryKey: "totalRejected" },
+  { key: "billed", label: "Billed", summaryKey: "totalBilled", color: "#166534" },
+  { key: "left", label: "Left", summaryKey: "totalLeft", color: "#9a3412" },
+];
 
 function toDateStr(d) {
   return d.toISOString().slice(0, 10);
@@ -63,6 +74,15 @@ function formatLabel(preset) {
   }
 }
 
+function formatStatusLabel(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (!normalized) return "Unknown";
+  return normalized
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export default function AdminPerformance({ setCurrentPage }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -71,6 +91,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("submitted");
   const [sortDir, setSortDir] = useState("desc");
+  const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
 
   // Timeline filter state
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
@@ -164,6 +185,21 @@ export default function AdminPerformance({ setCurrentPage }) {
   });
 
   const summary = data?.summary || {};
+  const selectedStatusItems =
+    data?.statusDrilldown?.[selectedStatusKey] &&
+    Array.isArray(data.statusDrilldown[selectedStatusKey])
+      ? data.statusDrilldown[selectedStatusKey]
+      : [];
+
+  const handleResumeOpen = (resId) => {
+    const token = getAuthSession()?.token;
+    if (!token) return;
+    window.open(
+      `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   return (
     <AdminLayout
@@ -267,48 +303,92 @@ export default function AdminPerformance({ setCurrentPage }) {
                 {summary.totalSubmitted ?? 0}
               </span>
             </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Verified</span>
-              <span className="perf-stat-value">
-                {summary.totalVerified ?? 0}
+            {STATUS_CARDS.map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                className="perf-stat-card"
+                onClick={() => setSelectedStatusKey(card.key)}
+                style={{
+                  textAlign: "left",
+                  border:
+                    selectedStatusKey === card.key
+                      ? "2px solid #0f766e"
+                      : undefined,
+                }}
+              >
+                <span className="perf-stat-label">{card.label}</span>
+                <span
+                  className="perf-stat-value"
+                  style={card.color ? { color: card.color } : undefined}
+                >
+                  {summary[card.summaryKey] ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="perf-section">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
+                {formatStatusLabel(selectedStatusKey)} Resume List
+              </h3>
+              <span className="admin-muted">
+                {selectedStatusItems.length} item
+                {selectedStatusItems.length === 1 ? "" : "s"}
               </span>
             </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Selected</span>
-              <span className="perf-stat-value">
-                {summary.totalSelected ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Joined</span>
-              <span className="perf-stat-value">
-                {summary.totalJoined ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Dropout</span>
-              <span className="perf-stat-value">
-                {summary.totalDropout ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Rejected</span>
-              <span className="perf-stat-value">
-                {summary.totalRejected ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Billed</span>
-              <span className="perf-stat-value" style={{ color: "#166534" }}>
-                {summary.totalBilled ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Left</span>
-              <span className="perf-stat-value" style={{ color: "#9a3412" }}>
-                {summary.totalLeft ?? 0}
-              </span>
-            </div>
+            {selectedStatusItems.length > 0 ? (
+              <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+                <table className="admin-table admin-table-wide">
+                  <thead>
+                    <tr>
+                      <th>Recruiter</th>
+                      <th>Team Leader</th>
+                      <th>Job ID</th>
+                      <th>Resume File</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedStatusItems.map((item) => (
+                      <tr key={`${selectedStatusKey}-${item.resId}`}>
+                        <td>
+                          <strong>{item.recruiterName || "N/A"}</strong>
+                          <div className="admin-muted">
+                            {item.recruiterRid || "N/A"}
+                          </div>
+                        </td>
+                        <td>{item.teamLeaderName || "N/A"}</td>
+                        <td>{item.jobJid ?? "N/A"}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="admin-refresh-btn"
+                            onClick={() => handleResumeOpen(item.resId)}
+                          >
+                            {item.resumeFilename || item.resId || "View resume"}
+                          </button>
+                        </td>
+                        <td>{formatStatusLabel(item.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
+                No resumes found for {formatStatusLabel(selectedStatusKey)}.
+              </p>
+            )}
           </div>
 
           {/* Top 5 recruiters by submissions */}
