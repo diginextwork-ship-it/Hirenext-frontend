@@ -20,10 +20,9 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       page: "adminperformance",
     },
     {
-      title: "Candidate's Submitted Resumes",
-      description:
-        "Review resumes submitted by candidates from the jobs search flow.",
-      stat: `${dashboard.candidateResumeCount} candidate uploads`,
+      title: "All Submitted Resumes",
+      description: "Review resumes submitted by candidates and recruiters.",
+      stat: `${dashboard.candidateResumeCount} candidate + ${dashboard.recruiterResumeUploads.length} recruiter uploads`,
       page: "admincandidateresumes",
     },
     {

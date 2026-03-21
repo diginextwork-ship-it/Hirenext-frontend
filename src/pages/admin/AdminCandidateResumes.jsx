@@ -27,8 +27,15 @@ const formatMoney = (value) => {
   return Number(value).toLocaleString("en-IN");
 };
 
+const SOURCE_FILTERS = {
+  ALL: "all",
+  CANDIDATE: "candidate",
+  RECRUITER: "recruiter",
+};
+
 export default function AdminCandidateResumes({ setCurrentPage }) {
   const [resumes, setResumes] = useState([]);
+  const [recruiterResumes, setRecruiterResumes] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isShortlisting, setIsShortlisting] = useState(false);
@@ -41,6 +48,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteDeleting, setDeleteDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTERS.ALL);
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -62,7 +70,12 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         );
       }
 
-      setResumes(Array.isArray(data?.resumes) ? data.resumes : []);
+      setResumes(
+        (Array.isArray(data?.resumes) ? data.resumes : []).map((r) => ({
+          ...r,
+          _source: "candidate",
+        })),
+      );
       setTotalCount(Number(data?.totalCount) || 0);
     } catch (error) {
       setResumes([]);
@@ -75,9 +88,68 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     }
   };
 
+  const loadRecruiterResumes = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/dashboard`, {
+        headers: getAdminHeaders(),
+      });
+      const data = await readJsonResponse(
+        response,
+        "Failed to fetch recruiter resume uploads.",
+      );
+      if (!response.ok) return;
+      const uploads = Array.isArray(data?.recruiterResumeUploads)
+        ? data.recruiterResumeUploads
+        : [];
+      setRecruiterResumes(
+        uploads.map((item) => ({
+          resId: item.resId,
+          applicantName: item.recruiterName || "N/A",
+          applicantEmail: item.recruiterEmail || "N/A",
+          jobJid: item.jobJid ?? null,
+          job: null,
+          atsScore: null,
+          atsMatchPercentage: null,
+          submittedReason: null,
+          verifiedReason: null,
+          hasPriorExperience: null,
+          experience: null,
+          resumeFilename: item.resumeFilename,
+          resumeType: item.resumeType,
+          uploadedAt: item.uploadedAt,
+          selection: { status: item.isAccepted ? "accepted" : "pending" },
+          _source: "recruiter",
+          _recruiterName: item.recruiterName,
+          _recruiterRid: item.rid,
+          _recruiterEmail: item.recruiterEmail,
+        })),
+      );
+    } catch {
+      setRecruiterResumes([]);
+    }
+  };
+
+  const loadAllResumes = async () => {
+    await Promise.all([loadCandidateResumes(), loadRecruiterResumes()]);
+  };
+
   useEffect(() => {
-    loadCandidateResumes();
+    loadAllResumes();
   }, []);
+
+  const displayedResumes =
+    sourceFilter === SOURCE_FILTERS.CANDIDATE
+      ? resumes
+      : sourceFilter === SOURCE_FILTERS.RECRUITER
+        ? recruiterResumes
+        : [...resumes, ...recruiterResumes];
+
+  const displayedCount =
+    sourceFilter === SOURCE_FILTERS.CANDIDATE
+      ? totalCount
+      : sourceFilter === SOURCE_FILTERS.RECRUITER
+        ? recruiterResumes.length
+        : totalCount + recruiterResumes.length;
 
   const openShortlistModal = (resume) => {
     setErrorMessage("");
@@ -250,14 +322,14 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
   return (
     <AdminLayout
-      title="Candidate's submitted resumes"
-      subtitle="See resumes submitted by normal users from the job search flow, along with JD and ATS details."
+      title="All Submitted Resumes"
+      subtitle="See resumes submitted by candidates and recruiters, along with JD and ATS details."
       setCurrentPage={setCurrentPage}
       actions={
         <button
           type="button"
           className="admin-refresh-btn"
-          onClick={loadCandidateResumes}
+          onClick={loadAllResumes}
           disabled={isLoading}
         >
           {isLoading ? "Refreshing..." : "Refresh"}
@@ -271,17 +343,48 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         <div className="admin-alert">{statusMessage}</div>
       ) : null}
 
-      <div className="admin-dashboard-card" style={{ marginBottom: "16px" }}>
-        <div className="admin-muted">Candidate resume submissions</div>
-        <h3 style={{ margin: "8px 0 0" }}>{totalCount}</h3>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        {[
+          {
+            key: SOURCE_FILTERS.ALL,
+            label: "All",
+            count: totalCount + recruiterResumes.length,
+          },
+          {
+            key: SOURCE_FILTERS.CANDIDATE,
+            label: "Candidate",
+            count: totalCount,
+          },
+          {
+            key: SOURCE_FILTERS.RECRUITER,
+            label: "Recruiter",
+            count: recruiterResumes.length,
+          },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            className={`perf-timeline-btn${sourceFilter === f.key ? " perf-timeline-btn-active" : ""}`}
+            onClick={() => setSourceFilter(f.key)}
+          >
+            {f.label} ({f.count})
+          </button>
+        ))}
       </div>
 
       <div className="admin-dashboard-card admin-card-large">
-        {resumes.length === 0 ? (
+        {displayedResumes.length === 0 ? (
           <p className="admin-chart-empty">
             {isLoading
-              ? "Loading candidate resumes..."
-              : "No candidate-submitted resumes found yet."}
+              ? "Loading resumes..."
+              : "No resumes found for this filter."}
           </p>
         ) : (
           <div className="admin-table-wrap">
@@ -289,7 +392,8 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
               <thead>
                 <tr>
                   <th>Resume ID</th>
-                  <th>Candidate</th>
+                  <th>Source</th>
+                  <th>Candidate / Recruiter</th>
                   <th>Job</th>
                   <th>JD</th>
                   <th>ATS Score</th>
@@ -305,10 +409,47 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {resumes.map((resume) => (
-                  <tr key={resume.resId}>
+                {displayedResumes.map((resume) => (
+                  <tr key={`${resume._source}-${resume.resId}`}>
                     <td>{resume.resId || "N/A"}</td>
-                    <td>{resume.applicantName || "Name not found"}</td>
+                    <td>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          backgroundColor:
+                            resume._source === "recruiter"
+                              ? "#dbeafe"
+                              : "#dcfce7",
+                          color:
+                            resume._source === "recruiter"
+                              ? "#1e40af"
+                              : "#166534",
+                        }}
+                      >
+                        {resume._source === "recruiter"
+                          ? "Recruiter"
+                          : "Candidate"}
+                      </span>
+                    </td>
+                    <td>
+                      {resume._source === "recruiter" ? (
+                        <>
+                          <div>{resume._recruiterName || "N/A"}</div>
+                          <div className="admin-muted">
+                            {resume._recruiterRid || ""}
+                            {resume._recruiterEmail
+                              ? ` · ${resume._recruiterEmail}`
+                              : ""}
+                          </div>
+                        </>
+                      ) : (
+                        resume.applicantName || "Name not found"
+                      )}
+                    </td>
                     <td className="admin-job-cell">
                       <strong>
                         {resume.jobJid ? `#${resume.jobJid}` : "No job"}
