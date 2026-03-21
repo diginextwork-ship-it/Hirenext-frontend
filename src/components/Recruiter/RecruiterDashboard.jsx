@@ -189,6 +189,34 @@ export default function RecruiterDashboard({ recruiterId }) {
     return resumes;
   }, [activeStatus, statusResumes, appliedFilters]);
 
+  const refreshDashboardStats = async () => {
+    try {
+      const response = await fetchRecruiterDashboard(
+        recruiterId,
+        appliedFilters,
+      );
+      setData(response);
+    } catch {
+      // Stats refresh is best-effort; don't overwrite main error state
+    }
+  };
+
+  const handleRefreshDashboard = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetchRecruiterDashboard(
+        recruiterId,
+        appliedFilters,
+      );
+      setData(response);
+    } catch (loadError) {
+      setError(loadError.message || "Failed to load recruiter dashboard.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading)
     return <p className="chart-empty">Loading performance dashboard...</p>;
   if (error) return <p className="job-message job-message-error">{error}</p>;
@@ -207,7 +235,17 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   return (
     <section className="recruiter-performance-dashboard">
-      <h2>My Performance Dashboard</h2>
+      <div className="ui-row-between ui-row-wrap">
+        <h2>My Performance Dashboard</h2>
+        <button
+          type="button"
+          className="click-here-btn"
+          onClick={handleRefreshDashboard}
+          disabled={loading}
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
       <div className="dashboard-date-filter">
         <div className="dashboard-date-input">
           <label htmlFor="recruiterDashboardStartDate">Start date</label>
@@ -579,6 +617,7 @@ export default function RecruiterDashboard({ recruiterId }) {
           } finally {
             setStatusLoading(false);
           }
+          refreshDashboardStats();
         }}
       />
 
@@ -669,6 +708,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                     } finally {
                       setStatusLoading(false);
                     }
+                    refreshDashboardStats();
                   } catch (err) {
                     setLeftError(err.message || "Failed to mark as left.");
                   } finally {

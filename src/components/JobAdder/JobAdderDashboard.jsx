@@ -11,9 +11,22 @@ export default function TeamLeaderDashboard() {
   const [overviewError, setOverviewError] = useState("");
   const [performanceRefreshKey, setPerformanceRefreshKey] = useState(0);
 
+  const loadOverview = async () => {
+    setLoadingOverview(true);
+    setOverviewError("");
+    try {
+      const data = await fetchTeamLeaderDashboard();
+      setOverviewData(data);
+    } catch (error) {
+      setOverviewError(error.message || "Failed to load team leader overview.");
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
-    const loadOverview = async () => {
+    const load = async () => {
       setLoadingOverview(true);
       setOverviewError("");
       try {
@@ -29,7 +42,7 @@ export default function TeamLeaderDashboard() {
         if (active) setLoadingOverview(false);
       }
     };
-    loadOverview();
+    load();
     return () => {
       active = false;
     };
@@ -56,6 +69,20 @@ export default function TeamLeaderDashboard() {
 
       {activeTab === "overview" ? (
         <>
+          <div
+            className="ui-row-between ui-row-wrap"
+            style={{ marginBottom: 12 }}
+          >
+            <span />
+            <button
+              type="button"
+              className="click-here-btn"
+              onClick={loadOverview}
+              disabled={loadingOverview}
+            >
+              {loadingOverview ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
           {overviewError ? (
             <p className="job-message job-message-error">{overviewError}</p>
           ) : null}
@@ -66,7 +93,10 @@ export default function TeamLeaderDashboard() {
       {activeTab === "performance" ? (
         <>
           <ResumeStatusManager
-            onStatusUpdated={() => setPerformanceRefreshKey((prev) => prev + 1)}
+            onStatusUpdated={() => {
+              setPerformanceRefreshKey((prev) => prev + 1);
+              loadOverview();
+            }}
           />
           <RecruiterPerformanceTable refreshKey={performanceRefreshKey} />
         </>

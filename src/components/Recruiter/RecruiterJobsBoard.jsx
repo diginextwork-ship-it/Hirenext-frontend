@@ -10,14 +10,24 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [filters, setFilters] = useState({ location: "", company: "", search: "" });
+  const [filters, setFilters] = useState({
+    location: "",
+    company: "",
+    search: "",
+  });
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [activeJobId, setActiveJobId] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
-  const currentPage = useMemo(() => Math.floor(offset / PAGE_SIZE) + 1, [offset]);
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    [total],
+  );
+  const currentPage = useMemo(
+    () => Math.floor(offset / PAGE_SIZE) + 1,
+    [offset],
+  );
 
   useEffect(() => {
     setOffset(0);
@@ -65,10 +75,41 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
     setActiveJobId(null);
   };
 
+  const handleRefreshJobs = async () => {
+    if (!recruiterId) return;
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const data = await fetchAccessibleJobs(recruiterId, {
+        location: filters.location,
+        company: filters.company,
+        search: filters.search,
+        limit: PAGE_SIZE,
+        offset,
+      });
+      setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+      setTotal(Number(data.total) || 0);
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to fetch jobs.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <section className="recruiter-jobs-board">
       <div className="recruiter-jobs-board-head">
-        <h2>Available Jobs</h2>
+        <div className="ui-row-between ui-row-wrap">
+          <h2>Available Jobs</h2>
+          <button
+            type="button"
+            className="click-here-btn"
+            onClick={handleRefreshJobs}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
         <p>
           Showing {jobs.length} of {total} accessible jobs.
         </p>
@@ -77,7 +118,9 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
       <SearchFilters filters={filters} onFilterChange={setFilters} />
 
       {loading ? <p className="chart-empty">Loading jobs...</p> : null}
-      {errorMessage ? <p className="job-message job-message-error">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <p className="job-message job-message-error">{errorMessage}</p>
+      ) : null}
 
       {!loading && !errorMessage && jobs.length === 0 ? (
         <p className="chart-empty">No jobs available matching your criteria.</p>

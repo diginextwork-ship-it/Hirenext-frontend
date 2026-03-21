@@ -599,7 +599,16 @@ export default function RecruiterLogin() {
                 />
 
                 <div className="ui-table-wrap ui-mt-sm">
-                  <h2 className="ui-title-sm">My uploaded resumes</h2>
+                  <div className="ui-row-between ui-row-wrap">
+                    <h2 className="ui-title-sm">My uploaded resumes</h2>
+                    <button
+                      type="button"
+                      className="click-here-btn"
+                      onClick={() => fetchRecruiterResumes(recruiter.rid)}
+                    >
+                      Refresh
+                    </button>
+                  </div>
                   {uploadedResumes.length === 0 ? (
                     <p className="chart-empty">No resumes uploaded yet.</p>
                   ) : (
