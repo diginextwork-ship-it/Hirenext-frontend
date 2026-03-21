@@ -35,6 +35,10 @@ export default function DashboardOverview({ data, loading }) {
           value={Number(overview.totalSubmissions) || 0}
         />
         <SummaryCard
+          title="Pending Joining"
+          value={Number(overview.totalSelected) || 0}
+        />
+        <SummaryCard
           title="Total Billed"
           value={Number(overview.totalBilled) || 0}
         />

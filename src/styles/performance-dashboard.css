@@ -501,6 +501,11 @@
   color: #9a3412;
 }
 
+.status-pill.status-pending-joining {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .left-reason-tooltip {
   display: inline-block;
   position: relative;

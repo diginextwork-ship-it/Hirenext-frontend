@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchAllRecruiterStatuses } from "../../services/performanceService";
 
-const metricDisplay = (value) => (value === null || value === undefined ? "-" : value);
+const metricDisplay = (value) =>
+  value === null || value === undefined ? "-" : value;
 
 export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
   const [loading, setLoading] = useState(true);
@@ -18,7 +19,11 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
       setLoading(true);
       setError("");
       try {
-        const data = await fetchAllRecruiterStatuses({ sortBy, sortOrder, search });
+        const data = await fetchAllRecruiterStatuses({
+          sortBy,
+          sortOrder,
+          search,
+        });
         if (!active) return;
         setRows(Array.isArray(data.recruiters) ? data.recruiters : []);
         setSummary(data.summary || null);
@@ -37,8 +42,13 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
   }, [sortBy, sortOrder, search, refreshKey]);
 
   const derived = useMemo(() => {
-    const totalSubmitted = rows.reduce((sum, item) => sum + (item?.stats?.submitted || 0), 0);
-    const avg = rows.length ? Number((totalSubmitted / rows.length).toFixed(2)) : 0;
+    const totalSubmitted = rows.reduce(
+      (sum, item) => sum + (item?.stats?.submitted || 0),
+      0,
+    );
+    const avg = rows.length
+      ? Number((totalSubmitted / rows.length).toFixed(2))
+      : 0;
     return { totalSubmitted, avg };
   }, [rows]);
 
@@ -63,7 +73,9 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
         />
       </div>
 
-      {loading ? <p className="chart-empty">Loading recruiter stats...</p> : null}
+      {loading ? (
+        <p className="chart-empty">Loading recruiter stats...</p>
+      ) : null}
       {error ? <p className="job-message job-message-error">{error}</p> : null}
 
       {!loading && !error ? (
@@ -73,13 +85,21 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
               <thead>
                 <tr>
                   <th>
-                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("name")}>
+                    <button
+                      type="button"
+                      className="table-sort-btn"
+                      onClick={() => toggleSort("name")}
+                    >
                       Name
                     </button>
                   </th>
                   <th>Email</th>
                   <th>
-                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("submitted")}>
+                    <button
+                      type="button"
+                      className="table-sort-btn"
+                      onClick={() => toggleSort("submitted")}
+                    >
                       Submitted
                     </button>
                   </th>
@@ -87,20 +107,33 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                   <th>Walk-in</th>
                   <th>Selected</th>
                   <th>Rejected</th>
+                  <th>Pending Joining</th>
                   <th>Joined</th>
                   <th>Dropout</th>
                   <th>
-                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("billed")}>
+                    <button
+                      type="button"
+                      className="table-sort-btn"
+                      onClick={() => toggleSort("billed")}
+                    >
                       Billed
                     </button>
                   </th>
                   <th>
-                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("left")}>
+                    <button
+                      type="button"
+                      className="table-sort-btn"
+                      onClick={() => toggleSort("left")}
+                    >
                       Left
                     </button>
                   </th>
                   <th>
-                    <button type="button" className="table-sort-btn" onClick={() => toggleSort("points")}>
+                    <button
+                      type="button"
+                      className="table-sort-btn"
+                      onClick={() => toggleSort("points")}
+                    >
                       Points
                     </button>
                   </th>
@@ -111,18 +144,41 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                   <tr key={item.rid}>
                     <td>{item.name}</td>
                     <td>{item.email}</td>
-                    <td className="metric-value">{item.stats?.submitted || 0}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.verified)}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.walk_in)}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.select)}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.reject)}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.joined)}</td>
-                    <td className="metric-value">{metricDisplay(item.stats?.dropout)}</td>
                     <td className="metric-value">
-                      <span className="status-pill status-billed">{metricDisplay(item.stats?.billed)}</span>
+                      {item.stats?.submitted || 0}
                     </td>
                     <td className="metric-value">
-                      <span className="status-pill status-left">{metricDisplay(item.stats?.left)}</span>
+                      {metricDisplay(item.stats?.verified)}
+                    </td>
+                    <td className="metric-value">
+                      {metricDisplay(item.stats?.walk_in)}
+                    </td>
+                    <td className="metric-value">
+                      {metricDisplay(item.stats?.select)}
+                    </td>
+                    <td className="metric-value">
+                      {metricDisplay(item.stats?.reject)}
+                    </td>
+                    <td className="metric-value">
+                      <span className="status-pill status-pending-joining">
+                        {metricDisplay(item.stats?.select)}
+                      </span>
+                    </td>
+                    <td className="metric-value">
+                      {metricDisplay(item.stats?.joined)}
+                    </td>
+                    <td className="metric-value">
+                      {metricDisplay(item.stats?.dropout)}
+                    </td>
+                    <td className="metric-value">
+                      <span className="status-pill status-billed">
+                        {metricDisplay(item.stats?.billed)}
+                      </span>
+                    </td>
+                    <td className="metric-value">
+                      <span className="status-pill status-left">
+                        {metricDisplay(item.stats?.left)}
+                      </span>
                     </td>
                     <td>{item.points || 0}</td>
                   </tr>
@@ -132,8 +188,14 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
           </div>
 
           <div className="table-summary">
-            <p>Total Submissions: {summary?.totalSubmitted ?? derived.totalSubmitted}</p>
-            <p>Average per Recruiter: {summary?.avgSubmittedPerRecruiter ?? derived.avg}</p>
+            <p>
+              Total Submissions:{" "}
+              {summary?.totalSubmitted ?? derived.totalSubmitted}
+            </p>
+            <p>
+              Average per Recruiter:{" "}
+              {summary?.avgSubmittedPerRecruiter ?? derived.avg}
+            </p>
             <p>Total Billed: {summary?.totalBilled ?? 0}</p>
             <p>Total Left: {summary?.totalLeft ?? 0}</p>
           </div>

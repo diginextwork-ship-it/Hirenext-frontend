@@ -137,6 +137,8 @@ export default function RecruiterDashboard({ recruiterId }) {
     if (normalized === "verified") return "verified";
     if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
     if (normalized === "selected" || normalized === "select") return "selected";
+    if (normalized === "pending_joining" || normalized === "pending joining")
+      return "pending_joining";
     if (normalized === "rejected" || normalized === "reject") return "rejected";
     if (normalized === "joined") return "joined";
     if (normalized === "dropout") return "dropout";
@@ -168,10 +170,12 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatus(activeStatus);
+    const filterStatus =
+      normalizedStatus === "pending_joining" ? "selected" : normalizedStatus;
     let resumes = Array.isArray(statusResumes) ? statusResumes : [];
-    if (normalizedStatus && normalizedStatus !== "submitted") {
+    if (filterStatus && filterStatus !== "submitted") {
       resumes = resumes.filter(
-        (resume) => normalizeStatus(resume.workflowStatus) === normalizedStatus,
+        (resume) => normalizeStatus(resume.workflowStatus) === filterStatus,
       );
     }
     const { startDate, endDate } = appliedFilters;
@@ -329,6 +333,13 @@ export default function RecruiterDashboard({ recruiterId }) {
           onClick={() => handleStatusCardClick("rejected")}
         />
         <PerformanceMetricCard
+          title="Pending Joining"
+          color="blue"
+          value={toDisplay(data.stats?.select)}
+          clickable
+          onClick={() => handleStatusCardClick("pending_joining")}
+        />
+        <PerformanceMetricCard
           title="Joined"
           color="gold"
           value={toDisplay(data.stats?.joined)}
@@ -425,7 +436,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                     <th>
                       {activeStatus === "walk_in"
                         ? "Walk In Reason"
-                        : activeStatus === "selected"
+                        : activeStatus === "selected" ||
+                            activeStatus === "pending_joining"
                           ? "Selection Reason"
                           : activeStatus === "joined"
                             ? "Joined Reason"
@@ -441,7 +453,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                     </th>
                     <th>Status</th>
                     <th>Updated</th>
-                    {(activeStatus === "joined" ||
+                    {(activeStatus === "pending_joining" ||
+                      activeStatus === "joined" ||
                       activeStatus === "billed" ||
                       activeStatus === "left") && <th>Joining Info</th>}
                     <th>Actions</th>
@@ -512,7 +525,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                             resume.workflowUpdatedAt || resume.uploadedAt,
                           )}
                         </td>
-                        {(activeStatus === "joined" ||
+                        {(activeStatus === "pending_joining" ||
+                          activeStatus === "joined" ||
                           activeStatus === "billed" ||
                           activeStatus === "left") && (
                           <td className="table-cell-wrap">
@@ -530,7 +544,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                               </div>
                             ) : null}
                             {!resume.joiningDate && !resume.joiningNote
-                              ? "-"
+                              ? "Not set"
                               : null}
                           </td>
                         )}

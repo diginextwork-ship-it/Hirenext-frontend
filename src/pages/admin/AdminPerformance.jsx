@@ -28,6 +28,12 @@ const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified" },
   { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn" },
   { key: "selected", label: "Selected", summaryKey: "totalSelected" },
+  {
+    key: "pending_joining",
+    label: "Pending Joining",
+    summaryKey: "totalSelected",
+    color: "#2563eb",
+  },
   { key: "joined", label: "Joined", summaryKey: "totalJoined" },
   {
     key: "dropout",
@@ -51,6 +57,10 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#b45309" },
+  ],
+  pending_joining: [
     { value: "joined", label: "Joined", color: "#16a34a" },
     { value: "dropout", label: "Dropout", color: "#b45309" },
   ],
@@ -233,10 +243,12 @@ export default function AdminPerformance({ setCurrentPage }) {
   });
 
   const summary = data?.summary || {};
+  const drilldownKey =
+    selectedStatusKey === "pending_joining" ? "selected" : selectedStatusKey;
   const selectedStatusItems =
-    data?.statusDrilldown?.[selectedStatusKey] &&
-    Array.isArray(data.statusDrilldown[selectedStatusKey])
-      ? data.statusDrilldown[selectedStatusKey]
+    data?.statusDrilldown?.[drilldownKey] &&
+    Array.isArray(data.statusDrilldown[drilldownKey])
+      ? data.statusDrilldown[drilldownKey]
       : [];
 
   const handleResumeOpen = (resId) => {
@@ -479,6 +491,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Job ID</th>
                       <th>Resume File</th>
                       <th>Status</th>
+                      {selectedStatusKey === "pending_joining" && (
+                        <th>Expected Joining Date</th>
+                      )}
                       {availableActions.length > 0 && <th>Actions</th>}
                     </tr>
                   </thead>
@@ -503,6 +518,15 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.status)}</td>
+                        {selectedStatusKey === "pending_joining" && (
+                          <td>
+                            {item.joiningDate
+                              ? new Date(
+                                  item.joiningDate + "T00:00:00",
+                                ).toLocaleDateString()
+                              : "Not set"}
+                          </td>
+                        )}
                         {availableActions.length > 0 && (
                           <td>
                             <div
@@ -559,6 +583,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Submitted</th>
                       <th>Verified</th>
                       <th>Selected</th>
+                      <th>Pending Joining</th>
                       <th>Joined</th>
                       <th>Billed</th>
                       <th>Left</th>
@@ -572,6 +597,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{r.name}</td>
                         <td>{r.submitted}</td>
                         <td>{r.verified}</td>
+                        <td>{r.selected}</td>
                         <td>{r.selected}</td>
                         <td>{r.joined}</td>
                         <td>{r.billed ?? 0}</td>
@@ -757,6 +783,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     >
                       Rejected{sortIndicator("rejected")}
                     </th>
+                    <th>Pending Joining</th>
                     <th
                       className="perf-sortable"
                       onClick={() => handleSort("joined")}
@@ -806,6 +833,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.walk_in}</td>
                       <td>{r.selected}</td>
                       <td>{r.rejected}</td>
+                      <td>{r.selected}</td>
                       <td>{r.joined}</td>
                       <td>{r.dropout}</td>
                       <td>{r.billed ?? 0}</td>
