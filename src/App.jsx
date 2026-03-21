@@ -13,7 +13,6 @@ import RecruiterLogin from "./pages/RecruiterLogin";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
 import AdminCreateRecruiter from "./pages/admin/AdminCreateRecruiter";
-import AdminTopResumes from "./pages/admin/AdminTopResumes";
 import AdminResumeUploads from "./pages/admin/AdminResumeUploads";
 import AdminPerformance from "./pages/admin/AdminPerformance";
 import AdminCandidateResumes from "./pages/admin/AdminCandidateResumes";
@@ -37,7 +36,6 @@ const PAGE_TO_PATH = {
   adminlogin: "/admin-login",
   adminpanel: "/admin-panel",
   admincreate: "/admin-panel/create-recruiter",
-  admintopresumes: "/admin-panel/top-resumes",
   adminuploads: "/admin-panel/recruiter-uploads",
   adminperformance: "/admin-panel/performance",
   admincandidateresumes: "/admin-panel/candidate-submitted-resumes",
@@ -50,7 +48,6 @@ const PAGE_TO_PATH = {
 const ADMIN_ONLY_PAGES = new Set([
   "adminpanel",
   "admincreate",
-  "admintopresumes",
   "adminuploads",
   "adminperformance",
   "admincandidateresumes",
@@ -81,7 +78,6 @@ const getPageFromPath = (pathname) => {
   if (normalizedPath === "/admin-login") return "adminlogin";
   if (normalizedPath === "/admin-panel") return "adminpanel";
   if (normalizedPath === "/admin-panel/create-recruiter") return "admincreate";
-  if (normalizedPath === "/admin-panel/top-resumes") return "admintopresumes";
   if (normalizedPath === "/admin-panel/recruiter-uploads")
     return "adminuploads";
   if (normalizedPath === "/admin-panel/performance") return "adminperformance";
@@ -181,8 +177,6 @@ export default function App() {
         );
       case "admincreate":
         return <AdminCreateRecruiter setCurrentPage={setCurrentPage} />;
-      case "admintopresumes":
-        return <AdminTopResumes setCurrentPage={setCurrentPage} />;
       case "adminuploads":
         return <AdminResumeUploads setCurrentPage={setCurrentPage} />;
       case "adminperformance":

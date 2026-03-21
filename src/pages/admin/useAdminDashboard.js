@@ -6,7 +6,6 @@ export default function useAdminDashboard() {
     totalResumeCount: 0,
     candidateResumeCount: 0,
     recruiterResumeUploads: [],
-    topResumesByJob: [],
   });
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -32,7 +31,6 @@ export default function useAdminDashboard() {
         recruiterResumeUploads: Array.isArray(data.recruiterResumeUploads)
           ? data.recruiterResumeUploads
           : [],
-        topResumesByJob: Array.isArray(data.topResumesByJob) ? data.topResumesByJob : [],
       });
     } catch (error) {
       setErrorMessage(error.message || "Failed to fetch admin dashboard.");

@@ -13,12 +13,6 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       page: "admincreate",
     },
     {
-      title: "Top ATS Resumes",
-      description: "Review top-matched resumes per job.",
-      stat: `${dashboard.topResumesByJob.length} jobs`,
-      page: "admintopresumes",
-    },
-    {
       title: "Performance Dashboard",
       description:
         "Track recruiter and team leader performance across all metrics.",
@@ -35,7 +29,7 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
     {
       title: "Manual Resume Selection",
       description: "Select resumes for each job against open positions.",
-      stat: `${dashboard.topResumesByJob.length} active jobs`,
+      stat: `${dashboard.totalResumeCount} resumes`,
       page: "adminmanualselection",
     },
     {
@@ -68,8 +62,8 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
           <p className="admin-kicker">Admin Control Center</p>
           <h1>Admin dashboard</h1>
           <p className="admin-hero-subtitle">
-            Organize recruiter access, track resume activity, and monitor ATS
-            insights.
+            Organize recruiter access, track resume activity, and manage core
+            admin workflows.
           </p>
         </div>
         <div className="admin-page-actions">

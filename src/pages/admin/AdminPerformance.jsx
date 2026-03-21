@@ -260,30 +260,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       {activeTab === TABS.OVERVIEW && (
         <div className="perf-overview">
           <div className="perf-summary-grid">
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Team Leaders</span>
-              <span className="perf-stat-value">
-                {summary.totalTeamLeaders ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Recruiters</span>
-              <span className="perf-stat-value">
-                {summary.totalRecruiters ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Jobs Created</span>
-              <span className="perf-stat-value">
-                {summary.totalJobsCreated ?? 0}
-              </span>
-            </div>
-            <div className="perf-stat-card">
-              <span className="perf-stat-label">Open Positions</span>
-              <span className="perf-stat-value">
-                {summary.totalPositions ?? 0}
-              </span>
-            </div>
+           
             <div className="perf-stat-card">
               <span className="perf-stat-label">Resumes Submitted</span>
               <span className="perf-stat-value">
