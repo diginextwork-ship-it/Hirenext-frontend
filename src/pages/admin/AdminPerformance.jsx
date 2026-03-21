@@ -618,12 +618,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                     >
                       Points{sortIndicator("points")}
                     </th>
-                    <th>Verification %</th>
-                    <th>Selection %</th>
-                    <th>Joining %</th>
-                    <th>Dropout %</th>
-                    <th>Billing %</th>
-                    <th>Left %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -642,12 +636,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.left ?? 0}</td>
                       <td>{r.on_hold}</td>
                       <td>{r.points}</td>
-                      <td>{r.verificationRate}%</td>
-                      <td>{r.selectionRate}%</td>
-                      <td>{r.joiningRate}%</td>
-                      <td>{r.dropoutRate}%</td>
-                      <td>{r.billingRate ?? 0}%</td>
-                      <td>{r.leftRate ?? 0}%</td>
                     </tr>
                   ))}
                 </tbody>
