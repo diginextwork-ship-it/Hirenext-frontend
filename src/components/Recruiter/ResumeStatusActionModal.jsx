@@ -64,13 +64,6 @@ export default function ResumeStatusActionModal({
       return;
     }
 
-    if (!additionalInfo.trim()) {
-      setErrorMessage(
-        `Please provide a ${getReasonFieldLabel().toLowerCase()}.`,
-      );
-      return;
-    }
-
     if (selectedAction === "joined" && !showJoiningConfirm) {
       setShowJoiningConfirm(true);
       setErrorMessage("");
@@ -97,7 +90,9 @@ export default function ResumeStatusActionModal({
           },
           body: JSON.stringify({
             status: selectedAction,
-            reason: additionalInfo.trim(),
+            ...(additionalInfo.trim()
+              ? { reason: additionalInfo.trim() }
+              : {}),
             ...(selectedAction === "joined" && joiningDate
               ? { joining_date: joiningDate }
               : {}),
@@ -217,7 +212,9 @@ export default function ResumeStatusActionModal({
 
               {selectedAction && !showJoiningConfirm && (
                 <div className="form-group">
-                  <label htmlFor="reason-input">{getReasonFieldLabel()}</label>
+                  <label htmlFor="reason-input">
+                    {getReasonFieldLabel()} (optional)
+                  </label>
                   <textarea
                     id="reason-input"
                     className="form-control"
@@ -312,7 +309,7 @@ export default function ResumeStatusActionModal({
                 type="button"
                 className="btn-primary"
                 onClick={handleSubmitAction}
-                disabled={isSubmitting || !additionalInfo.trim()}
+                disabled={isSubmitting}
               >
                 {isSubmitting
                   ? "Updating..."

@@ -412,13 +412,6 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
-    const needsReason = !["pending_joining", "joined", "billed"].includes(
-      actionTarget,
-    );
-    if (needsReason && !actionReason.trim()) {
-      setActionError("Please provide a reason.");
-      return;
-    }
     if (
       actionTarget === "pending_joining" &&
       !String(actionJoiningDate || "").trim()
@@ -1324,12 +1317,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                   }}
                 >
                   {actionTarget === "rejected"
-                    ? "Rejection Reason"
+                    ? "Rejection Reason (optional)"
                     : actionTarget === "dropout"
-                      ? "Dropout Reason"
+                      ? "Dropout Reason (optional)"
                       : actionTarget === "left"
-                        ? "Reason for Leaving"
-                        : "Reason"}
+                        ? "Reason for Leaving (optional)"
+                        : "Reason (optional)"}
                 </label>
                 <textarea
                   rows={4}
@@ -1374,9 +1367,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
                     !actionJoiningDate.trim()) ||
-                  (actionTarget === "billed" && !actionRevenue.trim()) ||
-                  (["rejected", "dropout", "left"].includes(actionTarget) &&
-                    !actionReason.trim())
+                  (actionTarget === "billed" && !actionRevenue.trim())
                 }
               >
                 {actionSubmitting
