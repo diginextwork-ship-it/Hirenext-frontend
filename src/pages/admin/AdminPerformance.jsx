@@ -28,6 +28,7 @@ const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified" },
   { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn" },
   { key: "selected", label: "Selected", summaryKey: "totalSelected" },
+  { key: "rejected", label: "Rejected", summaryKey: "totalRejected" },
   {
     key: "pending_joining",
     label: "Pending Joining",
@@ -41,7 +42,6 @@ const STATUS_CARDS = [
     summaryKey: "totalDropout",
     color: "#b45309",
   },
-  { key: "rejected", label: "Rejected", summaryKey: "totalRejected" },
   {
     key: "billed",
     label: "Billed",
