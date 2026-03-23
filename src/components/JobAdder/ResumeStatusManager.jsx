@@ -26,6 +26,11 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString();
 };
 
+const isPostWalkInStatus = (status) =>
+  ["walk_in", "pending_joining", "joined", "billed", "left"].includes(
+    String(status || "").trim().toLowerCase(),
+  );
+
 export default function ResumeStatusManager({ onStatusUpdated }) {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState("");
@@ -331,33 +336,37 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                   </td>
                   <td>
                     <div className="resume-status-actions">
-                      <button
-                        type="button"
-                        className={`resume-action-btn resume-action-verify ${
-                          resume.status === "verified" ? "active" : ""
-                        }`}
-                        onClick={() => openVerifyComposer(resume)}
-                      >
-                        Verify
-                      </button>
-                      <button
-                        type="button"
-                        className={`resume-action-btn resume-action-select ${
-                          resume.status === "selected" ? "active" : ""
-                        }`}
-                        onClick={() => handleStatusChange(resume, "selected")}
-                      >
-                        Select
-                      </button>
-                      <button
-                        type="button"
-                        className={`resume-action-btn resume-action-reject ${
-                          resume.status === "rejected" ? "active" : ""
-                        }`}
-                        onClick={() => handleStatusChange(resume, "rejected")}
-                      >
-                        Reject
-                      </button>
+                      {!isPostWalkInStatus(resume.status) ? (
+                        <>
+                          <button
+                            type="button"
+                            className={`resume-action-btn resume-action-verify ${
+                              resume.status === "verified" ? "active" : ""
+                            }`}
+                            onClick={() => openVerifyComposer(resume)}
+                          >
+                            Verify
+                          </button>
+                          <button
+                            type="button"
+                            className={`resume-action-btn resume-action-select ${
+                              resume.status === "selected" ? "active" : ""
+                            }`}
+                            onClick={() => handleStatusChange(resume, "selected")}
+                          >
+                            Select
+                          </button>
+                          <button
+                            type="button"
+                            className={`resume-action-btn resume-action-reject ${
+                              resume.status === "rejected" ? "active" : ""
+                            }`}
+                            onClick={() => handleStatusChange(resume, "rejected")}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : null}
                       {resume.status === "billed" ? (
                         <button
                           type="button"

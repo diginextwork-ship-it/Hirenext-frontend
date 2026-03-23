@@ -52,6 +52,14 @@ const STATUS_CARDS = [
 ];
 
 const ADMIN_ACTIONS_BY_STATUS = {
+  submitted: [
+    { value: "verified", label: "Verify", color: "#2563eb" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  verified: [
+    { value: "walk_in", label: "Walk In", color: "#16a34a" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
   walk_in: [
     { value: "selected", label: "Selected", color: "#0f766e" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
@@ -265,7 +273,11 @@ export default function AdminPerformance({ setCurrentPage }) {
           recruiterName: item.recruiterName || "N/A",
           recruiterRid: item.rid || "N/A",
           teamLeaderName: item.teamLeaderName || "N/A",
+          candidatePhone: item.candidatePhone || item.phone || null,
           jobJid: item.jobJid ?? "N/A",
+          companyName:
+            item.companyName || item.company_name || item.job?.companyName || null,
+          city: item.city || item.job?.city || null,
           resumeFilename: item.resumeFilename || item.resId || "View resume",
           status: "submitted",
           uploadedAt: item.uploadedAt || null,
@@ -419,7 +431,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide a joining date.");
       return;
     }
-    if (actionTarget === "billed" && !String(actionRevenue || "").trim()) {
+    if (actionTarget === "joined" && !String(actionRevenue || "").trim()) {
       setActionError("Please provide the joining amount.");
       return;
     }
@@ -436,7 +448,7 @@ export default function AdminPerformance({ setCurrentPage }) {
         ...(actionTarget === "joined" && actionJoiningNote.trim()
           ? { joining_note: actionJoiningNote.trim() }
           : {}),
-        ...(actionTarget === "billed" && actionRevenue.trim()
+        ...(actionTarget === "joined" && actionRevenue.trim()
           ? { revenue: actionRevenue.trim() }
           : {}),
       });
@@ -641,7 +653,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <tr>
                       <th>Recruiter</th>
                       <th>Team Leader</th>
+                      <th>Contact Number</th>
                       <th>Job ID</th>
+                      <th>Company Name</th>
+                      <th>City</th>
                       <th>Resume File</th>
                       <th>Status</th>
                       {selectedStatusKey === "walk_in" && (
@@ -650,13 +665,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                         </th>
                       )}
                       {[
+                        "dropout",
                         "pending_joining",
                         "joined",
                         "billed",
                         "left",
                       ].includes(selectedStatusKey) && (
                         <th>
-                          {selectedStatusKey === "pending_joining"
+                          {selectedStatusKey === "dropout"
+                            ? "Dropout Reason"
+                            : selectedStatusKey === "pending_joining"
                             ? "Joining Date"
                             : "Joining Info"}
                         </th>
@@ -674,7 +692,23 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </div>
                         </td>
                         <td>{item.teamLeaderName || "N/A"}</td>
+                        <td>
+                          {item.candidatePhone || item.phone ? (
+                            <a href={`tel:${item.candidatePhone || item.phone}`}>
+                              {item.candidatePhone || item.phone}
+                            </a>
+                          ) : (
+                            "N/A"
+                          )}
+                        </td>
                         <td>{item.jobJid ?? "N/A"}</td>
+                        <td>
+                          {item.companyName ||
+                            item.company_name ||
+                            item.job?.companyName ||
+                            "N/A"}
+                        </td>
+                        <td>{item.city || item.job?.city || "N/A"}</td>
                         <td>
                           <button
                             type="button"
@@ -691,13 +725,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </td>
                         )}
                         {[
+                          "dropout",
                           "pending_joining",
                           "joined",
                           "billed",
                           "left",
                         ].includes(selectedStatusKey) && (
                           <td>
-                            {selectedStatusKey === "pending_joining" ? (
+                            {selectedStatusKey === "dropout" ? (
+                              item.dropoutReason || item.reason || "Not set"
+                            ) : selectedStatusKey === "pending_joining" ? (
                               formatDate(item.joiningDate)
                             ) : item.joiningDate || item.joiningNote ? (
                               <>
@@ -1201,31 +1238,59 @@ export default function AdminPerformance({ setCurrentPage }) {
                   />
                 </div>
                 {actionTarget === "joined" ? (
-                  <div style={{ marginBottom: "10px" }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Joining Note (optional)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={actionJoiningNote}
-                      onChange={(e) => setActionJoiningNote(e.target.value)}
-                      placeholder="Enter any joining notes..."
-                      disabled={actionSubmitting}
-                      style={{
-                        width: "100%",
-                        padding: "8px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        fontFamily: "inherit",
-                      }}
-                    />
-                  </div>
+                  <>
+                    <div style={{ marginBottom: "10px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Joining Amount
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={actionRevenue}
+                        onChange={(e) => setActionRevenue(e.target.value)}
+                        disabled={actionSubmitting}
+                        placeholder="Enter amount"
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: "10px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Joining Note (optional)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={actionJoiningNote}
+                        onChange={(e) => setActionJoiningNote(e.target.value)}
+                        placeholder="Enter any joining notes..."
+                        disabled={actionSubmitting}
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          fontFamily: "inherit",
+                        }}
+                      />
+                    </div>
+                  </>
                 ) : null}
                 <div style={{ marginBottom: "10px" }}>
                   <label
@@ -1263,32 +1328,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Joining Amount
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={actionRevenue}
-                    onChange={(e) => setActionRevenue(e.target.value)}
-                    disabled={actionSubmitting}
-                    placeholder="Enter amount"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
                     Billed Reason (optional)
                   </label>
                   <textarea
@@ -1318,6 +1357,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                 >
                   {actionTarget === "rejected"
                     ? "Rejection Reason (optional)"
+                    : actionTarget === "verified"
+                      ? "Verification Note (optional)"
+                      : actionTarget === "walk_in"
+                        ? "Walk-in Reason (optional)"
                     : actionTarget === "dropout"
                       ? "Dropout Reason (optional)"
                       : actionTarget === "left"
@@ -1367,7 +1410,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
                     !actionJoiningDate.trim()) ||
-                  (actionTarget === "billed" && !actionRevenue.trim())
+                  (actionTarget === "joined" && !actionRevenue.trim())
                 }
               >
                 {actionSubmitting
