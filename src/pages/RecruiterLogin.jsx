@@ -45,10 +45,6 @@ const toUiJob = (job) => ({
   company: job.company_name || "Unknown company",
   title: job.role_name || "Untitled role",
   positionsOpen: Number(job.positions_open) || 1,
-  revenue:
-    job.revenue === null || job.revenue === undefined
-      ? null
-      : Number(job.revenue),
   pointsPerJoining: Number(job.points_per_joining) || 0,
   createdAt: job.created_at || null,
   city: job.city || "",
@@ -102,7 +98,6 @@ export default function RecruiterLogin() {
     company_name: "",
     role_name: "",
     positions_open: 1,
-    revenue: "",
     points_per_joining: 0,
     skills: "",
     job_description: "",
@@ -439,7 +434,6 @@ export default function RecruiterLogin() {
         company_name: "",
         role_name: "",
         positions_open: 1,
-        revenue: "",
         points_per_joining: 0,
         skills: "",
         job_description: "",
@@ -776,20 +770,6 @@ export default function RecruiterLogin() {
                       type="number"
                       min="1"
                       value={jobData.positions_open}
-                      onChange={handleJobInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="job-field">
-                    <label htmlFor="revenue">Estimated Revenue *</label>
-                    <input
-                      id="revenue"
-                      name="revenue"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={jobData.revenue}
                       onChange={handleJobInputChange}
                       required
                     />

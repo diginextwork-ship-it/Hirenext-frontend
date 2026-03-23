@@ -32,7 +32,7 @@ const STATUS_CARDS = [
   {
     key: "pending_joining",
     label: "Pending Joining",
-    summaryKey: "totalSelected",
+    summaryKey: "totalPendingJoining",
     color: "#2563eb",
   },
   { key: "joined", label: "Joined", summaryKey: "totalJoined" },
@@ -57,7 +57,11 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
-    { value: "joined", label: "Joined", color: "#16a34a" },
+    {
+      value: "pending_joining",
+      label: "Pending Joining",
+      color: "#2563eb",
+    },
     { value: "dropout", label: "Dropout", color: "#b45309" },
   ],
   pending_joining: [
@@ -121,16 +125,43 @@ function formatStatusLabel(status) {
     .trim()
     .toLowerCase();
   if (!normalized) return "Unknown";
+  if (normalized === "submitted") return "Resumes Submitted";
   return normalized
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
 
+function formatDate(value) {
+  if (!value) return "Not set";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString();
+}
+
+function normalizeStatus(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function dedupeItemsByResId(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = String(item?.resId || "").trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function AdminPerformance({ setCurrentPage }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [submittedResumes, setSubmittedResumes] = useState([]);
+  const [submittedLoading, setSubmittedLoading] = useState(false);
+  const [submittedError, setSubmittedError] = useState("");
   const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("submitted");
@@ -143,6 +174,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionReason, setActionReason] = useState("");
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
+  const [actionRevenue, setActionRevenue] = useState("");
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
 
@@ -197,6 +229,56 @@ export default function AdminPerformance({ setCurrentPage }) {
     fetchPerformance();
   }, [fetchPerformance]);
 
+  const fetchSubmittedResumes = useCallback(async () => {
+    setSubmittedLoading(true);
+    setSubmittedError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/dashboard`, {
+        headers: getAdminHeaders(),
+      });
+      const json = await readJsonResponse(
+        response,
+        "Failed to fetch submitted resumes.",
+      );
+      if (!response.ok) {
+        throw new Error(json?.message || "Failed to fetch submitted resumes.");
+      }
+
+      const uploads = Array.isArray(json?.recruiterResumeUploads)
+        ? json.recruiterResumeUploads
+        : [];
+
+      const filteredUploads = uploads.filter((item) => {
+        if (!dateRange) return true;
+        const rawDate = item?.uploadedAt;
+        if (!rawDate) return false;
+        const parsed = new Date(rawDate);
+        if (Number.isNaN(parsed.getTime())) return false;
+        const start = new Date(`${dateRange.start}T00:00:00`);
+        const end = new Date(`${dateRange.end}T23:59:59.999`);
+        return parsed >= start && parsed <= end;
+      });
+
+      setSubmittedResumes(
+        filteredUploads.map((item) => ({
+          resId: item.resId,
+          recruiterName: item.recruiterName || "N/A",
+          recruiterRid: item.rid || "N/A",
+          teamLeaderName: item.teamLeaderName || "N/A",
+          jobJid: item.jobJid ?? "N/A",
+          resumeFilename: item.resumeFilename || item.resId || "View resume",
+          status: "submitted",
+          uploadedAt: item.uploadedAt || null,
+        })),
+      );
+    } catch (err) {
+      setSubmittedResumes([]);
+      setSubmittedError(err.message || "Failed to fetch submitted resumes.");
+    } finally {
+      setSubmittedLoading(false);
+    }
+  }, [dateRange]);
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -243,13 +325,59 @@ export default function AdminPerformance({ setCurrentPage }) {
   });
 
   const summary = data?.summary || {};
-  const drilldownKey =
-    selectedStatusKey === "pending_joining" ? "selected" : selectedStatusKey;
-  const selectedStatusItems =
-    data?.statusDrilldown?.[drilldownKey] &&
-    Array.isArray(data.statusDrilldown[drilldownKey])
-      ? data.statusDrilldown[drilldownKey]
+  const performanceSubmittedItems =
+    data?.statusDrilldown?.submitted &&
+    Array.isArray(data.statusDrilldown.submitted)
+      ? data.statusDrilldown.submitted
       : [];
+  const drilldownKey = selectedStatusKey;
+  const selectedStatusItems = useMemo(() => {
+    const rawItems =
+      selectedStatusKey === "submitted"
+        ? performanceSubmittedItems.length > 0
+          ? performanceSubmittedItems
+          : submittedResumes
+        : data?.statusDrilldown?.[drilldownKey] &&
+            Array.isArray(data.statusDrilldown[drilldownKey])
+          ? data.statusDrilldown[drilldownKey]
+          : [];
+
+    const normalizedKey = normalizeStatus(selectedStatusKey);
+    const filteredItems =
+      selectedStatusKey === "submitted"
+        ? rawItems
+        : rawItems.filter((item) => {
+            const itemStatus = normalizeStatus(item?.status);
+            return !itemStatus || itemStatus === normalizedKey;
+          });
+
+    return dedupeItemsByResId(filteredItems);
+  }, [
+    data,
+    drilldownKey,
+    performanceSubmittedItems,
+    selectedStatusKey,
+    submittedResumes,
+  ]);
+
+  const handleSubmittedCardClick = async () => {
+    setSelectedStatusKey("submitted");
+    if (performanceSubmittedItems.length > 0) {
+      setSubmittedError("");
+      return;
+    }
+    await fetchSubmittedResumes();
+  };
+
+  useEffect(() => {
+    if (selectedStatusKey !== "submitted") return;
+    if (performanceSubmittedItems.length > 0) return;
+    fetchSubmittedResumes();
+  }, [
+    selectedStatusKey,
+    performanceSubmittedItems.length,
+    fetchSubmittedResumes,
+  ]);
 
   const handleResumeOpen = (resId) => {
     const token = getAuthSession()?.token;
@@ -267,6 +395,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionReason("");
     setActionJoiningDate("");
     setActionJoiningNote("");
+    setActionRevenue("");
     setActionError("");
   };
 
@@ -277,14 +406,28 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionReason("");
     setActionJoiningDate("");
     setActionJoiningNote("");
+    setActionRevenue("");
     setActionError("");
   };
 
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
-    const needsReason = actionTarget !== "joined";
+    const needsReason = !["pending_joining", "joined", "billed"].includes(
+      actionTarget,
+    );
     if (needsReason && !actionReason.trim()) {
       setActionError("Please provide a reason.");
+      return;
+    }
+    if (
+      actionTarget === "pending_joining" &&
+      !String(actionJoiningDate || "").trim()
+    ) {
+      setActionError("Please provide a joining date.");
+      return;
+    }
+    if (actionTarget === "billed" && !String(actionRevenue || "").trim()) {
+      setActionError("Please provide the joining amount.");
       return;
     }
     setActionSubmitting(true);
@@ -293,11 +436,15 @@ export default function AdminPerformance({ setCurrentPage }) {
       await adminAdvanceStatus(actionModalItem.resId, {
         status: actionTarget,
         reason: actionReason.trim() || undefined,
-        ...(actionTarget === "joined" && actionJoiningDate
+        ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
+        actionJoiningDate
           ? { joining_date: actionJoiningDate }
           : {}),
         ...(actionTarget === "joined" && actionJoiningNote.trim()
           ? { joining_note: actionJoiningNote.trim() }
+          : {}),
+        ...(actionTarget === "billed" && actionRevenue.trim()
+          ? { revenue: actionRevenue.trim() }
           : {}),
       });
       closeActionModal();
@@ -432,12 +579,23 @@ export default function AdminPerformance({ setCurrentPage }) {
       {activeTab === TABS.OVERVIEW && (
         <div className="perf-overview">
           <div className="perf-summary-grid">
-            <div className="perf-stat-card">
+            <button
+              type="button"
+              className="perf-stat-card"
+              onClick={handleSubmittedCardClick}
+              style={{
+                textAlign: "left",
+                border:
+                  selectedStatusKey === "submitted"
+                    ? "2px solid #0f766e"
+                    : undefined,
+              }}
+            >
               <span className="perf-stat-label">Resumes Submitted</span>
               <span className="perf-stat-value">
                 {summary.totalSubmitted ?? 0}
               </span>
-            </div>
+            </button>
             {STATUS_CARDS.map((card) => (
               <button
                 key={card.key}
@@ -474,7 +632,9 @@ export default function AdminPerformance({ setCurrentPage }) {
               }}
             >
               <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
-                {formatStatusLabel(selectedStatusKey)} Resume List
+                {selectedStatusKey === "submitted"
+                  ? "Submitted Resume List"
+                  : `${formatStatusLabel(selectedStatusKey)} Resume List`}
               </h3>
               <span className="admin-muted">
                 {selectedStatusItems.length} item
@@ -491,8 +651,22 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Job ID</th>
                       <th>Resume File</th>
                       <th>Status</th>
-                      {selectedStatusKey === "pending_joining" && (
-                        <th>Expected Joining Date</th>
+                      {selectedStatusKey === "walk_in" && (
+                        <th>
+                          Walk-in Date
+                        </th>
+                      )}
+                      {[
+                        "pending_joining",
+                        "joined",
+                        "billed",
+                        "left",
+                      ].includes(selectedStatusKey) && (
+                        <th>
+                          {selectedStatusKey === "pending_joining"
+                            ? "Joining Date"
+                            : "Joining Info"}
+                        </th>
                       )}
                       {availableActions.length > 0 && <th>Actions</th>}
                     </tr>
@@ -518,13 +692,37 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.status)}</td>
-                        {selectedStatusKey === "pending_joining" && (
+                        {selectedStatusKey === "walk_in" && (
                           <td>
-                            {item.joiningDate
-                              ? new Date(
-                                  item.joiningDate + "T00:00:00",
-                                ).toLocaleDateString()
-                              : "Not set"}
+                            {formatDate(item.walkInDate)}
+                          </td>
+                        )}
+                        {[
+                          "pending_joining",
+                          "joined",
+                          "billed",
+                          "left",
+                        ].includes(selectedStatusKey) && (
+                          <td>
+                            {selectedStatusKey === "pending_joining" ? (
+                              formatDate(item.joiningDate)
+                            ) : item.joiningDate || item.joiningNote ? (
+                              <>
+                                {item.joiningDate ? (
+                                  <div>
+                                    <strong>Date:</strong>{" "}
+                                    {formatDate(item.joiningDate)}
+                                  </div>
+                                ) : null}
+                                {item.joiningNote ? (
+                                  <div>
+                                    <strong>Note:</strong> {item.joiningNote}
+                                  </div>
+                                ) : null}
+                              </>
+                            ) : (
+                              "Not set"
+                            )}
                           </td>
                         )}
                         {availableActions.length > 0 && (
@@ -561,9 +759,24 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </tbody>
                 </table>
               </div>
+            ) : selectedStatusKey === "submitted" && submittedLoading ? (
+              <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
+                Loading submitted resumes...
+              </p>
+            ) : selectedStatusKey === "submitted" && submittedError ? (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginTop: "16px" }}
+              >
+                {submittedError}
+              </div>
             ) : (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
-                No resumes found for {formatStatusLabel(selectedStatusKey)}.
+                No resumes found for{" "}
+                {selectedStatusKey === "submitted"
+                  ? "Resumes Submitted"
+                  : formatStatusLabel(selectedStatusKey)}
+                .
               </p>
             )}
           </div>
@@ -598,7 +811,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{r.submitted}</td>
                         <td>{r.verified}</td>
                         <td>{r.selected}</td>
-                        <td>{r.selected}</td>
+                        <td>{r.pending_joining ?? 0}</td>
                         <td>{r.joined}</td>
                         <td>{r.billed ?? 0}</td>
                         <td>{r.left ?? 0}</td>
@@ -833,7 +1046,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.walk_in}</td>
                       <td>{r.selected}</td>
                       <td>{r.rejected}</td>
-                      <td>{r.selected}</td>
+                      <td>{r.pending_joining ?? 0}</td>
                       <td>{r.joined}</td>
                       <td>{r.dropout}</td>
                       <td>{r.billed ?? 0}</td>
@@ -969,7 +1182,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
             </div>
 
-            {actionTarget === "joined" ? (
+            {actionTarget === "pending_joining" || actionTarget === "joined" ? (
               <>
                 <div style={{ marginBottom: "10px" }}>
                   <label
@@ -979,7 +1192,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Joining Date (optional)
+                    Joining Date
                   </label>
                   <input
                     type="date"
@@ -994,31 +1207,33 @@ export default function AdminPerformance({ setCurrentPage }) {
                     }}
                   />
                 </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Joining Note (optional)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={actionJoiningNote}
-                    onChange={(e) => setActionJoiningNote(e.target.value)}
-                    placeholder="Enter any joining notes..."
-                    disabled={actionSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                </div>
+                {actionTarget === "joined" ? (
+                  <div style={{ marginBottom: "10px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontWeight: 600,
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Joining Note (optional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={actionJoiningNote}
+                      onChange={(e) => setActionJoiningNote(e.target.value)}
+                      placeholder="Enter any joining notes..."
+                      disabled={actionSubmitting}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        borderRadius: "4px",
+                        border: "1px solid #ccc",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                  </div>
+                ) : null}
                 <div style={{ marginBottom: "10px" }}>
                   <label
                     style={{
@@ -1034,6 +1249,60 @@ export default function AdminPerformance({ setCurrentPage }) {
                     value={actionReason}
                     onChange={(e) => setActionReason(e.target.value)}
                     placeholder="Enter reason..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+              </>
+            ) : actionTarget === "billed" ? (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Joining Amount
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={actionRevenue}
+                    onChange={(e) => setActionRevenue(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Billed Reason (optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder="Enter reason if needed..."
                     disabled={actionSubmitting}
                     style={{
                       width: "100%",
@@ -1103,7 +1372,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                 onClick={handleAdminAdvanceStatus}
                 disabled={
                   actionSubmitting ||
-                  (actionTarget !== "joined" && !actionReason.trim())
+                  (actionTarget === "pending_joining" &&
+                    !actionJoiningDate.trim()) ||
+                  (actionTarget === "billed" && !actionRevenue.trim()) ||
+                  (["rejected", "dropout", "left"].includes(actionTarget) &&
+                    !actionReason.trim())
                 }
               >
                 {actionSubmitting

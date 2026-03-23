@@ -10,6 +10,12 @@ import { API_BASE_URL } from "../../config/api";
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
+const formatDate = (value) => {
+  if (!value) return "Not set";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString();
+};
 const getPointsProgressColor = (points) => {
   if (points <= 25) return "danger";
   if (points <= 75) return "warning";
@@ -170,12 +176,10 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatus(activeStatus);
-    const filterStatus =
-      normalizedStatus === "pending_joining" ? "selected" : normalizedStatus;
     let resumes = Array.isArray(statusResumes) ? statusResumes : [];
-    if (filterStatus && filterStatus !== "submitted") {
+    if (normalizedStatus && normalizedStatus !== "submitted") {
       resumes = resumes.filter(
-        (resume) => normalizeStatus(resume.workflowStatus) === filterStatus,
+        (resume) => normalizeStatus(resume.workflowStatus) === normalizedStatus,
       );
     }
     const { startDate, endDate } = appliedFilters;
@@ -453,6 +457,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                     </th>
                     <th>Status</th>
                     <th>Updated</th>
+                    {activeStatus === "walk_in" && <th>Walk-in Date</th>}
                     {(activeStatus === "pending_joining" ||
                       activeStatus === "joined" ||
                       activeStatus === "billed" ||
@@ -466,6 +471,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                     if (activeStatus === "walk_in") {
                       currentReasonField = resume.walkInReason;
                     } else if (activeStatus === "selected") {
+                      currentReasonField = resume.selectReason;
+                    } else if (activeStatus === "pending_joining") {
                       currentReasonField = resume.selectReason;
                     } else if (activeStatus === "joined") {
                       currentReasonField = resume.joinedReason;
@@ -525,6 +532,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                             resume.workflowUpdatedAt || resume.uploadedAt,
                           )}
                         </td>
+                        {activeStatus === "walk_in" && (
+                          <td>{formatDate(resume.walkInDate)}</td>
+                        )}
                         {(activeStatus === "pending_joining" ||
                           activeStatus === "joined" ||
                           activeStatus === "billed" ||
@@ -533,9 +543,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                             {resume.joiningDate ? (
                               <div>
                                 <strong>Date:</strong>{" "}
-                                {new Date(
-                                  resume.joiningDate + "T00:00:00",
-                                ).toLocaleDateString()}
+                                {formatDate(resume.joiningDate)}
                               </div>
                             ) : null}
                             {resume.joiningNote ? (

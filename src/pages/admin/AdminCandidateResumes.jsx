@@ -22,6 +22,13 @@ const formatDateTime = (value) => {
   return parsed.toLocaleString();
 };
 
+const formatDate = (value) => {
+  if (!value) return "N/A";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString();
+};
+
 const formatMoney = (value) => {
   if (value === null || value === undefined || value === "") return "N/A";
   return Number(value).toLocaleString("en-IN");
@@ -550,16 +557,27 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     <td>{formatDateTime(resume.uploadedAt)}</td>
                     <td>{resume.selection?.status || "pending"}</td>
                     <td className="table-cell-wrap">
-                      {["joined", "billed", "left"].includes(
+                      {[
+                        "walk_in",
+                        "pending_joining",
+                        "joined",
+                        "billed",
+                        "left",
+                      ].includes(
                         String(resume.selection?.status || "").toLowerCase(),
                       ) ? (
                         <>
+                          {String(resume.selection?.status || "").toLowerCase() ===
+                            "walk_in" && resume.selection?.walkInDate ? (
+                            <div>
+                              <strong>Walk-in Date:</strong>{" "}
+                              {formatDate(resume.selection.walkInDate)}
+                            </div>
+                          ) : null}
                           {resume.selection?.joiningDate ? (
                             <div>
                               <strong>Date:</strong>{" "}
-                              {new Date(
-                                resume.selection.joiningDate + "T00:00:00",
-                              ).toLocaleDateString()}
+                              {formatDate(resume.selection.joiningDate)}
                             </div>
                           ) : null}
                           {resume.selection?.joiningNote ? (
@@ -568,7 +586,8 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                               {resume.selection.joiningNote}
                             </div>
                           ) : null}
-                          {!resume.selection?.joiningDate &&
+                          {!resume.selection?.walkInDate &&
+                          !resume.selection?.joiningDate &&
                           !resume.selection?.joiningNote
                             ? "-"
                             : null}

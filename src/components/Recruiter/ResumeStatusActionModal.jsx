@@ -230,6 +230,11 @@ export default function ResumeStatusActionModal({
                   <small className="form-text-muted">
                     This information will be saved for reference.
                   </small>
+                  {selectedAction === "walk_in" ? (
+                    <small className="form-text-muted">
+                      The walk-in date will be recorded automatically.
+                    </small>
+                  ) : null}
                 </div>
               )}
 

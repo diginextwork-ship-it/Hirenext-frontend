@@ -10,6 +10,13 @@ const formatDateTime = (value) => {
   return date.toLocaleString();
 };
 
+const formatDate = (value) => {
+  if (!value) return "N/A";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString();
+};
+
 export default function AdminManualSelection({ setCurrentPage }) {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(null);
@@ -284,16 +291,27 @@ export default function AdminManualSelection({ setCurrentPage }) {
                       </td>
                       <td>{resume.selection?.status || "pending"}</td>
                       <td className="table-cell-wrap">
-                        {["joined", "billed", "left"].includes(
+                        {[
+                          "walk_in",
+                          "pending_joining",
+                          "joined",
+                          "billed",
+                          "left",
+                        ].includes(
                           String(resume.selection?.status || "").toLowerCase(),
                         ) ? (
                           <>
+                            {String(resume.selection?.status || "").toLowerCase() ===
+                              "walk_in" && resume.selection?.walkInDate ? (
+                              <div>
+                                <strong>Walk-in Date:</strong>{" "}
+                                {formatDate(resume.selection.walkInDate)}
+                              </div>
+                            ) : null}
                             {resume.selection?.joiningDate ? (
                               <div>
                                 <strong>Date:</strong>{" "}
-                                {new Date(
-                                  resume.selection.joiningDate + "T00:00:00",
-                                ).toLocaleDateString()}
+                                {formatDate(resume.selection.joiningDate)}
                               </div>
                             ) : null}
                             {resume.selection?.joiningNote ? (
@@ -302,7 +320,8 @@ export default function AdminManualSelection({ setCurrentPage }) {
                                 {resume.selection.joiningNote}
                               </div>
                             ) : null}
-                            {!resume.selection?.joiningDate &&
+                            {!resume.selection?.walkInDate &&
+                            !resume.selection?.joiningDate &&
                             !resume.selection?.joiningNote
                               ? "-"
                               : null}

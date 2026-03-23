@@ -19,6 +19,13 @@ const formatDateTime = (value) => {
   return parsed.toLocaleString();
 };
 
+const formatDate = (value) => {
+  if (!value) return "-";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString();
+};
+
 export default function ResumeStatusManager({ onStatusUpdated }) {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState("");
@@ -271,7 +278,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                 <th>Timing Info</th>
                 <th>Status</th>
                 <th>Action</th>
-                <th>Joining Info</th>
+                <th>Status Info</th>
                 <th>Updated</th>
               </tr>
             </thead>
@@ -432,16 +439,22 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                     ) : null}
                   </td>
                   <td className="table-cell-wrap">
-                    {resume.status === "joined" ||
+                    {resume.status === "walk_in" ||
+                    resume.status === "pending_joining" ||
+                    resume.status === "joined" ||
                     resume.status === "billed" ||
                     resume.status === "left" ? (
                       <>
+                        {resume.status === "walk_in" && resume.walkInDate ? (
+                          <div>
+                            <strong>Walk-in Date:</strong>{" "}
+                            {formatDate(resume.walkInDate)}
+                          </div>
+                        ) : null}
                         {resume.joiningDate ? (
                           <div>
                             <strong>Date:</strong>{" "}
-                            {new Date(
-                              resume.joiningDate + "T00:00:00",
-                            ).toLocaleDateString()}
+                            {formatDate(resume.joiningDate)}
                           </div>
                         ) : null}
                         {resume.joiningNote ? (
@@ -449,7 +462,9 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                             <strong>Note:</strong> {resume.joiningNote}
                           </div>
                         ) : null}
-                        {!resume.joiningDate && !resume.joiningNote
+                        {!resume.walkInDate &&
+                        !resume.joiningDate &&
+                        !resume.joiningNote
                           ? "-"
                           : null}
                       </>
