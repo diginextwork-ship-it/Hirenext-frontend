@@ -276,7 +276,10 @@ export default function AdminPerformance({ setCurrentPage }) {
           candidatePhone: item.candidatePhone || item.phone || null,
           jobJid: item.jobJid ?? "N/A",
           companyName:
-            item.companyName || item.company_name || item.job?.companyName || null,
+            item.companyName ||
+            item.company_name ||
+            item.job?.companyName ||
+            null,
           city: item.city || item.job?.city || null,
           resumeFilename: item.resumeFilename || item.resId || "View resume",
           status: "submitted",
@@ -435,6 +438,18 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide the joining amount.");
       return;
     }
+    if (actionTarget === "billed") {
+      const revStr = String(actionRevenue || "").trim();
+      if (!revStr) {
+        setActionError("Please provide the revenue amount.");
+        return;
+      }
+      const revNum = Number(revStr);
+      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
+        setActionError("Revenue must be a non-negative integer.");
+        return;
+      }
+    }
     setActionSubmitting(true);
     setActionError("");
     try {
@@ -450,6 +465,9 @@ export default function AdminPerformance({ setCurrentPage }) {
           : {}),
         ...(actionTarget === "joined" && actionRevenue.trim()
           ? { revenue: actionRevenue.trim() }
+          : {}),
+        ...(actionTarget === "billed" && String(actionRevenue || "").trim()
+          ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
       });
       closeActionModal();
@@ -659,11 +677,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>City</th>
                       <th>Resume File</th>
                       <th>Status</th>
-                      {selectedStatusKey === "walk_in" && (
-                        <th>
-                          Walk-in Date
-                        </th>
-                      )}
+                      {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                       {[
                         "dropout",
                         "pending_joining",
@@ -675,8 +689,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                           {selectedStatusKey === "dropout"
                             ? "Dropout Reason"
                             : selectedStatusKey === "pending_joining"
-                            ? "Joining Date"
-                            : "Joining Info"}
+                              ? "Joining Date"
+                              : "Joining Info"}
                         </th>
                       )}
                       {availableActions.length > 0 && <th>Actions</th>}
@@ -694,7 +708,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{item.teamLeaderName || "N/A"}</td>
                         <td>
                           {item.candidatePhone || item.phone ? (
-                            <a href={`tel:${item.candidatePhone || item.phone}`}>
+                            <a
+                              href={`tel:${item.candidatePhone || item.phone}`}
+                            >
                               {item.candidatePhone || item.phone}
                             </a>
                           ) : (
@@ -720,9 +736,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         </td>
                         <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
-                          <td>
-                            {formatDate(item.walkInDate)}
-                          </td>
+                          <td>{formatDate(item.walkInDate)}</td>
                         )}
                         {[
                           "dropout",
@@ -1328,6 +1342,32 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
+                    Revenue
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={actionRevenue}
+                    onChange={(e) => setActionRevenue(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter revenue amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
                     Billed Reason (optional)
                   </label>
                   <textarea
@@ -1361,11 +1401,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                       ? "Verification Note (optional)"
                       : actionTarget === "walk_in"
                         ? "Walk-in Reason (optional)"
-                    : actionTarget === "dropout"
-                      ? "Dropout Reason (optional)"
-                      : actionTarget === "left"
-                        ? "Reason for Leaving (optional)"
-                        : "Reason (optional)"}
+                        : actionTarget === "dropout"
+                          ? "Dropout Reason (optional)"
+                          : actionTarget === "left"
+                            ? "Reason for Leaving (optional)"
+                            : "Reason (optional)"}
                 </label>
                 <textarea
                   rows={4}
@@ -1410,7 +1450,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
                     !actionJoiningDate.trim()) ||
-                  (actionTarget === "joined" && !actionRevenue.trim())
+                  (actionTarget === "joined" && !actionRevenue.trim()) ||
+                  (actionTarget === "billed" &&
+                    !String(actionRevenue || "").trim())
                 }
               >
                 {actionSubmitting
