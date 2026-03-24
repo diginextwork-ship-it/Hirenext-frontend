@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
 import {
@@ -44,34 +44,6 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [leftSubmitting, setLeftSubmitting] = useState(false);
   const [leftError, setLeftError] = useState("");
 
-  useEffect(() => {
-    if (!recruiterId) return;
-    let active = true;
-
-    const load = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await fetchRecruiterDashboard(
-          recruiterId,
-          appliedFilters,
-        );
-        if (!active) return;
-        setData(response);
-      } catch (loadError) {
-        if (!active) return;
-        setError(loadError.message || "Failed to load recruiter dashboard.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      active = false;
-    };
-  }, [recruiterId, appliedFilters]);
-
   const handleFilterChange = (field) => (event) => {
     const nextValue = event.target.value;
     setFilters((prev) => ({ ...prev, [field]: nextValue }));
@@ -113,7 +85,7 @@ export default function RecruiterDashboard({ recruiterId }) {
     }
   };
 
-  const fetchRecruiterResumes = async () => {
+  const fetchRecruiterResumes = useCallback(async () => {
     const token = getAuthToken();
     if (!token) throw new Error("Authentication required.");
     const response = await fetch(
@@ -131,7 +103,45 @@ export default function RecruiterDashboard({ recruiterId }) {
       );
     }
     return Array.isArray(payload.resumes) ? payload.resumes : [];
-  };
+  }, [recruiterId]);
+
+  useEffect(() => {
+    if (!recruiterId) return;
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const [dashboardResult, resumesResult] = await Promise.allSettled([
+          fetchRecruiterDashboard(recruiterId, appliedFilters),
+          fetchRecruiterResumes(),
+        ]);
+        if (dashboardResult.status !== "fulfilled") {
+          throw dashboardResult.reason;
+        }
+        if (!active) return;
+        setData(dashboardResult.value);
+        setStatusResumes(
+          resumesResult.status === "fulfilled" &&
+            Array.isArray(resumesResult.value)
+            ? resumesResult.value
+            : [],
+        );
+      } catch (loadError) {
+        if (!active) return;
+        setError(loadError.message || "Failed to load recruiter dashboard.");
+        setStatusResumes([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [recruiterId, appliedFilters, fetchRecruiterResumes]);
 
   const normalizeStatus = (value) =>
     String(value || "")
@@ -199,11 +209,17 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   const refreshDashboardStats = async () => {
     try {
-      const response = await fetchRecruiterDashboard(
-        recruiterId,
-        appliedFilters,
+      const [dashboardResult, resumesResult] = await Promise.allSettled([
+        fetchRecruiterDashboard(recruiterId, appliedFilters),
+        fetchRecruiterResumes(),
+      ]);
+      if (dashboardResult.status !== "fulfilled") return;
+      setData(dashboardResult.value);
+      setStatusResumes(
+        resumesResult.status === "fulfilled" && Array.isArray(resumesResult.value)
+          ? resumesResult.value
+          : [],
       );
-      setData(response);
     } catch {
       // Stats refresh is best-effort; don't overwrite main error state
     }
@@ -213,11 +229,19 @@ export default function RecruiterDashboard({ recruiterId }) {
     setLoading(true);
     setError("");
     try {
-      const response = await fetchRecruiterDashboard(
-        recruiterId,
-        appliedFilters,
+      const [dashboardResult, resumesResult] = await Promise.allSettled([
+        fetchRecruiterDashboard(recruiterId, appliedFilters),
+        fetchRecruiterResumes(),
+      ]);
+      if (dashboardResult.status !== "fulfilled") {
+        throw dashboardResult.reason;
+      }
+      setData(dashboardResult.value);
+      setStatusResumes(
+        resumesResult.status === "fulfilled" && Array.isArray(resumesResult.value)
+          ? resumesResult.value
+          : [],
       );
-      setData(response);
     } catch (loadError) {
       setError(loadError.message || "Failed to load recruiter dashboard.");
     } finally {
@@ -230,7 +254,15 @@ export default function RecruiterDashboard({ recruiterId }) {
   if (error) return <p className="job-message job-message-error">{error}</p>;
   if (!data) return <p className="chart-empty">No dashboard data available.</p>;
 
-  const totalPoints = Number(data.recruiter?.points) || 0;
+  const billedResumePoints = statusResumes.reduce((sum, resume) => {
+    const normalizedStatus = normalizeStatus(resume?.workflowStatus);
+    if (!["billed", "left"].includes(normalizedStatus)) return sum;
+    return sum + (Number(resume?.points) || 0);
+  }, 0);
+  const totalPoints =
+    billedResumePoints > 0
+      ? billedResumePoints
+      : Number(data.recruiter?.points) || 0;
   const cappedPoints = Math.max(0, Math.min(100, totalPoints));
   const progressWidth = totalPoints > 100 ? 100 : cappedPoints;
   const pointsProgressColor = getPointsProgressColor(totalPoints);
