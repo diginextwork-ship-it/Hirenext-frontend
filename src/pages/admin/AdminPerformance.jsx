@@ -434,9 +434,17 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide a joining date.");
       return;
     }
-    if (actionTarget === "joined" && !String(actionRevenue || "").trim()) {
-      setActionError("Please provide the joining amount.");
-      return;
+    if (actionTarget === "pending_joining") {
+      const revStr = String(actionRevenue || "").trim();
+      if (!revStr) {
+        setActionError("Please provide the revenue amount.");
+        return;
+      }
+      const revNum = Number(revStr);
+      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
+        setActionError("Revenue must be a non-negative integer.");
+        return;
+      }
     }
     if (actionTarget === "billed") {
       const revStr = String(actionRevenue || "").trim();
@@ -453,9 +461,13 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionSubmitting(true);
     setActionError("");
     try {
+      const shouldSendReason = ![
+        "pending_joining",
+        "selected",
+      ].includes(actionTarget);
       await adminAdvanceStatus(actionModalItem.resId, {
         status: actionTarget,
-        reason: actionReason.trim() || undefined,
+        reason: shouldSendReason ? actionReason.trim() || undefined : undefined,
         ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
         actionJoiningDate
           ? { joining_date: actionJoiningDate }
@@ -463,8 +475,8 @@ export default function AdminPerformance({ setCurrentPage }) {
         ...(actionTarget === "joined" && actionJoiningNote.trim()
           ? { joining_note: actionJoiningNote.trim() }
           : {}),
-        ...(actionTarget === "joined" && actionRevenue.trim()
-          ? { revenue: actionRevenue.trim() }
+        ...(actionTarget === "pending_joining" && actionRevenue.trim()
+          ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
         ...(actionTarget === "billed" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
@@ -1226,7 +1238,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
             </div>
 
-            {actionTarget === "pending_joining" || actionTarget === "joined" ? (
+            {actionTarget === "pending_joining" ? (
               <>
                 <div style={{ marginBottom: "10px" }}>
                   <label
@@ -1251,61 +1263,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                     }}
                   />
                 </div>
-                {actionTarget === "joined" ? (
-                  <>
-                    <div style={{ marginBottom: "10px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 600,
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Joining Amount
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={actionRevenue}
-                        onChange={(e) => setActionRevenue(e.target.value)}
-                        disabled={actionSubmitting}
-                        placeholder="Enter amount"
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                        }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: "10px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 600,
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Joining Note (optional)
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={actionJoiningNote}
-                        onChange={(e) => setActionJoiningNote(e.target.value)}
-                        placeholder="Enter any joining notes..."
-                        disabled={actionSubmitting}
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          fontFamily: "inherit",
-                        }}
-                      />
-                    </div>
-                  </>
-                ) : null}
                 <div style={{ marginBottom: "10px" }}>
                   <label
                     style={{
@@ -1314,13 +1271,65 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Reason (optional)
+                    Revenue Amount (integer)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={actionRevenue}
+                    onChange={(e) => setActionRevenue(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter revenue amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              </>
+            ) : actionTarget === "joined" ? (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Joining Date
+                  </label>
+                  <input
+                    type="date"
+                    value={actionJoiningDate}
+                    onChange={(e) => setActionJoiningDate(e.target.value)}
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Joining Note (optional)
                   </label>
                   <textarea
                     rows={3}
-                    value={actionReason}
-                    onChange={(e) => setActionReason(e.target.value)}
-                    placeholder="Enter reason..."
+                    value={actionJoiningNote}
+                    onChange={(e) => setActionJoiningNote(e.target.value)}
+                    placeholder="Enter any joining notes..."
                     disabled={actionSubmitting}
                     style={{
                       width: "100%",
@@ -1386,7 +1395,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   />
                 </div>
               </>
-            ) : (
+            ) : actionTarget === "selected" ? null : (
               <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{
@@ -1449,8 +1458,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 disabled={
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
-                    !actionJoiningDate.trim()) ||
-                  (actionTarget === "joined" && !actionRevenue.trim()) ||
+                    (!actionJoiningDate.trim() || !actionRevenue.trim())) ||
                   (actionTarget === "billed" &&
                     !String(actionRevenue || "").trim())
                 }
