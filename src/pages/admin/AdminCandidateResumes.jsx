@@ -114,7 +114,22 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           applicantName: item.recruiterName || "N/A",
           applicantEmail: item.recruiterEmail || "N/A",
           jobJid: item.jobJid ?? null,
-          job: null,
+          job: {
+            roleName:
+              item.roleName || item.role_name || item.job?.roleName || "",
+            companyName:
+              item.companyName ||
+              item.company_name ||
+              item.job?.companyName ||
+              "",
+            city: item.city || item.job?.city || "",
+            jobDescription:
+              item.jobDescription ||
+              item.job_description ||
+              item.job?.jobDescription ||
+              "",
+            skills: item.skills || item.job?.skills || "",
+          },
           atsScore: null,
           atsMatchPercentage: null,
           submittedReason: null,
@@ -464,6 +479,9 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                       <div>{resume.job?.roleName || "N/A"}</div>
                       <div className="admin-muted">
                         {resume.job?.companyName || "N/A"}
+                      </div>
+                      <div className="admin-muted">
+                        {resume.job?.city || "N/A"}
                       </div>
                     </td>
                     <td
