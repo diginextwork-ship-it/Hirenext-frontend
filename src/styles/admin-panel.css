@@ -497,7 +497,11 @@
   }
 
   .admin-table {
-    min-width: 420px;
+    min-width: 560px;
+  }
+
+  .admin-table-wide {
+    min-width: 760px;
   }
 
   .admin-panel-card,
@@ -526,8 +530,8 @@
 
   .admin-table th,
   .admin-table td {
-    padding: 0.55rem;
-    font-size: 0.86rem;
+    padding: 0.6rem;
+    font-size: 0.88rem;
   }
 }
 
@@ -548,20 +552,37 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-table-wrap {
+    margin-left: -0.2rem;
+    margin-right: -0.2rem;
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+  }
+
   .admin-table {
-    min-width: 0;
+    min-width: 540px;
   }
 
   .admin-table-wide {
-    min-width: 0;
+    min-width: 760px;
   }
 
   .admin-table th,
   .admin-table td {
+    white-space: nowrap;
+    word-break: normal;
+    padding: 0.52rem;
+    font-size: 0.82rem;
+  }
+
+  .table-cell-wrap,
+  .admin-job-cell {
     white-space: normal;
-    word-break: break-word;
-    padding: 0.4rem;
-    font-size: 0.78rem;
+    min-width: 160px;
+  }
+
+  .admin-attendance-actions {
+    min-width: 170px;
   }
 
   .admin-attendance-summary-grid {
