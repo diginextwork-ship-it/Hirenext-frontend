@@ -29,50 +29,60 @@ const PRESETS = {
 };
 
 const STATUS_CARDS = [
-  { key: "verified", label: "Verified", summaryKey: "totalVerified" },
+  {
+    key: "verified",
+    label: "Verified",
+    summaryKey: "totalVerified",
+    tone: "green",
+  },
   {
     key: "walk_in",
     label: "Walk In",
     summaryKey: "totalWalkIn",
-    color: "#ca8a04",
+    tone: "green",
   },
   {
     key: "selected",
     label: "Selected",
     summaryKey: "totalSelected",
-    color: "#16a34a",
+    tone: "purple",
   },
   {
     key: "rejected",
     label: "Rejected",
     summaryKey: "totalRejected",
-    color: "#dc2626",
+    tone: "red",
   },
   {
     key: "pending_joining",
     label: "Pending Joining",
     summaryKey: "totalPendingJoining",
-    color: "#2563eb",
+    tone: "blue",
   },
   {
     key: "joined",
     label: "Joined",
     summaryKey: "totalJoined",
-    color: "#16a34a",
+    tone: "gold",
   },
   {
     key: "dropout",
     label: "Dropout",
     summaryKey: "totalDropout",
-    color: "#dc2626",
+    tone: "pink",
   },
   {
     key: "billed",
     label: "Billed",
     summaryKey: "totalBilled",
-    color: "#166534",
+    tone: "teal",
   },
-  { key: "left", label: "Left", summaryKey: "totalLeft", color: "#dc2626" },
+  {
+    key: "left",
+    label: "Left",
+    summaryKey: "totalLeft",
+    tone: "orange",
+  },
 ];
 
 const ADMIN_ACTIONS_BY_STATUS = {
@@ -178,13 +188,74 @@ function normalizeStatus(value) {
 }
 
 function dedupeItemsByResId(items) {
-  const seen = new Set();
-  return items.filter((item) => {
-    const key = String(item?.resId || "").trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  // Dedupe by `resId`, but merge fields from duplicates so we don't lose
+  // partial job/company/city/team-leader info that arrives on some entries.
+  const isPresent = (value) =>
+    value !== null &&
+    value !== undefined &&
+    !(typeof value === "string" && value.trim() === "") &&
+    !(
+      typeof value === "string" &&
+      ["n/a", "na", "not set"].includes(value.trim().toLowerCase())
+    ) &&
+    // Treat empty objects as absent.
+    !(typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.keys(value).length === 0);
+
+  const getResId = (item) =>
+    item?.resId ??
+    item?.res_id ??
+    item?.resumeId ??
+    item?.resume_id;
+
+  const isPlainObject = (v) =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  const deepMergeByPresence = (prev, next) => {
+    if (!isPlainObject(prev) || !isPlainObject(next)) {
+      return isPresent(prev) ? prev : next;
+    }
+
+    const out = { ...prev };
+    for (const [key, nextVal] of Object.entries(next)) {
+      const prevVal = out[key];
+
+      // If nested job objects exist, merge them recursively.
+      if (key === "job" && isPlainObject(prevVal) && isPlainObject(nextVal)) {
+        out[key] = deepMergeByPresence(prevVal, nextVal);
+        continue;
+      }
+
+      // Fill missing scalar fields.
+      if (!isPresent(prevVal) && isPresent(nextVal)) {
+        out[key] = nextVal;
+        continue;
+      }
+
+      // If both are objects, merge recursively to fill nested values.
+      if (isPlainObject(prevVal) && isPlainObject(nextVal)) {
+        out[key] = deepMergeByPresence(prevVal, nextVal);
+      }
+    }
+    return out;
+  };
+
+  const map = new Map();
+  for (const item of items) {
+    const key = getResId(item);
+    if (!key || String(key).trim() === "") continue;
+
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...item, resId: key });
+      continue;
+    }
+
+    map.set(key, deepMergeByPresence(existing, { ...item, resId: key }));
+  }
+
+  return Array.from(map.values());
 }
 
 export default function AdminPerformance({ setCurrentPage }) {
@@ -219,6 +290,12 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+
+  // Temporary debugging toggle:
+  // set localStorage.setItem("perf_debug_admin","1") then refresh the page.
+  const PERF_DEBUG =
+    typeof window !== "undefined" &&
+    window.localStorage?.getItem("perf_debug_admin") === "1";
 
   const dateRange = useMemo(() => {
     if (timelinePreset === PRESETS.CUSTOM) {
@@ -392,9 +469,61 @@ export default function AdminPerformance({ setCurrentPage }) {
           });
 
     // Always normalize items so company/city are available for all statuses
-    const normalizedItems = filteredItems.map((item) =>
-      normalizeResumeData(item),
-    );
+    const normalizedItems = filteredItems.map((item) => {
+      const normalized = normalizeResumeData(item);
+
+      // Team leader naming differs between API paths (submitted list vs drilldowns).
+      const teamLeaderName =
+        item?.teamLeaderName ||
+        item?.team_leader_name ||
+        normalized?.teamLeaderName;
+
+      // Some payloads may send the resume id as `res_id` / `resumeId`.
+      const resId =
+        item?.resId ??
+        item?.res_id ??
+        item?.resumeId ??
+        item?.resume_id ??
+        normalized?.resId;
+
+      return {
+        ...normalized,
+        teamLeaderName,
+        resId,
+      };
+    });
+
+    if (PERF_DEBUG) {
+      const sample = normalizedItems.slice(0, 8).map((it) => ({
+        resId: it.resId,
+        rawTeamLeader: it.teamLeaderName ?? null,
+        companyName: it.companyName ?? it.company_name ?? null,
+        city: it.city ?? it.job?.city ?? null,
+        jobJid: it.jobJid ?? it.job?.jobJid ?? null,
+      }));
+
+      const counts = {};
+      for (const it of normalizedItems) {
+        const k = it.resId;
+        if (!k) continue;
+        counts[k] = (counts[k] || 0) + 1;
+      }
+      const dupResIds = Object.entries(counts)
+        .filter(([, c]) => c > 1)
+        .slice(0, 12)
+        .map(([k, c]) => ({ resId: k, count: c }));
+
+      console.debug("[AdminPerformance] drilldown sample", {
+        selectedStatusKey,
+        normalizedKey,
+        rawCount: rawItems.length,
+        filteredCount: filteredItems.length,
+        normalizedCount: normalizedItems.length,
+        dupResIds,
+        sample,
+      });
+    }
+
     return dedupeItemsByResId(normalizedItems);
   }, [
     data,
@@ -402,6 +531,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     performanceSubmittedItems,
     selectedStatusKey,
     submittedResumes,
+    PERF_DEBUG,
   ]);
 
   const handleSubmittedCardClick = async () => {
@@ -672,15 +802,8 @@ export default function AdminPerformance({ setCurrentPage }) {
           <div className="perf-summary-grid">
             <button
               type="button"
-              className="perf-stat-card"
+              className={`perf-stat-card perf-stat-card-button perf-stat-card-submitted${selectedStatusKey === "submitted" ? " perf-stat-card-active" : ""}`}
               onClick={handleSubmittedCardClick}
-              style={{
-                textAlign: "left",
-                border:
-                  selectedStatusKey === "submitted"
-                    ? "2px solid #0f766e"
-                    : undefined,
-              }}
             >
               <span className="perf-stat-label">Resumes Submitted</span>
               <span className="perf-stat-value">
@@ -691,21 +814,11 @@ export default function AdminPerformance({ setCurrentPage }) {
               <button
                 key={card.key}
                 type="button"
-                className="perf-stat-card"
+                className={`perf-stat-card perf-stat-card-button perf-stat-card-${card.tone}${selectedStatusKey === card.key ? " perf-stat-card-active" : ""}`}
                 onClick={() => setSelectedStatusKey(card.key)}
-                style={{
-                  textAlign: "left",
-                  border:
-                    selectedStatusKey === card.key
-                      ? "2px solid #0f766e"
-                      : undefined,
-                }}
               >
                 <span className="perf-stat-label">{card.label}</span>
-                <span
-                  className="perf-stat-value"
-                  style={card.color ? { color: card.color } : undefined}
-                >
+                <span className="perf-stat-value">
                   {summary[card.summaryKey] ?? 0}
                 </span>
               </button>
@@ -1563,3 +1676,4 @@ export default function AdminPerformance({ setCurrentPage }) {
     </AdminLayout>
   );
 }
+

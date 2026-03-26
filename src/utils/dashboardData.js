@@ -23,15 +23,28 @@ const pickNested = (source, paths) => {
 
 export const normalizeJobData = (job) => {
   const source = job || {};
-  const jid = pickNested(source, ["jid", "jobJid", "job_id", "jobId", "id"]);
+  const jid = pickNested(source, [
+    "jid",
+    "jobJid",
+    "job_id",
+    "jobId",
+    "id",
+    "jobID",
+  ]);
   const companyName = pickNested(source, [
     "companyName",
     "company_name",
     "company",
+    "companyTitle",
+    "company_title",
     "employerName",
     "employer_name",
     "organizationName",
     "organization_name",
+    "jobCompany",
+    "job_company",
+    "clientName",
+    "client_name",
   ]);
   const roleName = pickNested(source, [
     "roleName",
@@ -39,6 +52,8 @@ export const normalizeJobData = (job) => {
     "title",
     "jobTitle",
     "job_title",
+    "jobRole",
+    "job_role",
     "position",
     "designation",
   ]);
@@ -48,6 +63,11 @@ export const normalizeJobData = (job) => {
     "job_city",
     "location",
     "location_city",
+    "locationCity",
+    "jobLocation",
+    "job_location",
+    "currentCity",
+    "current_city",
   ]);
 
   return {
@@ -65,7 +85,17 @@ export const normalizeJobData = (job) => {
 export const normalizeResumeData = (resume, fallbackJob = null) => {
   const source = resume || {};
   const nestedJob = normalizeJobData(
-    pickFirst(source.job, source.jobDetails, source.job_data, fallbackJob) || {},
+    pickFirst(
+      source.job,
+      source.jobDetails,
+      source.job_details,
+      source.job_data,
+      source.jobData,
+      source.jobInfo,
+      source.job_info,
+      source.selectedJob,
+      fallbackJob,
+    ) || {},
   );
   const nestedCandidate = pickFirst(
     source.candidate,
@@ -155,7 +185,18 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(source.selection || {}, ["status", "selection_status"]),
   );
   const jobJid = pickFirst(
-    pickNested(source, ["jobJid", "job_jid", "jid", "jobId", "job_id"]),
+    pickNested(source, [
+      "jobJid",
+      "job_jid",
+      "jid",
+      "jobId",
+      "job_id",
+      "jobID",
+      "job.jid",
+      "job.jobJid",
+      "job.job_id",
+      "job.jobId",
+    ]),
     nestedJob.jobJid,
     nestedJob.jid,
   );
@@ -164,21 +205,59 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       "companyName",
       "company_name",
       "company",
+      "companyTitle",
+      "company_title",
       "employerName",
       "employer_name",
+      "jobCompany",
+      "job_company",
+      "clientName",
+      "client_name",
     ]),
     nestedJob.companyName,
     nestedJob.company_name,
   );
   const roleName = pickFirst(
-    pickNested(source, ["roleName", "role_name", "jobTitle", "job_title"]),
+    pickNested(source, [
+      "roleName",
+      "role_name",
+      "jobTitle",
+      "job_title",
+      "jobRole",
+      "job_role",
+    ]),
     nestedJob.roleName,
     nestedJob.role_name,
   );
   const city = pickFirst(
-    pickNested(source, ["city", "jobCity", "job_city", "location"]),
+    pickNested(source, [
+      "city",
+      "jobCity",
+      "job_city",
+      "location",
+      "location_city",
+      "locationCity",
+      "jobLocation",
+      "job_location",
+      "currentCity",
+      "current_city",
+      "job.city",
+      "job.jobCity",
+      "job.job_city",
+      "job.location",
+    ]),
     nestedJob.city,
   );
+  const normalizedJob = {
+    ...nestedJob,
+    jid: pickFirst(nestedJob.jid, jobJid),
+    jobJid: pickFirst(nestedJob.jobJid, jobJid),
+    companyName: pickFirst(nestedJob.companyName, companyName),
+    company_name: pickFirst(nestedJob.company_name, companyName),
+    roleName: pickFirst(nestedJob.roleName, roleName),
+    role_name: pickFirst(nestedJob.role_name, roleName),
+    city: pickFirst(nestedJob.city, city),
+  };
 
   return {
     ...source,
@@ -203,7 +282,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     roleName: pickFirst(source.roleName, roleName),
     role_name: pickFirst(source.role_name, roleName),
     city: pickFirst(source.city, city),
-    job: nestedJob,
+    job: normalizedJob,
   };
 };
 

@@ -254,11 +254,16 @@
 }
 
 .metric-card {
-  border: 1px solid #eee8e8;
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 12px;
   background: #fff;
-  border-left-width: 4px;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
 .metric-card-button {
@@ -274,7 +279,8 @@
 }
 
 .metric-card-button:hover {
-  background: #fcf9f9;
+  filter: brightness(1.06);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
 }
 
 .metric-card-button:active {
@@ -282,45 +288,47 @@
 }
 
 .metric-card.blue {
-  border-left-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
 .metric-card.green {
-  border-left-color: #4caf50;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 
 .metric-card.red {
-  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .metric-card.purple {
-  border-left-color: #9c27b0;
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
 }
 
 .metric-card.gold {
-  border-left-color: #ffc107;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
 }
 
 .metric-card.pink {
-  border-left-color: #ec4899;
+  background: linear-gradient(135deg, #ec4899, #db2777);
 }
 
 .metric-card.teal {
-  border-left-color: #14b8a6;
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
 }
 
 .metric-card.orange {
-  border-left-color: #f97316;
+  background: linear-gradient(135deg, #f97316, #ea580c);
 }
 
 .metric-card h4 {
   margin: 0;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .metric-card .metric-value {
   margin: 8px 0 0;
   font-weight: 700;
   font-size: 1.15rem;
+  color: #fff;
 }
 
 .dashboard-info-grid {

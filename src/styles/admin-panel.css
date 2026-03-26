@@ -732,7 +732,83 @@
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.perf-stat-card-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.perf-stat-card-button:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+}
+
+.perf-stat-card-button:active {
+  transform: translateY(1px);
+}
+
+.perf-stat-card-button:focus-visible {
+  outline: 2px solid #1f2937;
+  outline-offset: 2px;
+}
+
+.perf-stat-card-active {
+  border: 2px solid #111827;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+}
+
+.perf-stat-card-submitted {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+}
+
+.perf-stat-card-blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+}
+
+.perf-stat-card-green {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+
+.perf-stat-card-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.perf-stat-card-purple {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  color: #fff;
+}
+
+.perf-stat-card-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+
+.perf-stat-card-pink {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: #fff;
+}
+
+.perf-stat-card-teal {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+  color: #fff;
+}
+
+.perf-stat-card-orange {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #fff;
 }
 
 .perf-stat-label {
@@ -740,13 +816,13 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .perf-stat-value {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #fff;
 }
 
 .perf-section {
@@ -815,3 +891,4 @@
     font-size: 0.85rem;
   }
 }
+
