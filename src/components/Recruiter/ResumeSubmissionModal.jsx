@@ -219,6 +219,33 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       payload.append("jid", jid);
       payload.append("resumeBase64", resumeBase64);
       payload.append("resumeFilename", resumeFilename);
+      const candidateName = String(formData.candidate_name || "").trim();
+      const candidateEmail = String(formData.email || "").trim();
+      const candidatePhone = String(formData.phone || "").trim();
+      if (candidateName) {
+        payload.append("candidate_name", candidateName);
+        payload.append("candidateName", candidateName);
+        payload.append("applicant_name", candidateName);
+        payload.append("applicantName", candidateName);
+        payload.append("name", candidateName);
+      }
+      if (candidateEmail) {
+        payload.append("candidate_email", candidateEmail);
+        payload.append("candidateEmail", candidateEmail);
+        payload.append("applicant_email", candidateEmail);
+        payload.append("applicantEmail", candidateEmail);
+        payload.append("email", candidateEmail);
+      }
+      if (candidatePhone) {
+        payload.append("candidate_phone", candidatePhone);
+        payload.append("candidatePhone", candidatePhone);
+        payload.append("phone", candidatePhone);
+        payload.append("phone_number", candidatePhone);
+        payload.append("phoneNumber", candidatePhone);
+        payload.append("mobile", candidatePhone);
+        payload.append("mobile_number", candidatePhone);
+        payload.append("mobileNumber", candidatePhone);
+      }
       if (parsedPayload) {
         if (parsedPayload.parsedData) {
           payload.append("parsedData", JSON.stringify(parsedPayload.parsedData));

@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { getAuthToken } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
 import { useNotification } from "../../context/NotificationContext";
+import {
+  buildCandidatePayloadAliases,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 
 export default function ResumeStatusActionModal({
   isOpen,
@@ -33,6 +37,7 @@ export default function ResumeStatusActionModal({
   }, [isOpen]);
 
   if (!isOpen || !resume) return null;
+  const normalizedResume = normalizeResumeData(resume);
 
   const getAvailableActions = () => {
     const normalized = String(currentStatus || "")
@@ -80,7 +85,7 @@ export default function ResumeStatusActionModal({
 
       const response = await fetch(
         `${API_BASE_URL}/api/recruiters/${encodeURIComponent(
-          resume.recruiterRid || "",
+          normalizedResume.recruiterRid || "",
         )}/resumes/${encodeURIComponent(resume.resId)}/advance-status`,
         {
           method: "POST",
@@ -90,6 +95,7 @@ export default function ResumeStatusActionModal({
           },
           body: JSON.stringify({
             status: selectedAction,
+            ...buildCandidatePayloadAliases(normalizedResume),
             ...(additionalInfo.trim()
               ? { reason: additionalInfo.trim() }
               : {}),
@@ -117,8 +123,8 @@ export default function ResumeStatusActionModal({
       }
 
       const statusLabel = selectedAction.replace(/_/g, " ");
-      const candidateName = resume.candidateName || "Unknown";
-      const jobId = resume.jobJid || "N/A";
+      const candidateName = normalizedResume.candidateName || "Unknown";
+      const jobId = normalizedResume.jobJid || "N/A";
       const notificationMessage = `Status updated to ${statusLabel} for ${candidateName} (Job ID: ${jobId})`;
 
       addNotification(notificationMessage, "success", 5000);
@@ -160,13 +166,13 @@ export default function ResumeStatusActionModal({
         <div className="modal-body">
           <div className="resume-info-preview">
             <p>
-              <strong>Candidate:</strong> {resume.candidateName || "N/A"}
+              <strong>Candidate:</strong> {normalizedResume.candidateName || "N/A"}
             </p>
             <p>
               <strong>Phone:</strong>{" "}
-              {resume.candidatePhone ? (
-                <a href={`tel:${resume.candidatePhone}`}>
-                  {resume.candidatePhone}
+              {normalizedResume.candidatePhone ? (
+                <a href={`tel:${normalizedResume.candidatePhone}`}>
+                  {normalizedResume.candidatePhone}
                 </a>
               ) : (
                 "N/A"
@@ -177,7 +183,7 @@ export default function ResumeStatusActionModal({
               {String(currentStatus || "").replace(/_/g, " ")}
             </p>
             <p>
-              <strong>Job ID:</strong> {resume.jobJid || "N/A"}
+              <strong>Job ID:</strong> {normalizedResume.jobJid || "N/A"}
             </p>
           </div>
 

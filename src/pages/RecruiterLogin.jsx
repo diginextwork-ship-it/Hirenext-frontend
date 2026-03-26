@@ -15,6 +15,7 @@ import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
+import { normalizeJobData, normalizeResumeData } from "../utils/dashboardData";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
 import "../styles/reimbursement.css";
@@ -40,30 +41,39 @@ const readJsonResponse = async (response, fallbackMessage) => {
 };
 
 const toUiJob = (job) => ({
-  id: job.jid,
-  recruiterRid: job.recruiter_rid || null,
-  company: job.company_name || "Unknown company",
-  title: job.role_name || "Untitled role",
-  positionsOpen: Number(job.positions_open) || 1,
-  pointsPerJoining: Number(job.points_per_joining) || 0,
-  createdAt: job.created_at || null,
-  city: job.city || "",
+  ...normalizeJobData(job),
+  id: normalizeJobData(job).jid,
+  recruiterRid: job.recruiter_rid || job.recruiterRid || null,
+  company: normalizeJobData(job).companyName || "Unknown company",
+  title: normalizeJobData(job).roleName || "Untitled role",
+  positionsOpen: Number(job.positions_open || job.positionsOpen) || 1,
+  pointsPerJoining: Number(job.points_per_joining || job.pointsPerJoining) || 0,
+  createdAt: job.created_at || job.createdAt || null,
+  city: normalizeJobData(job).city || "",
   state: job.state || "",
   pincode: job.pincode || "",
   skills: job.skills || "",
-  description: job.job_description || "",
+  description: job.job_description || job.jobDescription || "",
   experience: job.experience || "",
   salary: job.salary || "",
   qualification: job.qualification || "",
   benefits: job.benefits || "",
   accessMode:
-    String(job.access_mode || "open")
+    String(job.access_mode || job.accessMode || "open")
       .trim()
       .toLowerCase() === "restricted"
       ? "restricted"
       : "open",
   recruiterCount: Number(job.recruiterCount) || 0,
 });
+const getResumeCompanyName = (item) =>
+  item?.companyName ||
+  item?.company_name ||
+  item?.job?.companyName ||
+  item?.job?.company_name ||
+  "N/A";
+const getResumeCityName = (item) =>
+  item?.city || item?.job?.city || item?.jobCity || "N/A";
 
 const isTeamLeaderRole = (role) => {
   const normalized = String(role || "")
@@ -192,8 +202,11 @@ export default function RecruiterLogin() {
         throw new Error(data?.message || "Failed to fetch resumes.");
       }
 
-      setUploadedResumes(Array.isArray(data.resumes) ? data.resumes : []);
-      return Array.isArray(data.resumes) ? data.resumes : [];
+      const resumes = Array.isArray(data.resumes)
+        ? data.resumes.map((item) => normalizeResumeData(item))
+        : [];
+      setUploadedResumes(resumes);
+      return resumes;
     } catch (error) {
       setJobMessageType("error");
       setJobMessage(error.message || "Failed to fetch resumes.");
@@ -573,7 +586,13 @@ export default function RecruiterLogin() {
                           <td>{item.email}</td>
                           <td>{item.jobJid ?? "N/A"}</td>
                           <td>
-                            {item.job?.roleName} ({item.job?.companyName})
+                            <div>{item.job?.roleName || "N/A"}</div>
+                            <div className="admin-muted">
+                              {getResumeCompanyName(item)}
+                            </div>
+                            <div className="admin-muted">
+                              {getResumeCityName(item)}
+                            </div>
                           </td>
                           <td>
                             {item.atsScore === null
@@ -619,7 +638,7 @@ export default function RecruiterLogin() {
                       <thead>
                         <tr>
                           <th>Resume ID</th>
-                          <th>Job ID</th>
+                          <th>Job</th>
                           <th>Filename</th>
                           <th>Type</th>
                           <th>ATS Score</th>
@@ -634,7 +653,15 @@ export default function RecruiterLogin() {
                         {uploadedResumes.map((item) => (
                           <tr key={item.resId}>
                             <td>{item.resId}</td>
-                            <td>{item.jobJid ?? "N/A"}</td>
+                            <td>
+                              <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
+                              <div className="admin-muted">
+                                {getResumeCompanyName(item)}
+                              </div>
+                              <div className="admin-muted">
+                                {getResumeCityName(item)}
+                              </div>
+                            </td>
                             <td>{item.resumeFilename}</td>
                             <td>
                               {String(item.resumeType || "").toUpperCase()}

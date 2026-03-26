@@ -6,6 +6,11 @@ import {
   markResumeLeft,
 } from "../../services/performanceService";
 import { useNotification } from "../../context/NotificationContext";
+import {
+  buildCandidatePayloadAliases,
+  normalizeJobData,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 
 const formatLabel = (value) =>
   String(value || "")
@@ -25,6 +30,13 @@ const formatDate = (value) => {
   if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleDateString();
 };
+const getResumeCompanyName = (resume, selectedJob) =>
+  normalizeResumeData(resume, selectedJob).companyName ||
+  selectedJob?.companyName ||
+  selectedJob?.company_name ||
+  "N/A";
+const getResumeCityName = (resume, selectedJob) =>
+  normalizeResumeData(resume, selectedJob).city || selectedJob?.city || "N/A";
 
 const isPostWalkInStatus = (status) =>
   ["walk_in", "pending_joining", "joined", "billed", "left"].includes(
@@ -59,7 +71,11 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
     setError("");
     try {
       const data = await fetchJobResumeStatuses(jobId);
-      setResumes(Array.isArray(data.resumes) ? data.resumes : []);
+      setResumes(
+        Array.isArray(data.resumes)
+          ? data.resumes.map((item) => normalizeResumeData(item, selectedJob))
+          : [],
+      );
     } catch (loadError) {
       setError(loadError.message || "Failed to fetch resumes.");
       setResumes([]);
@@ -76,7 +92,9 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
       try {
         const data = await fetchMyJobs();
         if (!active) return;
-        const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
+        const nextJobs = Array.isArray(data.jobs)
+          ? data.jobs.map((item) => normalizeJobData(item))
+          : [];
         setJobs(nextJobs);
         setSelectedJobId(nextJobs[0]?.jid ? String(nextJobs[0].jid) : "");
       } catch (loadError) {
@@ -109,6 +127,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
       await updateJobResumeStatus(selectedJobId, {
         resId: resume.resId,
         status,
+        ...buildCandidatePayloadAliases(resume, selectedJob),
       });
       setResumes((prev) =>
         prev.map((item) =>
@@ -164,6 +183,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
         resId: resume.resId,
         status: "left",
         note: trimmedNote,
+        ...buildCandidatePayloadAliases(resume, selectedJob),
       });
       setResumes((prev) =>
         prev.map((item) =>
@@ -202,6 +222,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
         resId: resume.resId,
         status: "verified",
         note: normalizedNote,
+        ...buildCandidatePayloadAliases(resume, selectedJob),
       });
       setResumes((prev) =>
         prev.map((item) =>
@@ -277,6 +298,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                 <th>RID</th>
                 <th>Recruiter</th>
                 <th>Candidate Phone</th>
+                <th>Job</th>
                 <th>File</th>
                 <th>ATS Match</th>
                 <th>Recruiter Note</th>
@@ -301,6 +323,15 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                     ) : (
                       "N/A"
                     )}
+                  </td>
+                  <td>
+                    <div>{selectedJobId ? `#${selectedJobId}` : "N/A"}</div>
+                    <div className="admin-muted">
+                      {getResumeCompanyName(resume, selectedJob)}
+                    </div>
+                    <div className="admin-muted">
+                      {getResumeCityName(resume, selectedJob)}
+                    </div>
                   </td>
                   <td>{resume.resumeFilename || "N/A"}</td>
                   <td>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import { normalizeResumeData } from "../../utils/dashboardData";
 
 export default function useAdminDashboard() {
   const [dashboard, setDashboard] = useState({
@@ -29,7 +30,7 @@ export default function useAdminDashboard() {
         totalResumeCount: Number(data.totalResumeCount) || 0,
         candidateResumeCount: Number(data.candidateResumeCount) || 0,
         recruiterResumeUploads: Array.isArray(data.recruiterResumeUploads)
-          ? data.recruiterResumeUploads
+          ? data.recruiterResumeUploads.map((item) => normalizeResumeData(item))
           : [],
       });
     } catch (error) {

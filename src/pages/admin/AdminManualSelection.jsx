@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import {
+  buildCandidatePayloadAliases,
+  normalizeJobData,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
 
 const formatDateTime = (value) => {
@@ -16,6 +21,13 @@ const formatDate = (value) => {
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString();
 };
+const getResumeCompanyName = (resume, selectedJob) =>
+  normalizeResumeData(resume, selectedJob).companyName ||
+  selectedJob?.companyName ||
+  selectedJob?.company_name ||
+  "N/A";
+const getResumeCityName = (resume, selectedJob) =>
+  normalizeResumeData(resume, selectedJob).city || selectedJob?.city || "N/A";
 
 export default function AdminManualSelection({ setCurrentPage }) {
   const [jobs, setJobs] = useState([]);
@@ -49,7 +61,9 @@ export default function AdminManualSelection({ setCurrentPage }) {
       if (!response.ok) {
         throw new Error(data?.message || "Failed to load job alerts.");
       }
-      const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
+      const nextJobs = Array.isArray(data.jobs)
+        ? data.jobs.map((item) => normalizeJobData(item))
+        : [];
       setJobs(nextJobs);
       if (
         !nextJobs.some((item) => Number(item.jobJid) === Number(selectedJobId))
@@ -95,7 +109,11 @@ export default function AdminManualSelection({ setCurrentPage }) {
       }
 
       setJobResumes(
-        Array.isArray(resumesData.resumes) ? resumesData.resumes : [],
+        Array.isArray(resumesData.resumes)
+          ? resumesData.resumes.map((item) =>
+              normalizeResumeData(item, selectedJob),
+            )
+          : [],
       );
       setSummary(summaryData.summary || null);
     } catch (error) {
@@ -126,6 +144,8 @@ export default function AdminManualSelection({ setCurrentPage }) {
 
     const selectionNote =
       window.prompt(`Optional note for ${resId}:`, "") || "";
+    const selectedResume =
+      jobResumes.find((item) => String(item.resId) === String(resId)) || null;
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/admin/jobs/${selectedJobId}/resume-selections`,
@@ -137,6 +157,7 @@ export default function AdminManualSelection({ setCurrentPage }) {
             selection_status: nextStatus,
             selection_note: selectionNote,
             selected_by_admin: "admin-panel",
+            ...buildCandidatePayloadAliases(selectedResume),
           }),
         },
       );
@@ -264,6 +285,7 @@ export default function AdminManualSelection({ setCurrentPage }) {
                     <th>Resume ID</th>
                     <th>RID</th>
                     <th>Recruiter</th>
+                    <th>Job</th>
                     <th>Filename</th>
                     <th>ATS Match</th>
                     <th>Status</th>
@@ -281,6 +303,15 @@ export default function AdminManualSelection({ setCurrentPage }) {
                         <div>{resume.recruiterName || "N/A"}</div>
                         <div className="admin-muted">
                           {resume.recruiterEmail || "N/A"}
+                        </div>
+                      </td>
+                      <td>
+                        <div>{selectedJobId ? `#${selectedJobId}` : "N/A"}</div>
+                        <div className="admin-muted">
+                          {getResumeCompanyName(resume, selectedJob)}
+                        </div>
+                        <div className="admin-muted">
+                          {getResumeCityName(resume, selectedJob)}
                         </div>
                       </td>
                       <td>{resume.resumeFilename || "N/A"}</td>

@@ -7,6 +7,7 @@ import {
 } from "../../services/performanceService";
 import { getAuthToken } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
+import { normalizeResumeData } from "../../utils/dashboardData";
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
@@ -16,6 +17,14 @@ const formatDate = (value) => {
   if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleDateString();
 };
+const getResumeCompanyName = (resume) =>
+  normalizeResumeData(resume).companyName || "N/A";
+const getResumeCityName = (resume) =>
+  normalizeResumeData(resume).city || "N/A";
+const getResumeCandidateName = (resume) =>
+  normalizeResumeData(resume).candidateName || "N/A";
+const getResumeCandidatePhone = (resume) =>
+  normalizeResumeData(resume).candidatePhone || null;
 const getPointsProgressColor = (points) => {
   if (points <= 25) return "danger";
   if (points <= 75) return "warning";
@@ -102,7 +111,9 @@ export default function RecruiterDashboard({ recruiterId }) {
           "Failed to fetch recruiter resumes.",
       );
     }
-    return Array.isArray(payload.resumes) ? payload.resumes : [];
+    return Array.isArray(payload.resumes)
+      ? payload.resumes.map((item) => normalizeResumeData(item))
+      : [];
   }, [recruiterId]);
 
   useEffect(() => {
@@ -466,7 +477,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                   <tr>
                     <th>Candidate</th>
                     <th>Phone</th>
-                    <th>Job ID</th>
+                    <th>Job</th>
                     <th>Submitted Reason</th>
                     <th>Verified Reason</th>
                     <th>
@@ -520,17 +531,25 @@ export default function RecruiterDashboard({ recruiterId }) {
 
                     return (
                       <tr key={resume.resId}>
-                        <td>{resume.candidateName || "N/A"}</td>
+                        <td>{getResumeCandidateName(resume)}</td>
                         <td>
-                          {resume.candidatePhone ? (
-                            <a href={`tel:${resume.candidatePhone}`}>
-                              {resume.candidatePhone}
+                          {getResumeCandidatePhone(resume) ? (
+                            <a href={`tel:${getResumeCandidatePhone(resume)}`}>
+                              {getResumeCandidatePhone(resume)}
                             </a>
                           ) : (
                             "N/A"
                           )}
                         </td>
-                        <td>{resume.jobJid ?? "N/A"}</td>
+                        <td>
+                          <div>{resume.jobJid ? `#${resume.jobJid}` : "N/A"}</div>
+                          <div className="admin-muted">
+                            {getResumeCompanyName(resume)}
+                          </div>
+                          <div className="admin-muted">
+                            {getResumeCityName(resume)}
+                          </div>
+                        </td>
                         <td className="table-cell-wrap">
                           {resume.submittedReason || "-"}
                         </td>
@@ -703,7 +722,7 @@ export default function RecruiterDashboard({ recruiterId }) {
               <div className="resume-info-preview">
                 <p>
                   <strong>Candidate:</strong>{" "}
-                  {leftModalResume.candidateName || "N/A"}
+                  {getResumeCandidateName(leftModalResume)}
                 </p>
                 <p>
                   <strong>Job ID:</strong> {leftModalResume.jobJid || "N/A"}

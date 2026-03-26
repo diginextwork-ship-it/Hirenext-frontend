@@ -8,6 +8,10 @@ import {
   adminDeleteRecruiter,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
+import {
+  buildCandidatePayloadAliases,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
 
 const TABS = {
@@ -268,23 +272,23 @@ export default function AdminPerformance({ setCurrentPage }) {
       });
 
       setSubmittedResumes(
-        filteredUploads.map((item) => ({
-          resId: item.resId,
-          recruiterName: item.recruiterName || "N/A",
-          recruiterRid: item.rid || "N/A",
-          teamLeaderName: item.teamLeaderName || "N/A",
-          candidatePhone: item.candidatePhone || item.phone || null,
-          jobJid: item.jobJid ?? "N/A",
-          companyName:
-            item.companyName ||
-            item.company_name ||
-            item.job?.companyName ||
-            null,
-          city: item.city || item.job?.city || null,
-          resumeFilename: item.resumeFilename || item.resId || "View resume",
-          status: "submitted",
-          uploadedAt: item.uploadedAt || null,
-        })),
+        filteredUploads.map((item) => {
+          const normalized = normalizeResumeData(item);
+          return {
+            ...normalized,
+            recruiterName: normalized.recruiterName || "N/A",
+            recruiterRid: normalized.rid || "N/A",
+            teamLeaderName: item.teamLeaderName || item.team_leader_name || "N/A",
+            candidatePhone: normalized.candidatePhone || null,
+            jobJid: normalized.jobJid ?? "N/A",
+            companyName: normalized.companyName || null,
+            city: normalized.city || null,
+            resumeFilename:
+              normalized.resumeFilename || normalized.resId || "View resume",
+            status: "submitted",
+            uploadedAt: normalized.uploadedAt || null,
+          };
+        }),
       );
     } catch (err) {
       setSubmittedResumes([]);
@@ -427,6 +431,7 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
+    const normalizedReason = actionReason.trim();
     if (
       actionTarget === "pending_joining" &&
       !String(actionJoiningDate || "").trim()
@@ -473,13 +478,21 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionSubmitting(true);
     setActionError("");
     try {
-      const shouldSendReason = ![
-        "pending_joining",
-        "selected",
-      ].includes(actionTarget);
       await adminAdvanceStatus(actionModalItem.resId, {
         status: actionTarget,
-        reason: shouldSendReason ? actionReason.trim() || undefined : undefined,
+        ...buildCandidatePayloadAliases(actionModalItem),
+        ...(!["pending_joining"].includes(actionTarget)
+          ? {
+              reason: normalizedReason || null,
+            }
+          : {}),
+        ...(actionTarget === "selected"
+          ? {
+              selection_reason: normalizedReason || null,
+              select_reason: normalizedReason || null,
+              selectReason: normalizedReason || null,
+            }
+          : {}),
         ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
         actionJoiningDate
           ? { joining_date: actionJoiningDate }
@@ -1440,7 +1453,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   />
                 </div>
               </>
-            ) : actionTarget === "selected" ? null : (
+            ) : (
               <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{
@@ -1453,6 +1466,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                     ? "Rejection Reason (optional)"
                     : actionTarget === "verified"
                       ? "Verification Note (optional)"
+                      : actionTarget === "selected"
+                        ? "Selection Reason (optional)"
                       : actionTarget === "walk_in"
                         ? "Walk-in Reason (optional)"
                         : actionTarget === "dropout"

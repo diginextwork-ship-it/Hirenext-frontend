@@ -8,6 +8,10 @@ import {
   updateTeamLeaderNote,
   adminDeleteCandidate,
 } from "./adminApi";
+import {
+  buildCandidatePayloadAliases,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
 
 const shortlistEmailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -79,7 +83,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
       setResumes(
         (Array.isArray(data?.resumes) ? data.resumes : []).map((r) => ({
-          ...r,
+          ...normalizeResumeData(r),
           _source: "candidate",
         })),
       );
@@ -109,42 +113,42 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         ? data.recruiterResumeUploads
         : [];
       setRecruiterResumes(
-        uploads.map((item) => ({
-          resId: item.resId,
-          applicantName: item.recruiterName || "N/A",
-          applicantEmail: item.recruiterEmail || "N/A",
-          jobJid: item.jobJid ?? null,
-          job: {
-            roleName:
-              item.roleName || item.role_name || item.job?.roleName || "",
-            companyName:
-              item.companyName ||
-              item.company_name ||
-              item.job?.companyName ||
-              "",
-            city: item.city || item.job?.city || "",
-            jobDescription:
-              item.jobDescription ||
-              item.job_description ||
-              item.job?.jobDescription ||
-              "",
-            skills: item.skills || item.job?.skills || "",
-          },
-          atsScore: null,
-          atsMatchPercentage: null,
-          submittedReason: null,
-          verifiedReason: null,
-          hasPriorExperience: null,
-          experience: null,
-          resumeFilename: item.resumeFilename,
-          resumeType: item.resumeType,
-          uploadedAt: item.uploadedAt,
-          selection: { status: item.isAccepted ? "accepted" : "pending" },
-          _source: "recruiter",
-          _recruiterName: item.recruiterName,
-          _recruiterRid: item.rid,
-          _recruiterEmail: item.recruiterEmail,
-        })),
+        uploads.map((item) => {
+          const normalized = normalizeResumeData(item);
+          return {
+            ...normalized,
+            applicantName: normalized.recruiterName || "N/A",
+            applicantEmail: normalized.recruiterEmail || "N/A",
+            job: {
+              ...normalized.job,
+              roleName:
+                normalized.roleName ||
+                normalized.job?.roleName ||
+                normalized.job?.role_name ||
+                "",
+              companyName: normalized.companyName || normalized.job?.companyName || "",
+              city: normalized.city || normalized.job?.city || "",
+              jobDescription:
+                item.jobDescription ||
+                item.job_description ||
+                normalized.job?.jobDescription ||
+                normalized.job?.job_description ||
+                "",
+              skills: item.skills || normalized.job?.skills || "",
+            },
+            atsScore: null,
+            atsMatchPercentage: null,
+            submittedReason: null,
+            verifiedReason: null,
+            hasPriorExperience: null,
+            experience: null,
+            selection: { status: item.isAccepted ? "accepted" : "pending" },
+            _source: "recruiter",
+            _recruiterName: normalized.recruiterName,
+            _recruiterRid: normalized.rid,
+            _recruiterEmail: normalized.recruiterEmail,
+          };
+        }),
       );
     } catch {
       setRecruiterResumes([]);
@@ -307,6 +311,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
             selection_note:
               "Shortlisted from candidate submitted resumes panel.",
             selected_by_admin: "admin-panel",
+            ...buildCandidatePayloadAliases(pendingResume),
           }),
         },
       );

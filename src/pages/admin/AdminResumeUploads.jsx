@@ -2,7 +2,13 @@ import AdminLayout from "./AdminLayout";
 import useAdminDashboard from "./useAdminDashboard";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import { useState } from "react";
+import { normalizeResumeData } from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
+
+const getResumeCompanyName = (item) =>
+  normalizeResumeData(item).companyName || "N/A";
+const getResumeCityName = (item) =>
+  normalizeResumeData(item).city || "N/A";
 
 export default function AdminResumeUploads({ setCurrentPage }) {
   const [statusMessage, setStatusMessage] = useState("");
@@ -74,7 +80,7 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                   <th>Recruiter</th>
                   <th>Email</th>
                   <th>RID</th>
-                  <th>Job ID</th>
+                  <th>Job</th>
                   <th>Filename</th>
                   <th>Type</th>
                   <th>Points / Joining</th>
@@ -84,13 +90,21 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {dashboard.recruiterResumeUploads.map((item) => (
+                {dashboard.recruiterResumeUploads.map((rawItem) => {
+                  const item = normalizeResumeData(rawItem);
+                  return (
                   <tr key={item.resId}>
                     <td>{item.resId}</td>
                     <td>{item.recruiterName}</td>
                     <td>{item.recruiterEmail}</td>
                     <td>{item.rid}</td>
-                    <td>{item.jobJid ?? "N/A"}</td>
+                    <td>
+                      <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
+                      <div className="admin-muted">
+                        {getResumeCompanyName(item)}
+                      </div>
+                      <div className="admin-muted">{getResumeCityName(item)}</div>
+                    </td>
                     <td>{item.resumeFilename}</td>
                     <td>{String(item.resumeType || "").toUpperCase()}</td>
                     <td>{Number(item.pointsPerJoining) || 0}</td>
@@ -113,7 +127,8 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
