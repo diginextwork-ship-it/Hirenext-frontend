@@ -43,6 +43,8 @@ const isPostWalkInStatus = (status) =>
     String(status || "").trim().toLowerCase(),
   );
 
+const VERIFIED_STATUS_FALLBACKS = ["verified", "verfied", "verify"];
+
 export default function ResumeStatusManager({ onStatusUpdated }) {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState("");
@@ -218,12 +220,34 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
     setError("");
     try {
       const normalizedNote = verifyNote.trim();
-      await updateJobResumeStatus(selectedJobId, {
+      const basePayload = {
         resId: resume.resId,
-        status: "verified",
         note: normalizedNote,
         ...buildCandidatePayloadAliases(resume, selectedJob),
-      });
+      };
+      let lastError = null;
+
+      for (const statusValue of VERIFIED_STATUS_FALLBACKS) {
+        try {
+          await updateJobResumeStatus(selectedJobId, {
+            ...basePayload,
+            status: statusValue,
+          });
+          lastError = null;
+          break;
+        } catch (updateError) {
+          lastError = updateError;
+          const errorMessage = String(
+            updateError?.message || "",
+          ).toLowerCase();
+          if (!errorMessage.includes("invalid target status")) {
+            throw updateError;
+          }
+        }
+      }
+
+      if (lastError) throw lastError;
+
       setResumes((prev) =>
         prev.map((item) =>
           item.resId === resume.resId
