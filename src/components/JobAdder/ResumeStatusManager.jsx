@@ -466,14 +466,16 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                             {formatDate(resume.joiningDate)}
                           </div>
                         ) : null}
-                        {resume.joiningNote ? (
+                        {resume.joiningNote || resume.joinedReason ? (
                           <div>
-                            <strong>Note:</strong> {resume.joiningNote}
+                            <strong>Note:</strong>{" "}
+                            {resume.joiningNote || resume.joinedReason}
                           </div>
                         ) : null}
                         {!resume.walkInDate &&
                         !resume.joiningDate &&
-                        !resume.joiningNote
+                        !resume.joiningNote &&
+                        !resume.joinedReason
                           ? "-"
                           : null}
                       </>

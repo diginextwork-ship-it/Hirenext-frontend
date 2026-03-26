@@ -2,10 +2,20 @@ import { useEffect, useState } from "react";
 import { checkRecruiterJobAccess, submitRecruiterResume } from "../../services/jobAccessService";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../../config/api";
 
+const RESUME_SOURCE_OPTIONS = [
+  "Naukri",
+  "Shine",
+  "Reference",
+  "Apna Job",
+  "LinkedIn",
+  "Internal Database",
+];
+
 const initialFormState = {
   candidate_name: "",
   phone: "",
   email: "",
+  source: "",
   latest_education_level: "",
   board_university: "",
   institution_name: "",
@@ -279,6 +289,18 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
               onChange={(event) => setField("email", event.target.value)}
               required
             />
+            <select
+              value={formData.source}
+              onChange={(event) => setField("source", event.target.value)}
+              required
+            >
+              <option value="">Resume Source</option>
+              {RESUME_SOURCE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
             <select
               value={formData.latest_education_level}
               onChange={(event) => setField("latest_education_level", event.target.value)}

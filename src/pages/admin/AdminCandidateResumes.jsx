@@ -598,15 +598,18 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                               {formatDate(resume.selection.joiningDate)}
                             </div>
                           ) : null}
-                          {resume.selection?.joiningNote ? (
+                          {resume.selection?.joiningNote ||
+                          resume.selection?.joinedReason ? (
                             <div>
                               <strong>Note:</strong>{" "}
-                              {resume.selection.joiningNote}
+                              {resume.selection.joiningNote ||
+                                resume.selection.joinedReason}
                             </div>
                           ) : null}
                           {!resume.selection?.walkInDate &&
                           !resume.selection?.joiningDate &&
-                          !resume.selection?.joiningNote
+                          !resume.selection?.joiningNote &&
+                          !resume.selection?.joinedReason
                             ? "-"
                             : null}
                         </>

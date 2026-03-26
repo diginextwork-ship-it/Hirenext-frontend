@@ -578,12 +578,15 @@ export default function RecruiterDashboard({ recruiterId }) {
                                 {formatDate(resume.joiningDate)}
                               </div>
                             ) : null}
-                            {resume.joiningNote ? (
+                            {resume.joiningNote || resume.joinedReason ? (
                               <div>
-                                <strong>Note:</strong> {resume.joiningNote}
+                                <strong>Note:</strong>{" "}
+                                {resume.joiningNote || resume.joinedReason}
                               </div>
                             ) : null}
-                            {!resume.joiningDate && !resume.joiningNote
+                            {!resume.joiningDate &&
+                            !resume.joiningNote &&
+                            !resume.joinedReason
                               ? "Not set"
                               : null}
                           </td>

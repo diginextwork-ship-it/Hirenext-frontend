@@ -177,21 +177,28 @@ export default function RecruiterLogin() {
   };
 
   const fetchRecruiterResumes = async (rid) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/recruiters/${rid}/resumes`,
-      {
-        headers: getAuthHeaders(),
-      },
-    );
-    const data = await readJsonResponse(
-      response,
-      "Check VITE_API_BASE_URL and backend route setup.",
-    );
-    if (!response.ok) {
-      throw new Error(data?.message || "Failed to fetch resumes.");
-    }
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/recruiters/${rid}/resumes`,
+        {
+          headers: getAuthHeaders(),
+        },
+      );
+      const data = await readJsonResponse(
+        response,
+        "Check VITE_API_BASE_URL and backend route setup.",
+      );
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to fetch resumes.");
+      }
 
-    setUploadedResumes(Array.isArray(data.resumes) ? data.resumes : []);
+      setUploadedResumes(Array.isArray(data.resumes) ? data.resumes : []);
+      return Array.isArray(data.resumes) ? data.resumes : [];
+    } catch (error) {
+      setJobMessageType("error");
+      setJobMessage(error.message || "Failed to fetch resumes.");
+      return [];
+    }
   };
 
   const handleLoginSubmit = async (event) => {
@@ -465,6 +472,8 @@ export default function RecruiterLogin() {
 
   const handleResumeSubmitted = async () => {
     if (!recruiter?.rid) return;
+    setJobMessageType("success");
+    setJobMessage("Resume submitted successfully.");
     await fetchRecruiterResumes(recruiter.rid);
   };
 

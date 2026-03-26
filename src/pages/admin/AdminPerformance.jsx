@@ -458,6 +458,18 @@ export default function AdminPerformance({ setCurrentPage }) {
         return;
       }
     }
+    if (actionTarget === "joined") {
+      const revStr = String(actionRevenue || "").trim();
+      if (!revStr) {
+        setActionError("Please provide the revenue amount.");
+        return;
+      }
+      const revNum = Number(revStr);
+      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
+        setActionError("Revenue must be a non-negative integer.");
+        return;
+      }
+    }
     setActionSubmitting(true);
     setActionError("");
     try {
@@ -473,9 +485,15 @@ export default function AdminPerformance({ setCurrentPage }) {
           ? { joining_date: actionJoiningDate }
           : {}),
         ...(actionTarget === "joined" && actionJoiningNote.trim()
-          ? { joining_note: actionJoiningNote.trim() }
+          ? {
+              joining_note: actionJoiningNote.trim(),
+              joined_reason: actionJoiningNote.trim(),
+            }
           : {}),
         ...(actionTarget === "pending_joining" && actionRevenue.trim()
+          ? { revenue: Number(String(actionRevenue).trim()) }
+          : {}),
+        ...(actionTarget === "joined" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
         ...(actionTarget === "billed" && String(actionRevenue || "").trim()
@@ -762,7 +780,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               item.dropoutReason || item.reason || "Not set"
                             ) : selectedStatusKey === "pending_joining" ? (
                               formatDate(item.joiningDate)
-                            ) : item.joiningDate || item.joiningNote ? (
+                            ) : item.joiningDate || item.joiningNote || item.joinedReason ? (
                               <>
                                 {item.joiningDate ? (
                                   <div>
@@ -770,9 +788,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                                     {formatDate(item.joiningDate)}
                                   </div>
                                 ) : null}
-                                {item.joiningNote ? (
+                                {item.joiningNote || item.joinedReason ? (
                                   <div>
-                                    <strong>Note:</strong> {item.joiningNote}
+                                    <strong>Note:</strong>{" "}
+                                    {item.joiningNote || item.joinedReason}
                                   </div>
                                 ) : null}
                               </>
@@ -1323,6 +1342,32 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
+                    Revenue Amount (integer)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={actionRevenue}
+                    onChange={(e) => setActionRevenue(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter revenue amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
                     Joining Note (optional)
                   </label>
                   <textarea
@@ -1459,6 +1504,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
                     (!actionJoiningDate.trim() || !actionRevenue.trim())) ||
+                  (actionTarget === "joined" &&
+                    !String(actionRevenue || "").trim()) ||
                   (actionTarget === "billed" &&
                     !String(actionRevenue || "").trim())
                 }

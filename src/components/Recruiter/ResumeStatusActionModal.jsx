@@ -97,7 +97,10 @@ export default function ResumeStatusActionModal({
               ? { joining_date: joiningDate }
               : {}),
             ...(selectedAction === "joined" && joiningNote.trim()
-              ? { joining_note: joiningNote.trim() }
+              ? {
+                  joining_note: joiningNote.trim(),
+                  joined_reason: joiningNote.trim(),
+                }
               : {}),
           }),
         },
