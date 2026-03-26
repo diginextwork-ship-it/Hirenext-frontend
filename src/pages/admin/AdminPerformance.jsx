@@ -30,21 +30,41 @@ const PRESETS = {
 
 const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified" },
-  { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn" },
-  { key: "selected", label: "Selected", summaryKey: "totalSelected" },
-  { key: "rejected", label: "Rejected", summaryKey: "totalRejected" },
+  {
+    key: "walk_in",
+    label: "Walk In",
+    summaryKey: "totalWalkIn",
+    color: "#ca8a04",
+  },
+  {
+    key: "selected",
+    label: "Selected",
+    summaryKey: "totalSelected",
+    color: "#16a34a",
+  },
+  {
+    key: "rejected",
+    label: "Rejected",
+    summaryKey: "totalRejected",
+    color: "#dc2626",
+  },
   {
     key: "pending_joining",
     label: "Pending Joining",
     summaryKey: "totalPendingJoining",
     color: "#2563eb",
   },
-  { key: "joined", label: "Joined", summaryKey: "totalJoined" },
+  {
+    key: "joined",
+    label: "Joined",
+    summaryKey: "totalJoined",
+    color: "#16a34a",
+  },
   {
     key: "dropout",
     label: "Dropout",
     summaryKey: "totalDropout",
-    color: "#b45309",
+    color: "#dc2626",
   },
   {
     key: "billed",
@@ -52,7 +72,7 @@ const STATUS_CARDS = [
     summaryKey: "totalBilled",
     color: "#166534",
   },
-  { key: "left", label: "Left", summaryKey: "totalLeft", color: "#9a3412" },
+  { key: "left", label: "Left", summaryKey: "totalLeft", color: "#dc2626" },
 ];
 
 const ADMIN_ACTIONS_BY_STATUS = {
@@ -61,11 +81,11 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   verified: [
-    { value: "walk_in", label: "Walk In", color: "#16a34a" },
+    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   walk_in: [
-    { value: "selected", label: "Selected", color: "#0f766e" },
+    { value: "selected", label: "Selected", color: "#16a34a" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
@@ -74,15 +94,15 @@ const ADMIN_ACTIONS_BY_STATUS = {
       label: "Pending Joining",
       color: "#2563eb",
     },
-    { value: "dropout", label: "Dropout", color: "#b45309" },
+    { value: "dropout", label: "Dropout", color: "#dc2626" },
   ],
   pending_joining: [
     { value: "joined", label: "Joined", color: "#16a34a" },
-    { value: "dropout", label: "Dropout", color: "#b45309" },
+    { value: "dropout", label: "Dropout", color: "#dc2626" },
   ],
   joined: [
-    { value: "billed", label: "Billed", color: "#0f766e" },
-    { value: "left", label: "Left", color: "#9a3412" },
+    { value: "billed", label: "Billed", color: "#16a34a" },
+    { value: "left", label: "Left", color: "#dc2626" },
   ],
 };
 
@@ -278,7 +298,8 @@ export default function AdminPerformance({ setCurrentPage }) {
             ...normalized,
             recruiterName: normalized.recruiterName || "N/A",
             recruiterRid: normalized.rid || "N/A",
-            teamLeaderName: item.teamLeaderName || item.team_leader_name || "N/A",
+            teamLeaderName:
+              item.teamLeaderName || item.team_leader_name || "N/A",
             candidatePhone: normalized.candidatePhone || null,
             jobJid: normalized.jobJid ?? "N/A",
             companyName: normalized.companyName || null,
@@ -370,7 +391,11 @@ export default function AdminPerformance({ setCurrentPage }) {
             return !itemStatus || itemStatus === normalizedKey;
           });
 
-    return dedupeItemsByResId(filteredItems);
+    // Always normalize items so company/city are available for all statuses
+    const normalizedItems = filteredItems.map((item) =>
+      normalizeResumeData(item),
+    );
+    return dedupeItemsByResId(normalizedItems);
   }, [
     data,
     drilldownKey,
@@ -793,7 +818,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                               item.dropoutReason || item.reason || "Not set"
                             ) : selectedStatusKey === "pending_joining" ? (
                               formatDate(item.joiningDate)
-                            ) : item.joiningDate || item.joiningNote || item.joinedReason ? (
+                            ) : item.joiningDate ||
+                              item.joiningNote ||
+                              item.joinedReason ? (
                               <>
                                 {item.joiningDate ? (
                                   <div>
@@ -1468,13 +1495,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                       ? "Verification Note (optional)"
                       : actionTarget === "selected"
                         ? "Selection Reason (optional)"
-                      : actionTarget === "walk_in"
-                        ? "Walk-in Reason (optional)"
-                        : actionTarget === "dropout"
-                          ? "Dropout Reason (optional)"
-                          : actionTarget === "left"
-                            ? "Reason for Leaving (optional)"
-                            : "Reason (optional)"}
+                        : actionTarget === "walk_in"
+                          ? "Walk-in Reason (optional)"
+                          : actionTarget === "dropout"
+                            ? "Dropout Reason (optional)"
+                            : actionTarget === "left"
+                              ? "Reason for Leaving (optional)"
+                              : "Reason (optional)"}
                 </label>
                 <textarea
                   rows={4}
