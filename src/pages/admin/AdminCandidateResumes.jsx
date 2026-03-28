@@ -38,6 +38,42 @@ const formatMoney = (value) => {
   return Number(value).toLocaleString("en-IN");
 };
 
+const pickFirstValue = (...values) =>
+  values.find((value) => value !== null && value !== undefined && value !== "");
+
+const formatPercent = (value) => {
+  const resolved = pickFirstValue(value);
+  if (resolved === undefined) return "N/A";
+  return `${resolved}%`;
+};
+
+const getRecruiterNote = (resume) =>
+  pickFirstValue(
+    resume.submittedReason,
+    resume.submitted_reason,
+    resume.recruiterNote,
+    resume.recruiter_note,
+    resume.note,
+  ) || "-";
+
+const getTeamLeaderNote = (resume) =>
+  pickFirstValue(
+    resume.verifiedReason,
+    resume.verified_reason,
+    resume.teamLeaderNote,
+    resume.team_leader_note,
+  ) || "-";
+
+const getJobDescription = (resume) =>
+  pickFirstValue(
+    resume.job?.jobDescription,
+    resume.job?.job_description,
+    resume.jobDescription,
+    resume.job_description,
+    resume.job?.skills,
+    resume.skills,
+  ) || "N/A";
+
 const SOURCE_FILTERS = {
   ALL: "all",
   CANDIDATE: "candidate",
@@ -117,8 +153,16 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           const normalized = normalizeResumeData(item);
           return {
             ...normalized,
-            applicantName: normalized.recruiterName || "N/A",
-            applicantEmail: normalized.recruiterEmail || "N/A",
+            applicantName:
+              normalized.applicantName ||
+              normalized.candidateName ||
+              normalized.name ||
+              "N/A",
+            applicantEmail:
+              normalized.applicantEmail ||
+              normalized.candidateEmail ||
+              normalized.email ||
+              "N/A",
             job: {
               ...normalized.job,
               roleName:
@@ -136,10 +180,20 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 "",
               skills: item.skills || normalized.job?.skills || "",
             },
-            atsScore: null,
-            atsMatchPercentage: null,
-            submittedReason: null,
-            verifiedReason: null,
+            atsScore: pickFirstValue(
+              normalized.atsScore,
+              item.atsScore,
+              item.ats_score,
+            ),
+            atsMatchPercentage: pickFirstValue(
+              normalized.atsMatchPercentage,
+              item.atsMatchPercentage,
+              item.ats_match_percentage,
+              item.atsMatch,
+              item.ats_match,
+            ),
+            submittedReason: getRecruiterNote({ ...item, ...normalized }),
+            verifiedReason: getTeamLeaderNote({ ...item, ...normalized }),
             hasPriorExperience: null,
             experience: null,
             selection: { status: item.isAccepted ? "accepted" : "pending" },
@@ -441,21 +495,11 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     <td>{resume.resId || "N/A"}</td>
                     <td>
                       <span
-                        style={{
-                          display: "inline-block",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          backgroundColor:
-                            resume._source === "recruiter"
-                              ? "#dbeafe"
-                              : "#dcfce7",
-                          color:
-                            resume._source === "recruiter"
-                              ? "#1e40af"
-                              : "#166534",
-                        }}
+                        className={`admin-source-badge ${
+                          resume._source === "recruiter"
+                            ? "is-recruiter"
+                            : "is-candidate"
+                        }`}
                       >
                         {resume._source === "recruiter"
                           ? "Recruiter"
@@ -464,86 +508,79 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     </td>
                     <td>
                       {resume._source === "recruiter" ? (
-                        <>
+                        <div className="admin-cell-stack">
                           <div>{resume._recruiterName || "N/A"}</div>
                           <div className="admin-muted">
-                            {resume._recruiterRid || ""}
+                            {resume._recruiterRid || "No recruiter ID"}
                             {resume._recruiterEmail
                               ? ` · ${resume._recruiterEmail}`
                               : ""}
                           </div>
-                        </>
+                        </div>
                       ) : (
-                        resume.applicantName || "Name not found"
+                        <div className="admin-cell-stack">
+                          <div>
+                            {resume.applicantName ||
+                              resume.candidateName ||
+                              "Name not found"}
+                          </div>
+                          <div className="admin-muted">
+                            {resume.candidatePhone ||
+                              resume.phone ||
+                              resume.mobile ||
+                              "Phone not available"}
+                          </div>
+                        </div>
                       )}
                     </td>
                     <td className="admin-job-cell">
-                      <strong>
-                        {resume.jobJid ? `#${resume.jobJid}` : "No job"}
-                      </strong>
-                      <div>{resume.job?.roleName || "N/A"}</div>
-                      <div className="admin-muted">
-                        {resume.job?.companyName || "N/A"}
-                      </div>
-                      <div className="admin-muted">
-                        {resume.job?.city || "N/A"}
+                      <div className="admin-cell-stack">
+                        <strong>
+                          {resume.jobJid ? `#${resume.jobJid}` : "No job"}
+                        </strong>
+                        <div>{resume.job?.roleName || "N/A"}</div>
+                        <div className="admin-muted">
+                          {resume.job?.companyName || "N/A"}
+                        </div>
+                        <div className="admin-muted">
+                          {resume.job?.city || "N/A"}
+                        </div>
                       </div>
                     </td>
-                    <td
-                      style={{
-                        maxWidth: "200px",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {resume.job?.jobDescription ||
-                        resume.job?.skills ||
-                        "N/A"}
+                    <td className="admin-jd-cell">
+                      {getJobDescription(resume)}
                     </td>
                     <td>
-                      {resume.atsScore === null ? "N/A" : `${resume.atsScore}%`}
+                      <span className="admin-stat-pill">
+                        {formatPercent(resume.atsScore)}
+                      </span>
                     </td>
                     <td>
-                      {resume.atsMatchPercentage === null
-                        ? "N/A"
-                        : `${resume.atsMatchPercentage}%`}
+                      <span className="admin-stat-pill admin-stat-pill-soft">
+                        {formatPercent(resume.atsMatchPercentage)}
+                      </span>
                     </td>
-                    <td
-                      className="table-cell-wrap"
-                      style={{ maxWidth: "160px", wordBreak: "break-word" }}
-                    >
-                      {resume.submittedReason || "-"}
+                    <td className="table-cell-wrap admin-note-cell">
+                      {getRecruiterNote(resume)}
                     </td>
-                    <td
-                      className="table-cell-wrap"
-                      style={{ maxWidth: "160px", wordBreak: "break-word" }}
-                    >
-                      {resume.verifiedReason || "-"}
+                    <td className="table-cell-wrap admin-note-cell">
+                      <div className="admin-note-cell-content">
+                        {getTeamLeaderNote(resume)}
+                      </div>
                       <button
                         type="button"
-                        className="admin-refresh-btn"
+                        className="admin-refresh-btn admin-note-edit-btn"
                         onClick={() => openNoteEditor(resume)}
                         disabled={isLoading || isSavingNote}
-                        style={{
-                          marginLeft: "8px",
-                          padding: "4px 8px",
-                          fontSize: "12px",
-                        }}
                       >
                         Edit
                       </button>
                     </td>
-                    <td
-                      style={{
-                        maxWidth: "200px",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                      }}
-                    >
+                    <td className="admin-experience-cell">
                       {resume.hasPriorExperience === null ? (
                         "N/A"
                       ) : resume.hasPriorExperience ? (
-                        <>
+                        <div className="admin-cell-stack">
                           <div>
                             <strong>Industry:</strong>{" "}
                             {resume.experience?.industry === "others"
@@ -566,7 +603,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                             <strong>Years:</strong>{" "}
                             {resume.experience?.yearsOfExperience ?? "N/A"}
                           </div>
-                        </>
+                        </div>
                       ) : (
                         "No prior experience"
                       )}
@@ -623,13 +660,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                       )}
                     </td>
                     <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      <div className="admin-actions-cell">
                         <button
                           type="button"
                           className="admin-refresh-btn admin-shortlist-btn"
@@ -650,14 +681,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         </button>
                         <button
                           type="button"
-                          className="admin-back-btn"
-                          style={{
-                            backgroundColor: "#dc2626",
-                            color: "#fff",
-                            border: "none",
-                            padding: "4px 10px",
-                            fontSize: "13px",
-                          }}
+                          className="admin-back-btn admin-delete-btn"
                           onClick={() => openDeleteCandidateModal(resume)}
                         >
                           Delete

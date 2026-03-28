@@ -307,11 +307,7 @@
 }
 
 .admin-table-wide {
-  min-width: 780px;
-}
-
-.admin-table-wide {
-  min-width: 780px;
+  min-width: 1580px;
 }
 
 .admin-table th,
@@ -322,8 +318,122 @@
   vertical-align: top;
 }
 
+.admin-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fffdfb;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-table tbody tr:nth-child(even) {
+  background: #fcfcfd;
+}
+
+.admin-table tbody tr:hover {
+  background: #fff7f7;
+}
+
 .admin-job-cell {
-  min-width: 140px;
+  min-width: 230px;
+}
+
+.admin-cell-stack {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-source-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.admin-source-badge.is-recruiter {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admin-source-badge.is-candidate {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-jd-cell {
+  min-width: 320px;
+  max-width: 360px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.admin-note-cell {
+  min-width: 220px;
+  max-width: 260px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.admin-note-cell-content {
+  margin-bottom: 0.45rem;
+}
+
+.admin-note-edit-btn {
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+}
+
+.admin-experience-cell {
+  min-width: 230px;
+  max-width: 280px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.admin-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.admin-stat-pill-soft {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.admin-actions-cell {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  min-width: 170px;
+}
+
+.admin-delete-btn {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.admin-delete-btn:hover {
+  background: #b91c1c;
 }
 
 .admin-resume-grid {
@@ -501,7 +611,7 @@
   }
 
   .admin-table-wide {
-    min-width: 760px;
+    min-width: 1580px;
   }
 
   .admin-panel-card,
@@ -564,7 +674,7 @@
   }
 
   .admin-table-wide {
-    min-width: 760px;
+    min-width: 1580px;
   }
 
   .admin-table th,

@@ -2,13 +2,8 @@ import { useMemo, useState } from "react";
 import "../styles/gallery.css";
 import PageBackButton from "../components/PageBackButton";
 
-const officeImageModules = import.meta.glob(
-  "../assets/gallery/office/*.{png,jpg,jpeg,webp,avif,gif}",
-  { eager: true, import: "default" }
-);
-
-const campaignImageModules = import.meta.glob(
-  "../assets/gallery/campaign/*.{png,jpg,jpeg,webp,avif,gif}",
+const galleryImageModules = import.meta.glob(
+  "../assets/gallery/*.{png,jpg,jpeg,webp,avif,gif}",
   { eager: true, import: "default" }
 );
 
@@ -24,8 +19,14 @@ const normalizeImages = (imageModules) =>
     })
     .sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
 
-const officeImages = normalizeImages(officeImageModules);
-const campaignImages = normalizeImages(campaignImageModules);
+const allGalleryImages = normalizeImages(galleryImageModules);
+
+const officeImages = allGalleryImages.filter((image) =>
+  /office/i.test(image.key),
+);
+const campaignImages = allGalleryImages.filter(
+  (image) => !/office/i.test(image.key),
+);
 
 const categoryCards = [
   {
