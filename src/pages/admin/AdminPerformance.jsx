@@ -5,6 +5,7 @@ import {
   getAdminHeaders,
   readJsonResponse,
   adminAdvanceStatus,
+  adminRollbackStatus,
   adminDeleteRecruiter,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
@@ -115,6 +116,15 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "left", label: "Left", color: "#dc2626" },
   ],
 };
+
+const ROLLBACKABLE_ADMIN_STATUSES = new Set([
+  "verified",
+  "walk_in",
+  "selected",
+  "rejected",
+  "pending_joining",
+  "joined",
+]);
 
 function toDateStr(d) {
   return d.toISOString().slice(0, 10);
@@ -678,6 +688,26 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const availableActions = ADMIN_ACTIONS_BY_STATUS[selectedStatusKey] || [];
+  const canRollbackSelectedStatus =
+    ROLLBACKABLE_ADMIN_STATUSES.has(selectedStatusKey);
+
+  const handleAdminRollback = async (item) => {
+    if (!item?.resId) return;
+    const confirmed = window.confirm(
+      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(selectedStatusKey)} to the previous stage?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await adminRollbackStatus(item.resId);
+      await fetchPerformance();
+      if (selectedStatusKey === "submitted") {
+        await fetchSubmittedResumes();
+      }
+    } catch (err) {
+      window.alert(err.message || "Failed to rollback resume status.");
+    }
+  };
 
   const openDeleteModal = (item) => {
     setDeleteTarget(item);
@@ -874,7 +904,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               : "Joining Info"}
                         </th>
                       )}
-                      {availableActions.length > 0 && <th>Actions</th>}
+                      {(availableActions.length > 0 || canRollbackSelectedStatus) && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -953,7 +983,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             )}
                           </td>
                         )}
-                        {availableActions.length > 0 && (
+                        {(availableActions.length > 0 || canRollbackSelectedStatus) && (
                           <td>
                             <div
                               style={{
@@ -979,6 +1009,20 @@ export default function AdminPerformance({ setCurrentPage }) {
                                   {action.label}
                                 </button>
                               ))}
+                              {canRollbackSelectedStatus && (
+                                <button
+                                  type="button"
+                                  className="admin-refresh-btn"
+                                  style={{
+                                    backgroundColor: "#111827",
+                                    color: "#fff",
+                                    border: "none",
+                                  }}
+                                  onClick={() => handleAdminRollback(item)}
+                                >
+                                  Rollback
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}
@@ -1676,4 +1720,6 @@ export default function AdminPerformance({ setCurrentPage }) {
     </AdminLayout>
   );
 }
+
+
 

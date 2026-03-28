@@ -31,6 +31,13 @@ export const adminAdvanceStatus = async (resId, payload) =>
     "Failed to advance resume status.",
   );
 
+export const adminRollbackStatus = async (resId) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/rollback-status`,
+    { method: "POST" },
+    "Failed to rollback resume status.",
+  );
+
 export const adminDeleteRecruiter = async (rid) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}`,
@@ -44,3 +51,5 @@ export const adminDeleteCandidate = async (resId) =>
     { method: "DELETE" },
     "Failed to delete candidate.",
   );
+
+
