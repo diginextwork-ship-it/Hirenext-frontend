@@ -1,5 +1,6 @@
 import {
   authFetch,
+  authFetchMultipart,
   buildAuthHeaders,
   readJsonResponse,
 } from "../../auth/authFetch";
@@ -21,15 +22,21 @@ export const updateTeamLeaderNote = async (resId, verifiedReason) =>
   );
 
 export const adminAdvanceStatus = async (resId, payload) =>
-  authFetch(
-    `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/advance-status`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    },
-    "Failed to advance resume status.",
-  );
+  payload instanceof FormData
+    ? authFetchMultipart(
+        `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/advance-status`,
+        payload,
+        "Failed to advance resume status.",
+      )
+    : authFetch(
+        `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/advance-status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        "Failed to advance resume status.",
+      );
 
 export const adminRollbackStatus = async (resId) =>
   authFetch(

@@ -155,6 +155,11 @@ function getPresetRange(preset) {
   }
 }
 
+const appendFormValue = (formData, key, value) => {
+  if (value === null || value === undefined || value === "") return;
+  formData.append(key, String(value));
+};
+
 function formatLabel(preset) {
   switch (preset) {
     case PRESETS.TODAY:
@@ -288,6 +293,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionRevenue, setActionRevenue] = useState("");
+  const [actionAttachmentFile, setActionAttachmentFile] = useState(null);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
 
@@ -580,6 +586,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
+    setActionAttachmentFile(null);
     setActionError("");
   };
 
@@ -591,6 +598,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
+    setActionAttachmentFile(null);
     setActionError("");
   };
 
@@ -616,10 +624,25 @@ export default function AdminPerformance({ setCurrentPage }) {
         return;
       }
     }
+    if (actionTarget === "billed") {
+      if (!actionAttachmentFile) {
+        setActionError("Please upload the candidate PDF attachment.");
+        return;
+      }
+      const fileName = String(actionAttachmentFile.name || "").toLowerCase();
+      const fileType = String(actionAttachmentFile.type || "").toLowerCase();
+      if (
+        fileType !== "application/pdf" &&
+        !fileName.endsWith(".pdf")
+      ) {
+        setActionError("Only PDF attachments are allowed for billed status.");
+        return;
+      }
+    }
     setActionSubmitting(true);
     setActionError("");
     try {
-      await adminAdvanceStatus(actionModalItem.resId, {
+      const basePayload = {
         status: actionTarget,
         ...buildCandidatePayloadAliases(actionModalItem),
         ...(!["pending_joining"].includes(actionTarget)
@@ -647,7 +670,21 @@ export default function AdminPerformance({ setCurrentPage }) {
         ...(actionTarget === "joined" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
-      });
+      };
+
+      const payload =
+        actionTarget === "billed" && actionAttachmentFile
+          ? (() => {
+              const formData = new FormData();
+              Object.entries(basePayload).forEach(([key, value]) => {
+                appendFormValue(formData, key, value);
+              });
+              formData.append("photo", actionAttachmentFile);
+              return formData;
+            })()
+          : basePayload;
+
+      await adminAdvanceStatus(actionModalItem.resId, payload);
       closeActionModal();
       fetchPerformance();
     } catch (err) {
@@ -1537,6 +1574,35 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
+                    Candidate PDF Attachment
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) =>
+                      setActionAttachmentFile(e.target.files?.[0] || null)
+                    }
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                  <p className="admin-muted" style={{ margin: "6px 0 0" }}>
+                    This PDF will be sent as the revenue attachment and stored
+                    in the `photo` field.
+                  </p>
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
                     Billed Reason (optional)
                   </label>
                   <textarea
@@ -1622,7 +1688,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                   (actionTarget === "pending_joining" &&
                     !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
-                    !String(actionRevenue || "").trim())
+                    !String(actionRevenue || "").trim()) ||
+                  (actionTarget === "billed" && !actionAttachmentFile)
                 }
               >
                 {actionSubmitting

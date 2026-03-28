@@ -523,7 +523,7 @@ export default function AdminRevenue({ setCurrentPage }) {
                     <td>
                       {item.photo ? (
                         <a href={item.photo} target="_blank" rel="noreferrer">
-                          View
+                          Attachment
                         </a>
                       ) : (
                         "N/A"
