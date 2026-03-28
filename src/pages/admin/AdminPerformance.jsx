@@ -1488,32 +1488,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                     }}
                   />
                 </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Revenue Amount (optional)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={actionRevenue}
-                    onChange={(e) => setActionRevenue(e.target.value)}
-                    disabled={actionSubmitting}
-                    placeholder="Enter revenue amount (optional)"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
               </>
             ) : actionTarget === "joined" ? (
               <>
