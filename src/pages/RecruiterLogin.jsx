@@ -639,8 +639,8 @@ export default function RecruiterLogin() {
                         <tr>
                           <th>Resume ID</th>
                           <th>Job</th>
-                          <th>Filename</th>
-                          <th>Type</th>
+                          <th>Candidate Name</th>
+                          <th>Phone Number</th>
                           <th>ATS Score</th>
                           <th>Submitted Note</th>
                           <th>Timing Info</th>
@@ -662,10 +662,8 @@ export default function RecruiterLogin() {
                                 {getResumeCityName(item)}
                               </div>
                             </td>
-                            <td>{item.resumeFilename}</td>
-                            <td>
-                              {String(item.resumeType || "").toUpperCase()}
-                            </td>
+                            <td>{item.candidateName || item.applicantName || "N/A"}</td>
+                            <td>{item.phone || item.mobile || item.candidatePhone || "N/A"}</td>
                             <td>
                               {item.atsScore === null ||
                               item.atsScore === undefined
