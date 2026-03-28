@@ -604,30 +604,6 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide a joining date.");
       return;
     }
-    if (actionTarget === "pending_joining") {
-      const revStr = String(actionRevenue || "").trim();
-      if (!revStr) {
-        setActionError("Please provide the revenue amount.");
-        return;
-      }
-      const revNum = Number(revStr);
-      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
-        setActionError("Revenue must be a non-negative integer.");
-        return;
-      }
-    }
-    if (actionTarget === "billed") {
-      const revStr = String(actionRevenue || "").trim();
-      if (!revStr) {
-        setActionError("Please provide the revenue amount.");
-        return;
-      }
-      const revNum = Number(revStr);
-      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
-        setActionError("Revenue must be a non-negative integer.");
-        return;
-      }
-    }
     if (actionTarget === "joined") {
       const revStr = String(actionRevenue || "").trim();
       if (!revStr) {
@@ -668,13 +644,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               joined_reason: actionJoiningNote.trim(),
             }
           : {}),
-        ...(actionTarget === "pending_joining" && actionRevenue.trim()
-          ? { revenue: Number(String(actionRevenue).trim()) }
-          : {}),
         ...(actionTarget === "joined" && String(actionRevenue || "").trim()
-          ? { revenue: Number(String(actionRevenue).trim()) }
-          : {}),
-        ...(actionTarget === "billed" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
       });
@@ -1464,39 +1434,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Joining Date
+                    Tentative joining date
                   </label>
                   <input
                     type="date"
                     value={actionJoiningDate}
                     onChange={(e) => setActionJoiningDate(e.target.value)}
                     disabled={actionSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Revenue Amount (integer)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={actionRevenue}
-                    onChange={(e) => setActionRevenue(e.target.value)}
-                    disabled={actionSubmitting}
-                    placeholder="Enter revenue amount"
                     style={{
                       width: "100%",
                       padding: "8px",
@@ -1593,32 +1537,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Revenue
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={actionRevenue}
-                    onChange={(e) => setActionRevenue(e.target.value)}
-                    disabled={actionSubmitting}
-                    placeholder="Enter revenue amount"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
                     Billed Reason (optional)
                   </label>
                   <textarea
@@ -1702,10 +1620,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                 disabled={
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
-                    (!actionJoiningDate.trim() || !actionRevenue.trim())) ||
+                    !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
-                    !String(actionRevenue || "").trim()) ||
-                  (actionTarget === "billed" &&
                     !String(actionRevenue || "").trim())
                 }
               >
