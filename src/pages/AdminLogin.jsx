@@ -28,12 +28,13 @@ export default function AdminLogin({ onLoginSuccess }) {
         throw new Error(data?.message || "Invalid admin credentials.");
       }
 
-      saveAuthSession({
+      const session = {
         token: data.token,
         role: "admin",
         name: data?.admin?.name || "Admin",
-      });
-      onLoginSuccess?.();
+      };
+      saveAuthSession(session);
+      onLoginSuccess?.(session);
     } catch (error) {
       setMessage(error.message || "Unable to login right now.");
     } finally {

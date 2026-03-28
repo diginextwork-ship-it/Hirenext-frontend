@@ -196,9 +196,18 @@ export default function App() {
       case "adminlogin":
         return (
           <AdminLogin
-            onLoginSuccess={() => {
-              setAuthSession(getAuthSession());
-              setCurrentPage("adminpanel");
+            onLoginSuccess={(session) => {
+              setAuthSession(session || getAuthSession());
+              setCurrentPageState("adminpanel");
+              const adminPanelPath = PAGE_TO_PATH.adminpanel;
+              if (normalizePath(window.location.pathname) !== adminPanelPath) {
+                window.history.pushState(
+                  { page: "adminpanel" },
+                  "",
+                  adminPanelPath,
+                );
+              }
+              window.scrollTo({ top: 0, left: 0, behavior: "auto" });
             }}
           />
         );
