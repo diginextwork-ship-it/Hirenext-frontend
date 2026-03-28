@@ -214,15 +214,14 @@ function dedupeItemsByResId(items) {
       ["n/a", "na", "not set"].includes(value.trim().toLowerCase())
     ) &&
     // Treat empty objects as absent.
-    !(typeof value === "object" &&
+    !(
+      typeof value === "object" &&
       !Array.isArray(value) &&
-      Object.keys(value).length === 0);
+      Object.keys(value).length === 0
+    );
 
   const getResId = (item) =>
-    item?.resId ??
-    item?.res_id ??
-    item?.resumeId ??
-    item?.resume_id;
+    item?.resId ?? item?.res_id ?? item?.resumeId ?? item?.resume_id;
 
   const isPlainObject = (v) =>
     typeof v === "object" && v !== null && !Array.isArray(v);
@@ -612,6 +611,18 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide a joining date.");
       return;
     }
+    if (actionTarget === "pending_joining") {
+      const revStr = String(actionRevenue || "").trim();
+      if (!revStr) {
+        setActionError("Please provide the revenue amount.");
+        return;
+      }
+      const revNum = Number(revStr);
+      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
+        setActionError("Revenue must be a non-negative integer.");
+        return;
+      }
+    }
     if (actionTarget === "joined") {
       const revStr = String(actionRevenue || "").trim();
       if (!revStr) {
@@ -631,10 +642,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
       const fileName = String(actionAttachmentFile.name || "").toLowerCase();
       const fileType = String(actionAttachmentFile.type || "").toLowerCase();
-      if (
-        fileType !== "application/pdf" &&
-        !fileName.endsWith(".pdf")
-      ) {
+      if (fileType !== "application/pdf" && !fileName.endsWith(".pdf")) {
         setActionError("Only PDF attachments are allowed for billed status.");
         return;
       }
@@ -666,6 +674,10 @@ export default function AdminPerformance({ setCurrentPage }) {
               joining_note: actionJoiningNote.trim(),
               joined_reason: actionJoiningNote.trim(),
             }
+          : {}),
+        ...(actionTarget === "pending_joining" &&
+        String(actionRevenue || "").trim()
+          ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
         ...(actionTarget === "joined" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
@@ -911,7 +923,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                               : "Joining Info"}
                         </th>
                       )}
-                      {(availableActions.length > 0 || canRollbackSelectedStatus) && <th>Actions</th>}
+                      {(availableActions.length > 0 ||
+                        canRollbackSelectedStatus) && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -990,7 +1003,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                             )}
                           </td>
                         )}
-                        {(availableActions.length > 0 || canRollbackSelectedStatus) && (
+                        {(availableActions.length > 0 ||
+                          canRollbackSelectedStatus) && (
                           <td>
                             <div
                               style={{
@@ -1486,6 +1500,32 @@ export default function AdminPerformance({ setCurrentPage }) {
                     }}
                   />
                 </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Revenue Amount (integer)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={actionRevenue}
+                    onChange={(e) => setActionRevenue(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter revenue amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
               </>
             ) : actionTarget === "joined" ? (
               <>
@@ -1686,7 +1726,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                 disabled={
                   actionSubmitting ||
                   (actionTarget === "pending_joining" &&
-                    !actionJoiningDate.trim()) ||
+                    (!actionJoiningDate.trim() ||
+                      !String(actionRevenue || "").trim())) ||
                   (actionTarget === "joined" &&
                     !String(actionRevenue || "").trim()) ||
                   (actionTarget === "billed" && !actionAttachmentFile)
@@ -1703,6 +1744,3 @@ export default function AdminPerformance({ setCurrentPage }) {
     </AdminLayout>
   );
 }
-
-
-
