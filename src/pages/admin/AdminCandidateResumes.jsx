@@ -96,6 +96,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [deleteDeleting, setDeleteDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTERS.ALL);
+  const [phoneSearch, setPhoneSearch] = useState("");
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -217,12 +218,30 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     loadAllResumes();
   }, []);
 
+  const normalizePhoneForSearch = (value) =>
+    String(value || "").replace(/\D/g, "");
+
   const displayedResumes =
     sourceFilter === SOURCE_FILTERS.CANDIDATE
       ? resumes
       : sourceFilter === SOURCE_FILTERS.RECRUITER
         ? recruiterResumes
         : [...resumes, ...recruiterResumes];
+
+  const filteredResumes = phoneSearch.trim()
+    ? displayedResumes.filter((resume) =>
+        [
+          resume.candidatePhone,
+          resume.phone,
+          resume.mobile,
+          resume.applicantPhone,
+        ].some((value) =>
+          normalizePhoneForSearch(value).includes(
+            normalizePhoneForSearch(phoneSearch),
+          ),
+        ),
+      )
+    : displayedResumes;
 
   const displayedCount =
     sourceFilter === SOURCE_FILTERS.CANDIDATE
@@ -460,12 +479,36 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         ))}
       </div>
 
+      <div className="admin-candidate-resumes-toolbar">
+        <label className="admin-candidate-resumes-search">
+          <span>Search by candidate phone</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Enter phone number"
+            value={phoneSearch}
+            onChange={(event) => setPhoneSearch(event.target.value)}
+          />
+        </label>
+        {phoneSearch.trim() ? (
+          <button
+            type="button"
+            className="admin-back-btn admin-candidate-resumes-clear"
+            onClick={() => setPhoneSearch("")}
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+
       <div className="admin-dashboard-card admin-card-large">
-        {displayedResumes.length === 0 ? (
+        {filteredResumes.length === 0 ? (
           <p className="admin-chart-empty">
             {isLoading
               ? "Loading resumes..."
-              : "No resumes found for this filter."}
+              : phoneSearch.trim()
+                ? "No resumes found for this phone number."
+                : "No resumes found for this filter."}
           </p>
         ) : (
           <div className="admin-table-wrap">
@@ -490,7 +533,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {displayedResumes.map((resume) => (
+                {filteredResumes.map((resume) => (
                   <tr key={`${resume._source}-${resume.resId}`}>
                     <td>{resume.resId || "N/A"}</td>
                     <td>
