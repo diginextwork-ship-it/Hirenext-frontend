@@ -702,10 +702,6 @@ export default function AdminPerformance({ setCurrentPage }) {
               joined_reason: actionJoiningNote.trim(),
             }
           : {}),
-        ...(actionTarget === "pending_joining" &&
-        String(actionRevenue || "").trim()
-          ? { revenue: Number(String(actionRevenue).trim()) }
-          : {}),
         ...(actionTarget === "joined" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
