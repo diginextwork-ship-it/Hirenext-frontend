@@ -22,12 +22,12 @@ body,
   min-height: 100%;
 }
 
-html,
-body {
-  overflow-x: hidden;
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
+  overflow-x: hidden;
   font-family: "Outfit", sans-serif;
   background: var(--warm-cream);
   color: var(--charcoal);
