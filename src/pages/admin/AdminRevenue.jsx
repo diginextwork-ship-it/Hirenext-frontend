@@ -504,7 +504,8 @@ export default function AdminRevenue({ setCurrentPage }) {
                   <th>Type</th>
                   <th>Intake</th>
                   <th>Expense</th>
-                  <th>Profit (running)</th>
+                  <th>Company Name</th>
+                  <th>City</th>
                   <th>Reason</th>
                   <th>Attachment</th>
                   <th>Created At</th>
@@ -518,7 +519,21 @@ export default function AdminRevenue({ setCurrentPage }) {
                     <td>{item.entryType}</td>
                     <td>{toCurrency(item.companyRev)}</td>
                     <td>{toCurrency(item.expense)}</td>
-                    <td>{toCurrency(item.profit)}</td>
+                    <td>
+                      {item.companyName ||
+                        item.company_name ||
+                        item.company ||
+                        item.orgName ||
+                        item.organization ||
+                        "N/A"}
+                    </td>
+                    <td>
+                      {item.city ||
+                        item.jobCity ||
+                        item.locationCity ||
+                        item.location ||
+                        "N/A"}
+                    </td>
                     <td>{item.reason || "N/A"}</td>
                     <td>
                       {item.photo ? (
