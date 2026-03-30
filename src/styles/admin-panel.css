@@ -907,9 +907,7 @@
   margin-bottom: 1.5rem;
   width: 100%;
   overflow: hidden;
-  /* already present — good */
   box-sizing: border-box;
-  /* ADD THIS */
 }
 
 .perf-stat-card {
@@ -955,10 +953,8 @@
 
 .perf-stat-card-active {
   border-color: #111827;
-  /* Remove the inset shadow or keep it contained */
   box-shadow:
     0 0 0 2px #111827 inset,
-    /* use inset keyword AFTER values */
     0 16px 32px rgba(15, 23, 42, 0.18);
 }
 
@@ -1063,6 +1059,52 @@
   color: #c62828;
 }
 
+/* ── Action button group fix ─────────────────────────────────────────────
+   Buttons like Verify / Reject / Rollback were sitting in a plain div with
+   flex but no wrapping, so they overflowed the viewport on narrower screens.
+   We constrain the cell and let the flex container wrap instead.           */
+
+/* The wrapper div around action buttons in each row */
+.admin-table td>div[style*="display: flex"] {
+  flex-wrap: wrap !important;
+  /* force wrap on the inline-styled div */
+}
+
+/* Dedicated utility class — add class="perf-action-group" to the div in JSX
+   if you prefer an explicit hook instead of the attribute selector above.  */
+.perf-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Actions column: allow the cell to grow but cap it so it wraps gracefully */
+.admin-table th:last-child,
+.admin-table td:last-child {
+  white-space: normal;
+  /* don't force single-line inside action cells */
+  min-width: 140px;
+  max-width: 220px;
+}
+
+/* Table wrapper scrolls horizontally on narrow viewports so the rest of the
+   table columns are reachable — the action column wraps *within* the cell.  */
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  /* Ensure the wrapper itself never bleeds past its parent */
+  max-width: 100%;
+}
+
+/* Prevent any single table from exploding past its container */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  /* columns size to content, but bounded by the wrapper */
+}
+
 @media (max-width: 768px) {
   .perf-summary-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -1079,6 +1121,13 @@
 
   .perf-stat-value {
     font-size: 1.5rem;
+  }
+
+  /* On mobile shrink action buttons a touch so they wrap sooner */
+  .admin-table th:last-child,
+  .admin-table td:last-child {
+    min-width: 110px;
+    max-width: 180px;
   }
 }
 
