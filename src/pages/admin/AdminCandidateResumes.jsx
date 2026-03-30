@@ -469,7 +469,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           </p>
         ) : (
           <div className="admin-table-wrap">
-            <table className="admin-table admin-table-wide">
+            <table className="admin-table admin-table-wide admin-candidate-resumes-table">
               <thead>
                 <tr>
                   <th>Resume ID</th>
