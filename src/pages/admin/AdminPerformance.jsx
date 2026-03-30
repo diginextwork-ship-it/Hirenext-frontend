@@ -205,6 +205,26 @@ function normalizeStatus(value) {
     .toLowerCase();
 }
 
+const STATUS_PROGRESS_RANK = {
+  submitted: 0,
+  verified: 1,
+  walk_in: 2,
+  selected: 3,
+  pending_joining: 4,
+  joined: 5,
+  billed: 6,
+  left: 7,
+  dropout: 7,
+  rejected: 7,
+};
+
+function getStatusRank(status) {
+  const normalized = normalizeStatus(status);
+  return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
+    ? STATUS_PROGRESS_RANK[normalized]
+    : -1;
+}
+
 function dedupeItemsByResId(items) {
   // Dedupe by `resId`, but merge fields from duplicates so we don't lose
   // partial job/company/city/team-leader info that arrives on some entries.
@@ -295,6 +315,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionRevenue, setActionRevenue] = useState("");
+  const [actionBilledAmount, setActionBilledAmount] = useState("");
   const [actionAttachmentFile, setActionAttachmentFile] = useState(null);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -496,11 +517,44 @@ export default function AdminPerformance({ setCurrentPage }) {
   });
 
   const summary = data?.summary || {};
+  const statusDrilldown = data?.statusDrilldown || {};
   const performanceSubmittedItems =
-    data?.statusDrilldown?.submitted &&
-    Array.isArray(data.statusDrilldown.submitted)
-      ? data.statusDrilldown.submitted
+    statusDrilldown?.submitted && Array.isArray(statusDrilldown.submitted)
+      ? statusDrilldown.submitted
       : [];
+  const latestStatusByResId = useMemo(() => {
+    const map = new Map();
+    const getResId = (item) =>
+      item?.resId ?? item?.res_id ?? item?.resumeId ?? item?.resume_id;
+
+    for (const [bucketStatus, bucketItems] of Object.entries(statusDrilldown)) {
+      if (!Array.isArray(bucketItems)) continue;
+      const bucketRank = getStatusRank(bucketStatus);
+      for (const item of bucketItems) {
+        const resId = getResId(item);
+        if (!resId || String(resId).trim() === "") continue;
+        const itemStatus = normalizeStatus(
+          item?.workflowStatus || item?.workflow_status || item?.status,
+        );
+        const itemRank = getStatusRank(itemStatus);
+        const currentRank = Math.max(bucketRank, itemRank);
+        if (currentRank < 0) continue;
+
+        const prev = map.get(String(resId));
+        if (!prev || currentRank > prev.rank) {
+          map.set(String(resId), {
+            status:
+              currentRank === itemRank && itemRank >= 0
+                ? itemStatus
+                : normalizeStatus(bucketStatus),
+            rank: currentRank,
+          });
+        }
+      }
+    }
+
+    return map;
+  }, [statusDrilldown]);
   const drilldownKey = selectedStatusKey;
   const selectedStatusItems = useMemo(() => {
     const rawItems =
@@ -508,19 +562,11 @@ export default function AdminPerformance({ setCurrentPage }) {
         ? performanceSubmittedItems.length > 0
           ? performanceSubmittedItems
           : submittedResumes
-        : data?.statusDrilldown?.[drilldownKey] &&
-            Array.isArray(data.statusDrilldown[drilldownKey])
-          ? data.statusDrilldown[drilldownKey]
+        : statusDrilldown?.[drilldownKey] && Array.isArray(statusDrilldown[drilldownKey])
+          ? statusDrilldown[drilldownKey]
           : [];
 
-    const normalizedKey = normalizeStatus(selectedStatusKey);
-    const filteredItems =
-      selectedStatusKey === "submitted"
-        ? rawItems
-        : rawItems.filter((item) => {
-            const itemStatus = normalizeStatus(item?.status);
-            return !itemStatus || itemStatus === normalizedKey;
-          });
+    const filteredItems = rawItems;
 
     // Always normalize items so company/city are available for all statuses
     const normalizedItems = filteredItems.map((item) => {
@@ -540,10 +586,27 @@ export default function AdminPerformance({ setCurrentPage }) {
         item?.resume_id ??
         normalized?.resId;
 
+      const latestResolved = resId
+        ? latestStatusByResId.get(String(resId))
+        : null;
+      const sourceStatus = normalizeStatus(
+        normalized?.workflowStatus ||
+          normalized?.workflow_status ||
+          normalized?.status ||
+          item?.workflowStatus ||
+          item?.workflow_status ||
+          item?.status ||
+          selectedStatusKey,
+      );
+      const effectiveStatus = normalizeStatus(
+        latestResolved?.status || sourceStatus || selectedStatusKey,
+      );
+
       return {
         ...normalized,
         teamLeaderName,
         resId,
+        status: effectiveStatus,
       };
     });
 
@@ -569,7 +632,6 @@ export default function AdminPerformance({ setCurrentPage }) {
 
       console.debug("[AdminPerformance] drilldown sample", {
         selectedStatusKey,
-        normalizedKey,
         rawCount: rawItems.length,
         filteredCount: filteredItems.length,
         normalizedCount: normalizedItems.length,
@@ -582,8 +644,10 @@ export default function AdminPerformance({ setCurrentPage }) {
   }, [
     data,
     drilldownKey,
+    latestStatusByResId,
     performanceSubmittedItems,
     selectedStatusKey,
+    statusDrilldown,
     submittedResumes,
     PERF_DEBUG,
   ]);
@@ -618,12 +682,24 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const openActionModal = (item, targetStatus) => {
+    const existingRevenue = Number(
+      item?.revenue ??
+        item?.revenueAmount ??
+        item?.amount ??
+        item?.companyRev ??
+        0,
+    );
     setActionModalItem(item);
     setActionTarget(targetStatus);
     setActionReason("");
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
+    setActionBilledAmount(
+      targetStatus === "billed" && Number.isFinite(existingRevenue) && existingRevenue > 0
+        ? String(Math.trunc(existingRevenue))
+        : "",
+    );
     setActionAttachmentFile(null);
     setActionError("");
   };
@@ -636,8 +712,69 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
+    setActionBilledAmount("");
     setActionAttachmentFile(null);
     setActionError("");
+  };
+
+  const ensureBilledIntakeEntry = async ({
+    resId,
+    amount,
+    reason,
+    attachmentFile,
+  }) => {
+    const marker = `[BILLED:${resId}]`;
+    const revenueResponse = await fetch(`${API_BASE_URL}/api/admin/revenue`, {
+      headers: getAdminHeaders(),
+    });
+    const revenueJson = await readJsonResponse(
+      revenueResponse,
+      "Failed to read revenue entries while syncing billed intake.",
+    );
+    if (!revenueResponse.ok) {
+      throw new Error(
+        revenueJson?.message || "Failed to verify existing revenue entries.",
+      );
+    }
+
+    const existingEntries = Array.isArray(revenueJson?.entries)
+      ? revenueJson.entries
+      : [];
+    const alreadyRecorded = existingEntries.some((entry) => {
+      const entryReason = String(entry?.reason || "")
+        .trim()
+        .toLowerCase();
+      const entryType = String(entry?.entryType || "")
+        .trim()
+        .toLowerCase();
+      return entryType === "intake" && entryReason.includes(marker.toLowerCase());
+    });
+    if (alreadyRecorded) return;
+
+    const payload = new FormData();
+    payload.append("entryType", "intake");
+    payload.append("amount", String(Math.trunc(amount)));
+    payload.append("reasonCategory", "others");
+    payload.append(
+      "otherReason",
+      `${marker} ${reason?.trim() || "Candidate moved to billed"}`,
+    );
+    if (attachmentFile) {
+      payload.append("photo", attachmentFile);
+    }
+
+    const createResponse = await fetch(`${API_BASE_URL}/api/admin/revenue/entries`, {
+      method: "POST",
+      headers: getAdminHeaders(),
+      body: payload,
+    });
+    const createJson = await readJsonResponse(
+      createResponse,
+      "Failed to read billed intake sync response.",
+    );
+    if (!createResponse.ok) {
+      throw new Error(createJson?.error || createJson?.message || "Failed to add billed intake entry.");
+    }
   };
 
   const handleAdminAdvanceStatus = async () => {
@@ -663,6 +800,20 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     }
     if (actionTarget === "billed") {
+      const billedAmountStr = String(actionBilledAmount || "").trim();
+      if (!billedAmountStr) {
+        setActionError("Please provide the billed amount.");
+        return;
+      }
+      const billedAmountNum = Number(billedAmountStr);
+      if (
+        !Number.isFinite(billedAmountNum) ||
+        billedAmountNum <= 0 ||
+        !Number.isInteger(billedAmountNum)
+      ) {
+        setActionError("Billed amount must be a positive integer.");
+        return;
+      }
       if (!actionAttachmentFile) {
         setActionError("Please upload the candidate PDF attachment.");
         return;
@@ -705,6 +856,9 @@ export default function AdminPerformance({ setCurrentPage }) {
         ...(actionTarget === "joined" && String(actionRevenue || "").trim()
           ? { revenue: Number(String(actionRevenue).trim()) }
           : {}),
+        ...(actionTarget === "billed" && String(actionBilledAmount || "").trim()
+          ? { revenue: Number(String(actionBilledAmount).trim()) }
+          : {}),
       };
 
       const payload =
@@ -720,8 +874,24 @@ export default function AdminPerformance({ setCurrentPage }) {
           : basePayload;
 
       await adminAdvanceStatus(actionModalItem.resId, payload);
+      let intakeSyncWarning = "";
+      if (actionTarget === "billed") {
+        try {
+          await ensureBilledIntakeEntry({
+            resId: actionModalItem.resId,
+            amount: Number(String(actionBilledAmount).trim()),
+            reason: normalizedReason,
+            attachmentFile: actionAttachmentFile,
+          });
+        } catch (syncError) {
+          intakeSyncWarning = `Candidate moved to billed, but intake sync failed: ${syncError.message || "unknown error"}`;
+        }
+      }
       closeActionModal();
-      fetchPerformance();
+      await fetchPerformance();
+      if (intakeSyncWarning) {
+        window.alert(intakeSyncWarning);
+      }
     } catch (err) {
       setActionError(err.message || "Failed to advance status.");
     } finally {
@@ -729,14 +899,42 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const availableActions = ADMIN_ACTIONS_BY_STATUS[selectedStatusKey] || [];
-  const canRollbackSelectedStatus =
-    ROLLBACKABLE_ADMIN_STATUSES.has(selectedStatusKey);
+  const selectedStatusRank = getStatusRank(selectedStatusKey);
+
+  const getRowActionState = useCallback(
+    (item) => {
+      const effectiveStatus = normalizeStatus(item?.status);
+      const effectiveRank = getStatusRank(effectiveStatus);
+      const isPreviousStageView =
+        selectedStatusRank >= 0 &&
+        effectiveRank >= 0 &&
+        selectedStatusRank < effectiveRank;
+
+      if (isPreviousStageView) {
+        return { availableActions: [], canRollback: false };
+      }
+
+      return {
+        availableActions: ADMIN_ACTIONS_BY_STATUS[effectiveStatus] || [],
+        canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
+      };
+    },
+    [selectedStatusRank],
+  );
+
+  const hasAnyRowActions = useMemo(
+    () =>
+      selectedStatusItems.some((item) => {
+        const rowActionState = getRowActionState(item);
+        return rowActionState.availableActions.length > 0 || rowActionState.canRollback;
+      }),
+    [getRowActionState, selectedStatusItems],
+  );
 
   const handleAdminRollback = async (item) => {
     if (!item?.resId) return;
     const confirmed = window.confirm(
-      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(selectedStatusKey)} to the previous stage?`,
+      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(item.status)} to the previous stage?`,
     );
     if (!confirmed) return;
 
@@ -946,12 +1144,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                               : "Joining Info"}
                         </th>
                       )}
-                      {(availableActions.length > 0 ||
-                        canRollbackSelectedStatus) && <th>Actions</th>}
+                      {hasAnyRowActions && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedStatusItems.map((item) => (
+                    {selectedStatusItems.map((item) => {
+                      const rowActionState = getRowActionState(item);
+                      const rowHasActions =
+                        rowActionState.availableActions.length > 0 ||
+                        rowActionState.canRollback;
+                      return (
                       <tr key={`${selectedStatusKey}-${item.resId}`}>
                         <td>
                           <strong>{item.recruiterName || "N/A"}</strong>
@@ -1026,52 +1228,54 @@ export default function AdminPerformance({ setCurrentPage }) {
                             )}
                           </td>
                         )}
-                        {(availableActions.length > 0 ||
-                          canRollbackSelectedStatus) && (
+                        {hasAnyRowActions && (
                           <td>
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "6px",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {availableActions.map((action) => (
-                                <button
-                                  key={action.value}
-                                  type="button"
-                                  className="admin-refresh-btn"
-                                  style={{
-                                    backgroundColor: action.color,
-                                    color: "#fff",
-                                    border: "none",
-                                  }}
-                                  onClick={() =>
-                                    openActionModal(item, action.value)
-                                  }
-                                >
-                                  {action.label}
-                                </button>
-                              ))}
-                              {canRollbackSelectedStatus && (
-                                <button
-                                  type="button"
-                                  className="admin-refresh-btn"
-                                  style={{
-                                    backgroundColor: "#111827",
-                                    color: "#fff",
-                                    border: "none",
-                                  }}
-                                  onClick={() => handleAdminRollback(item)}
-                                >
-                                  Rollback
-                                </button>
-                              )}
-                            </div>
+                            {rowHasActions ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "6px",
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                {rowActionState.availableActions.map((action) => (
+                                  <button
+                                    key={action.value}
+                                    type="button"
+                                    className="admin-refresh-btn"
+                                    style={{
+                                      backgroundColor: action.color,
+                                      color: "#fff",
+                                      border: "none",
+                                    }}
+                                    onClick={() =>
+                                      openActionModal(item, action.value)
+                                    }
+                                  >
+                                    {action.label}
+                                  </button>
+                                ))}
+                                {rowActionState.canRollback && (
+                                  <button
+                                    type="button"
+                                    className="admin-refresh-btn"
+                                    style={{
+                                      backgroundColor: "#111827",
+                                      color: "#fff",
+                                      border: "none",
+                                    }}
+                                    onClick={() => handleAdminRollback(item)}
+                                  >
+                                    Rollback
+                                  </button>
+                                )}
+                              </div>
+                            ) : null}
                           </td>
                         )}
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1494,7 +1698,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
               <p className="admin-muted" style={{ margin: 0 }}>
                 <strong>Current Status:</strong>{" "}
-                {formatStatusLabel(selectedStatusKey)}
+                {formatStatusLabel(actionModalItem.status)}
               </p>
             </div>
 
@@ -1603,6 +1807,32 @@ export default function AdminPerformance({ setCurrentPage }) {
               </>
             ) : actionTarget === "billed" ? (
               <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Billed Amount (integer)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={actionBilledAmount}
+                    onChange={(e) => setActionBilledAmount(e.target.value)}
+                    disabled={actionSubmitting}
+                    placeholder="Enter billed amount"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
                 <div style={{ marginBottom: "10px" }}>
                   <label
                     style={{
@@ -1726,7 +1956,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                     !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
                     !String(actionRevenue || "").trim()) ||
-                  (actionTarget === "billed" && !actionAttachmentFile)
+                  (actionTarget === "billed" &&
+                    (!actionAttachmentFile ||
+                      !String(actionBilledAmount || "").trim()))
                 }
               >
                 {actionSubmitting

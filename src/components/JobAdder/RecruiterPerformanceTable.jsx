@@ -161,7 +161,7 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                     </td>
                     <td className="metric-value">
                       <span className="status-pill status-pending-joining">
-                        {metricDisplay(item.stats?.select)}
+                        {metricDisplay(item.stats?.pending_joining)}
                       </span>
                     </td>
                     <td className="metric-value">

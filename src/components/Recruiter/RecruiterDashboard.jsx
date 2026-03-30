@@ -31,6 +31,19 @@ const getPointsProgressColor = (points) => {
   return "success";
 };
 
+const STATUS_PROGRESS_RANK = {
+  submitted: 0,
+  verified: 1,
+  walk_in: 2,
+  selected: 3,
+  pending_joining: 4,
+  joined: 5,
+  billed: 6,
+  left: 7,
+  dropout: 7,
+  rejected: 7,
+};
+
 export default function RecruiterDashboard({ recruiterId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -158,6 +171,12 @@ export default function RecruiterDashboard({ recruiterId }) {
     String(value || "")
       .trim()
       .toLowerCase();
+  const getStatusRank = (status) => {
+    const normalized = normalizeStatus(status);
+    return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
+      ? STATUS_PROGRESS_RANK[normalized]
+      : -1;
+  };
   const mapStatusToFilter = (status) => {
     const normalized = normalizeStatus(status);
     if (normalized === "submitted") return "submitted";
@@ -197,7 +216,42 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatus(activeStatus);
-    let resumes = Array.isArray(statusResumes) ? statusResumes : [];
+    const dedupedByLatestStatus = (() => {
+      const byResId = new Map();
+      for (const resume of Array.isArray(statusResumes) ? statusResumes : []) {
+        const resId =
+          resume?.resId ?? resume?.res_id ?? resume?.resumeId ?? resume?.resume_id;
+        if (!resId || String(resId).trim() === "") continue;
+        const currentStatus = normalizeStatus(
+          resume?.workflowStatus || resume?.workflow_status || resume?.status,
+        );
+        const currentRank = getStatusRank(currentStatus);
+        const currentUpdatedAt = new Date(
+          resume?.workflowUpdatedAt || resume?.uploadedAt || 0,
+        ).getTime();
+        const next = {
+          resume,
+          status: currentStatus,
+          rank: currentRank,
+          updatedAt: Number.isFinite(currentUpdatedAt) ? currentUpdatedAt : 0,
+        };
+        const prev = byResId.get(String(resId));
+        if (
+          !prev ||
+          next.rank > prev.rank ||
+          (next.rank === prev.rank && next.updatedAt > prev.updatedAt)
+        ) {
+          byResId.set(String(resId), next);
+        }
+      }
+      return Array.from(byResId.values()).map((item) => ({
+        ...item.resume,
+        workflowStatus: item.status || item.resume?.workflowStatus,
+        status: item.status || item.resume?.status,
+      }));
+    })();
+
+    let resumes = dedupedByLatestStatus;
     if (normalizedStatus && normalizedStatus !== "submitted") {
       resumes = resumes.filter(
         (resume) => normalizeStatus(resume.workflowStatus) === normalizedStatus,
@@ -382,7 +436,7 @@ export default function RecruiterDashboard({ recruiterId }) {
         <PerformanceMetricCard
           title="Pending Joining"
           color="blue"
-          value={toDisplay(data.stats?.select)}
+          value={toDisplay(data.stats?.pending_joining)}
           clickable
           onClick={() => handleStatusCardClick("pending_joining")}
         />
