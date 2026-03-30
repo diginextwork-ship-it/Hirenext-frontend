@@ -127,7 +127,10 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
 ]);
 
 function toDateStr(d) {
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getPresetRange(preset) {
