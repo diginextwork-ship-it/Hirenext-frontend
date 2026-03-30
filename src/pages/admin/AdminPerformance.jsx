@@ -353,6 +353,42 @@ export default function AdminPerformance({ setCurrentPage }) {
     fetchPerformance();
   }, [fetchPerformance]);
 
+  // Auto-refresh performance data daily at midnight and every 6 hours
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+
+    // Refresh at midnight
+    const timeoutId = setTimeout(() => {
+      fetchPerformance();
+      // Then refresh every 24 hours
+      const intervalId = setInterval(
+        () => {
+          fetchPerformance();
+        },
+        24 * 60 * 60 * 1000,
+      );
+      return () => clearInterval(intervalId);
+    }, timeUntilMidnight);
+
+    // Also refresh every 6 hours to catch updates throughout the day
+    const intervalId = setInterval(
+      () => {
+        fetchPerformance();
+      },
+      6 * 60 * 60 * 1000,
+    );
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
+  }, [fetchPerformance]);
+
   const fetchSubmittedResumes = useCallback(async () => {
     setSubmittedLoading(true);
     setSubmittedError("");
