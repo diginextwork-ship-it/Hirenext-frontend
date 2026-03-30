@@ -4,6 +4,7 @@
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-family: "Outfit", sans-serif;
   color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 .admin-panel-page {
@@ -296,12 +297,14 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin-top: 1rem;
+  box-sizing: border-box;
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 520px;
+  table-layout: auto;
 }
 
 .admin-table-wide {
@@ -314,6 +317,9 @@
   padding: 0.75rem;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: top;
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .admin-table th {
@@ -419,7 +425,9 @@
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
-  min-width: 170px;
+  min-width: 140px;
+  max-width: 200px;
+  min-height: fit-content;
 }
 
 .admin-delete-btn {
@@ -827,9 +835,11 @@
 
 .perf-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 1.5rem;
+  width: 100%;
+  overflow: hidden;
 }
 
 .perf-stat-card {
@@ -846,6 +856,8 @@
     box-shadow 0.2s ease,
     filter 0.2s ease,
     border-color 0.2s ease;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .perf-stat-card-button {
@@ -973,6 +985,25 @@
 
 .perf-sortable:hover {
   color: #c62828;
+}
+
+@media (max-width: 768px) {
+  .perf-summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+  }
+
+  .perf-stat-card {
+    padding: 0.75rem;
+  }
+
+  .perf-stat-label {
+    font-size: 0.75rem;
+  }
+
+  .perf-stat-value {
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 640px) {
