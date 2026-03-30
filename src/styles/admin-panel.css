@@ -840,6 +840,9 @@
   margin-bottom: 1.5rem;
   width: 100%;
   overflow: hidden;
+  /* already present — good */
+  box-sizing: border-box;
+  /* ADD THIS */
 }
 
 .perf-stat-card {
@@ -847,6 +850,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 1rem;
+  box-sizing: border-box;
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -858,6 +862,7 @@
     border-color 0.2s ease;
   min-width: 0;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .perf-stat-card-button {
@@ -882,8 +887,12 @@
 }
 
 .perf-stat-card-active {
-  border: 2px solid #111827;
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+  border-color: #111827;
+  /* Remove the inset shadow or keep it contained */
+  box-shadow:
+    0 0 0 2px #111827 inset,
+    /* use inset keyword AFTER values */
+    0 16px 32px rgba(15, 23, 42, 0.18);
 }
 
 .perf-stat-card-submitted {
