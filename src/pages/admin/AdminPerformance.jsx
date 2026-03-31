@@ -158,9 +158,38 @@ function getPresetRange(preset) {
   }
 }
 
-const appendFormValue = (formData, key, value) => {
-  if (value === null || value === undefined || value === "") return;
-  formData.append(key, String(value));
+const getExistingRevenueAmount = (item) => {
+  const revenueValue = Number(
+    item?.revenue ??
+      item?.revenueAmount ??
+      item?.amount ??
+      item?.companyRev ??
+      item?.company_rev ??
+      item?.job?.companyRev ??
+      item?.job?.company_rev ??
+      0,
+  );
+
+  return Number.isFinite(revenueValue) ? Math.trunc(revenueValue) : 0;
+};
+
+const buildBilledFormData = (resume, attachmentFile) => {
+  const normalized = normalizeResumeData(resume);
+  const formData = new FormData();
+
+  formData.append("status", "billed");
+  if (normalized.candidateName) {
+    formData.append("candidate_name", String(normalized.candidateName));
+  }
+  if (normalized.candidateEmail) {
+    formData.append("candidate_email", String(normalized.candidateEmail));
+  }
+  if (normalized.candidatePhone) {
+    formData.append("candidate_phone", String(normalized.candidatePhone));
+  }
+  formData.append("photo", attachmentFile);
+
+  return formData;
 };
 
 function formatLabel(preset) {
@@ -315,7 +344,6 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionRevenue, setActionRevenue] = useState("");
-  const [actionBilledAmount, setActionBilledAmount] = useState("");
   const [actionAttachmentFile, setActionAttachmentFile] = useState(null);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -682,27 +710,12 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const openActionModal = (item, targetStatus) => {
-    const existingRevenue = Number(
-      item?.revenue ??
-        item?.revenueAmount ??
-        item?.amount ??
-        item?.companyRev ??
-        item?.company_rev ??
-        item?.job?.companyRev ??
-        item?.job?.company_rev ??
-        0,
-    );
     setActionModalItem(item);
     setActionTarget(targetStatus);
     setActionReason("");
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
-    setActionBilledAmount(
-      targetStatus === "billed" && Number.isFinite(existingRevenue) && existingRevenue > 0
-        ? String(Math.trunc(existingRevenue))
-        : "",
-    );
     setActionAttachmentFile(null);
     setActionError("");
   };
@@ -715,7 +728,6 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
-    setActionBilledAmount("");
     setActionAttachmentFile(null);
     setActionError("");
   };
@@ -783,6 +795,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
     const normalizedReason = actionReason.trim();
+    const existingRevenueAmount = getExistingRevenueAmount(actionModalItem);
     if (
       actionTarget === "pending_joining" &&
       !String(actionJoiningDate || "").trim()
@@ -803,22 +816,8 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     }
     if (actionTarget === "billed") {
-      const billedAmountStr = String(actionBilledAmount || "").trim();
-      if (!billedAmountStr) {
-        setActionError("Please provide the billed amount.");
-        return;
-      }
-      const billedAmountNum = Number(billedAmountStr);
-      if (
-        !Number.isFinite(billedAmountNum) ||
-        billedAmountNum <= 0 ||
-        !Number.isInteger(billedAmountNum)
-      ) {
-        setActionError("Billed amount must be a positive integer.");
-        return;
-      }
       if (!actionAttachmentFile) {
-        setActionError("Please upload the candidate PDF attachment.");
+        setActionError("photo PDF attachment is required for billed status.");
         return;
       }
       const fileName = String(actionAttachmentFile.name || "").toLowerCase();
@@ -827,54 +826,46 @@ export default function AdminPerformance({ setCurrentPage }) {
         setActionError("Only PDF attachments are allowed for billed status.");
         return;
       }
+      if (actionAttachmentFile.size > 8 * 1024 * 1024) {
+        setActionError("Billed attachment must be 8MB or smaller.");
+        return;
+      }
     }
     setActionSubmitting(true);
     setActionError("");
     try {
-      const basePayload = {
-        status: actionTarget,
-        ...buildCandidatePayloadAliases(actionModalItem),
-        ...(!["pending_joining"].includes(actionTarget)
-          ? {
-              reason: normalizedReason || null,
-            }
-          : {}),
-        ...(actionTarget === "selected"
-          ? {
-              selection_reason: normalizedReason || null,
-              select_reason: normalizedReason || null,
-              selectReason: normalizedReason || null,
-            }
-          : {}),
-        ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
-        actionJoiningDate
-          ? { joining_date: actionJoiningDate }
-          : {}),
-        ...(actionTarget === "joined" && actionJoiningNote.trim()
-          ? {
-              joining_note: actionJoiningNote.trim(),
-              joined_reason: actionJoiningNote.trim(),
-            }
-          : {}),
-        ...(actionTarget === "joined" && String(actionRevenue || "").trim()
-          ? { revenue: Number(String(actionRevenue).trim()) }
-          : {}),
-        ...(actionTarget === "billed" && String(actionBilledAmount || "").trim()
-          ? { revenue: Number(String(actionBilledAmount).trim()) }
-          : {}),
-      };
-
       const payload =
         actionTarget === "billed" && actionAttachmentFile
-          ? (() => {
-              const formData = new FormData();
-              Object.entries(basePayload).forEach(([key, value]) => {
-                appendFormValue(formData, key, value);
-              });
-              formData.append("photo", actionAttachmentFile);
-              return formData;
-            })()
-          : basePayload;
+          ? buildBilledFormData(actionModalItem, actionAttachmentFile)
+          : {
+              status: actionTarget,
+              ...buildCandidatePayloadAliases(actionModalItem),
+              ...(!["pending_joining"].includes(actionTarget)
+                ? {
+                    reason: normalizedReason || null,
+                  }
+                : {}),
+              ...(actionTarget === "selected"
+                ? {
+                    selection_reason: normalizedReason || null,
+                    select_reason: normalizedReason || null,
+                    selectReason: normalizedReason || null,
+                  }
+                : {}),
+              ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
+              actionJoiningDate
+                ? { joining_date: actionJoiningDate }
+                : {}),
+              ...(actionTarget === "joined" && actionJoiningNote.trim()
+                ? {
+                    joining_note: actionJoiningNote.trim(),
+                    joined_reason: actionJoiningNote.trim(),
+                  }
+                : {}),
+              ...(actionTarget === "joined" && String(actionRevenue || "").trim()
+                ? { revenue: Number(String(actionRevenue).trim()) }
+                : {}),
+            };
 
       await adminAdvanceStatus(actionModalItem.resId, payload);
       let intakeSyncWarning = "";
@@ -882,8 +873,8 @@ export default function AdminPerformance({ setCurrentPage }) {
         try {
           await ensureBilledIntakeEntry({
             resId: actionModalItem.resId,
-            amount: Number(String(actionBilledAmount).trim()),
-            reason: normalizedReason,
+            amount: existingRevenueAmount,
+            reason: "",
             attachmentFile: actionAttachmentFile,
           });
         } catch (syncError) {
@@ -1835,34 +1826,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                     }}
                   />
                   <p className="admin-muted" style={{ margin: "6px 0 0" }}>
-                    This PDF will be sent as the revenue attachment and stored
-                    in the `photo` field.
+                    This PDF will be stored as the revenue attachment in the
+                    `photo` field. The existing joined revenue amount will be
+                    reused automatically.
                   </p>
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Billed Reason (optional)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={actionReason}
-                    onChange={(e) => setActionReason(e.target.value)}
-                    placeholder="Enter reason if needed..."
-                    disabled={actionSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                      fontFamily: "inherit",
-                    }}
-                  />
                 </div>
               </>
             ) : (
@@ -1933,9 +1900,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
                     !String(actionRevenue || "").trim()) ||
-                  (actionTarget === "billed" &&
-                    (!actionAttachmentFile ||
-                      !String(actionBilledAmount || "").trim()))
+                  (actionTarget === "billed" && !actionAttachmentFile)
                 }
               >
                 {actionSubmitting
