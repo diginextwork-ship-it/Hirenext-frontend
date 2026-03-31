@@ -687,6 +687,9 @@ export default function AdminPerformance({ setCurrentPage }) {
         item?.revenueAmount ??
         item?.amount ??
         item?.companyRev ??
+        item?.company_rev ??
+        item?.job?.companyRev ??
+        item?.job?.company_rev ??
         0,
     );
     setActionModalItem(item);
