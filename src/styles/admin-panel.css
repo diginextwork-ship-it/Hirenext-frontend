@@ -1285,6 +1285,13 @@
   margin-top: 1.25rem;
 }
 
+.billed-disabled-reason {
+  margin: 0.5rem 0 0;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .admin-attendance-toolbar {
   display: flex;
   align-items: flex-end;

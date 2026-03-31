@@ -162,6 +162,8 @@ const getExistingRevenueAmount = (item) => {
   const revenueValue = Number(
     item?.revenue ??
       item?.revenueAmount ??
+      item?.candidateRevenue ??
+      item?.companyRevenue ??
       item?.amount ??
       item?.companyRev ??
       item?.company_rev ??
@@ -172,6 +174,42 @@ const getExistingRevenueAmount = (item) => {
 
   return Number.isFinite(revenueValue) ? Math.trunc(revenueValue) : 0;
 };
+
+function getConfirmBilledDisabledReason(candidate, billedFile) {
+  const currentStatus = String(
+    candidate?.currentStatus ?? candidate?.status ?? "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!candidate?.resId) {
+    return "Resume ID is missing.";
+  }
+
+  if (currentStatus !== "joined" && currentStatus !== "billed") {
+    return `Only a Joined candidate can move to Billed. Current status: ${candidate?.currentStatus || candidate?.status || "unknown"}.`;
+  }
+
+  if (!billedFile) {
+    return "Upload the candidate PDF attachment to enable Confirm Billed.";
+  }
+
+  if (billedFile.type !== "application/pdf") {
+    return "Only PDF files are allowed for billing.";
+  }
+
+  const revenue = Number(
+    candidate?.candidateRevenue ??
+      candidate?.companyRevenue ??
+      getExistingRevenueAmount(candidate),
+  );
+
+  if (!Number.isFinite(revenue) || revenue <= 0) {
+    return "Revenue is not configured for this candidate/company.";
+  }
+
+  return "";
+}
 
 const buildBilledFormData = (resume, attachmentFile) => {
   const normalized = normalizeResumeData(resume);
@@ -347,6 +385,11 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionAttachmentFile, setActionAttachmentFile] = useState(null);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const billedDisabledReason =
+    actionTarget === "billed"
+      ? getConfirmBilledDisabledReason(actionModalItem, actionAttachmentFile)
+      : "";
+  const isConfirmBilledDisabled = Boolean(billedDisabledReason);
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -816,13 +859,20 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     }
     if (actionTarget === "billed") {
+      const disableReason = getConfirmBilledDisabledReason(
+        actionModalItem,
+        actionAttachmentFile,
+      );
+      if (disableReason) {
+        setActionError(disableReason);
+        return;
+      }
       if (!actionAttachmentFile) {
         setActionError("photo PDF attachment is required for billed status.");
         return;
       }
-      const fileName = String(actionAttachmentFile.name || "").toLowerCase();
       const fileType = String(actionAttachmentFile.type || "").toLowerCase();
-      if (fileType !== "application/pdf" && !fileName.endsWith(".pdf")) {
+      if (fileType !== "application/pdf") {
         setActionError("Only PDF attachments are allowed for billed status.");
         return;
       }
@@ -1900,7 +1950,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
                     !String(actionRevenue || "").trim()) ||
-                  (actionTarget === "billed" && !actionAttachmentFile)
+                  (actionTarget === "billed" && isConfirmBilledDisabled)
                 }
               >
                 {actionSubmitting
@@ -1908,6 +1958,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                   : `Confirm ${formatStatusLabel(actionTarget)}`}
               </button>
             </div>
+            {actionTarget === "billed" && billedDisabledReason ? (
+              <p className="billed-disabled-reason">{billedDisabledReason}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
