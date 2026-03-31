@@ -11,6 +11,8 @@ const RESUME_SOURCE_OPTIONS = [
   "Internal Database",
 ];
 
+const EDUCATION_LEVEL_OPTIONS = ["Bachelor's", "Master's", "PhD"];
+
 const initialFormState = {
   candidate_name: "",
   phone: "",
@@ -134,12 +136,15 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       }
 
       const autofill = data?.autofill || {};
+      const autofillEducationLevel = EDUCATION_LEVEL_OPTIONS.includes(autofill.latestEducationLevel)
+        ? autofill.latestEducationLevel
+        : prev.latest_education_level;
       setFormData((prev) => ({
         ...prev,
         candidate_name: autofill.name || prev.candidate_name,
         phone: String(autofill.phone || prev.phone).replace(/\D/g, "").slice(0, 10),
         email: autofill.email || prev.email,
-        latest_education_level: autofill.latestEducationLevel || prev.latest_education_level,
+        latest_education_level: autofillEducationLevel,
         board_university: autofill.boardUniversity || prev.board_university,
         institution_name: autofill.institutionName || prev.institution_name,
         age: autofill.age || prev.age,
@@ -334,17 +339,17 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
               required
             >
               <option value="">Education Level</option>
-              <option value="High School">High School</option>
-              <option value="Bachelor's">Bachelor&apos;s</option>
-              <option value="Master's">Master&apos;s</option>
-              <option value="PhD">PhD</option>
+              {EDUCATION_LEVEL_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
             <input
               type="text"
               placeholder="Board / University"
               value={formData.board_university}
               onChange={(event) => setField("board_university", event.target.value)}
-              required
             />
             <input
               type="text"
