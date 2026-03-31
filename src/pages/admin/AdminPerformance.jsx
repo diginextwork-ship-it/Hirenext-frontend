@@ -167,6 +167,10 @@ const getExistingRevenueAmount = (item) => {
       item?.amount ??
       item?.companyRev ??
       item?.company_rev ??
+      item?.job?.revenue ??
+      item?.job?.revenueAmount ??
+      item?.job?.candidateRevenue ??
+      item?.job?.companyRevenue ??
       item?.job?.companyRev ??
       item?.job?.company_rev ??
       0,
@@ -196,16 +200,6 @@ function getConfirmBilledDisabledReason(candidate, billedFile) {
 
   if (billedFile.type !== "application/pdf") {
     return "Only PDF files are allowed for billing.";
-  }
-
-  const revenue = Number(
-    candidate?.candidateRevenue ??
-      candidate?.companyRevenue ??
-      getExistingRevenueAmount(candidate),
-  );
-
-  if (!Number.isFinite(revenue) || revenue <= 0) {
-    return "Revenue is not configured for this candidate/company.";
   }
 
   return "";
@@ -838,7 +832,6 @@ export default function AdminPerformance({ setCurrentPage }) {
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
     const normalizedReason = actionReason.trim();
-    const existingRevenueAmount = getExistingRevenueAmount(actionModalItem);
     if (
       actionTarget === "pending_joining" &&
       !String(actionJoiningDate || "").trim()
@@ -853,8 +846,8 @@ export default function AdminPerformance({ setCurrentPage }) {
         return;
       }
       const revNum = Number(revStr);
-      if (!Number.isFinite(revNum) || revNum < 0 || !Number.isInteger(revNum)) {
-        setActionError("Revenue must be a non-negative integer.");
+      if (!Number.isFinite(revNum) || revNum <= 0 || !Number.isInteger(revNum)) {
+        setActionError("Revenue must be a positive integer.");
         return;
       }
     }
@@ -917,13 +910,27 @@ export default function AdminPerformance({ setCurrentPage }) {
                 : {}),
             };
 
-      await adminAdvanceStatus(actionModalItem.resId, payload);
+      const advanceResponse = await adminAdvanceStatus(
+        actionModalItem.resId,
+        payload,
+      );
       let intakeSyncWarning = "";
       if (actionTarget === "billed") {
+        const syncRevenueAmount = getExistingRevenueAmount(
+          advanceResponse?.resume ||
+            advanceResponse?.candidate ||
+            advanceResponse ||
+            actionModalItem,
+        );
         try {
+          if (syncRevenueAmount <= 0) {
+            throw new Error(
+              "Revenue amount was not returned after moving the candidate to billed.",
+            );
+          }
           await ensureBilledIntakeEntry({
             resId: actionModalItem.resId,
-            amount: existingRevenueAmount,
+            amount: syncRevenueAmount,
             reason: "",
             attachmentFile: actionAttachmentFile,
           });
@@ -1809,7 +1816,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </label>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     step="1"
                     value={actionRevenue}
                     onChange={(e) => setActionRevenue(e.target.value)}
