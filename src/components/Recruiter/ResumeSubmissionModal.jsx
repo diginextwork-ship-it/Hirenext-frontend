@@ -136,15 +136,14 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       }
 
       const autofill = data?.autofill || {};
-      const autofillEducationLevel = EDUCATION_LEVEL_OPTIONS.includes(autofill.latestEducationLevel)
-        ? autofill.latestEducationLevel
-        : prev.latest_education_level;
       setFormData((prev) => ({
         ...prev,
         candidate_name: autofill.name || prev.candidate_name,
         phone: String(autofill.phone || prev.phone).replace(/\D/g, "").slice(0, 10),
         email: autofill.email || prev.email,
-        latest_education_level: autofillEducationLevel,
+        latest_education_level: EDUCATION_LEVEL_OPTIONS.includes(autofill.latestEducationLevel)
+          ? autofill.latestEducationLevel
+          : prev.latest_education_level,
         board_university: autofill.boardUniversity || prev.board_university,
         institution_name: autofill.institutionName || prev.institution_name,
         age: autofill.age || prev.age,
@@ -345,12 +344,6 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
                 </option>
               ))}
             </select>
-            <input
-              type="text"
-              placeholder="Board / University"
-              value={formData.board_university}
-              onChange={(event) => setField("board_university", event.target.value)}
-            />
             <input
               type="text"
               placeholder="Institution Name"
