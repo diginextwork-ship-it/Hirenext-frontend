@@ -1815,32 +1815,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                       marginBottom: "4px",
                     }}
                   >
-                    Billed Amount (integer)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={actionBilledAmount}
-                    onChange={(e) => setActionBilledAmount(e.target.value)}
-                    disabled={actionSubmitting}
-                    placeholder="Enter billed amount"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
                     Candidate PDF Attachment
                   </label>
                   <input
