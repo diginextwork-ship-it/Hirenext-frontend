@@ -106,6 +106,7 @@
 .performance-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 960px;
 }
 
 .performance-table th,
@@ -141,6 +142,7 @@
 .resume-status-actions {
   display: inline-flex;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .resume-action-btn {
@@ -481,8 +483,7 @@
 
   .performance-table th,
   .performance-table td {
-    white-space: normal;
-    word-break: break-word;
+    white-space: nowrap;
     padding: 0.4rem;
     font-size: 0.75rem;
   }

@@ -4,12 +4,13 @@
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-family: "Outfit", sans-serif;
   color: var(--text-primary);
-  overflow-x: hidden;
+  overflow-x: visible;
 }
 
 .admin-panel-page {
   display: grid;
   gap: 2rem;
+  min-width: 0;
 }
 
 .admin-hero {
@@ -130,6 +131,7 @@
 .admin-page-body {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .admin-page-actions {
@@ -180,12 +182,14 @@
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
   max-width: 100%;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .admin-card-large {
   width: 100%;
   max-width: 100%;
   overflow: hidden;
+  min-width: 0;
 }
 
 .admin-form {
@@ -296,8 +300,11 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   margin-top: 1rem;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .admin-table {
@@ -431,9 +438,12 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   box-sizing: border-box;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
+  min-width: 0;
 }
 
 /* ── Base table ─────────────────────────────────────────────────── */
@@ -1406,6 +1416,10 @@
     border-radius: 0.85rem;
   }
 
+  .admin-page-body > * {
+    min-width: 0;
+  }
+
   .admin-page-actions {
     width: 100%;
     flex-direction: column;
@@ -1449,10 +1463,10 @@
   }
 
   .admin-table-wrap {
-    margin-left: -0.2rem;
-    margin-right: -0.2rem;
-    padding-left: 0.2rem;
-    padding-right: 0.2rem;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .admin-table {

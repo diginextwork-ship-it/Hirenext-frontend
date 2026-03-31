@@ -7,6 +7,7 @@
 .recruiter-login-shell {
   max-width: 560px;
   margin: 0 auto;
+  min-width: 0;
 }
 
 .recruiter-login-card {
@@ -15,6 +16,7 @@
   border-radius: 1rem;
   padding: var(--spacing-2xl);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  min-width: 0;
 }
 
 .recruiter-login-card h1 {
@@ -230,6 +232,7 @@
   padding: 1rem;
   margin-bottom: 1.2rem;
   background: #fff;
+  min-width: 0;
 }
 
 .chart-card h2 {
@@ -293,11 +296,17 @@
 .jobs-list-table-wrap {
   margin-top: 0.8rem;
   overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 
 .jobs-list-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 760px;
 }
 
 .jobs-list-table th,

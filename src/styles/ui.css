@@ -6,6 +6,7 @@
 .ui-shell {
   width: min(1200px, 96vw);
   margin: 0 auto;
+  min-width: 0;
 }
 
 .ui-card {
@@ -56,11 +57,16 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 
 .ui-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 720px;
 }
 
 .ui-table th,
@@ -197,7 +203,7 @@ video {
 
   .ui-table th,
   .ui-table td {
-    white-space: normal;
+    white-space: nowrap;
     font-size: 0.78rem;
     padding: 0.35rem;
   }
