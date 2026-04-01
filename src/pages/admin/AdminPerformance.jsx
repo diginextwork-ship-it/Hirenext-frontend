@@ -596,10 +596,15 @@ export default function AdminPerformance({ setCurrentPage }) {
       if (!Array.isArray(bucketItems)) continue;
       const bucketRank = getStatusRank(bucketStatus);
       for (const item of bucketItems) {
+        const normalizedItem = normalizeResumeData(item);
         const resId = getResId(item);
         if (!resId || String(resId).trim() === "") continue;
         const itemStatus = normalizeStatus(
-          item?.workflowStatus || item?.workflow_status || item?.status,
+          normalizedItem?.workflowStatus ||
+            normalizedItem?.status ||
+            item?.workflowStatus ||
+            item?.workflow_status ||
+            item?.status,
         );
         const itemRank = getStatusRank(itemStatus);
         const currentRank = Math.max(bucketRank, itemRank);
@@ -631,10 +636,8 @@ export default function AdminPerformance({ setCurrentPage }) {
           ? statusDrilldown[drilldownKey]
           : [];
 
-    const filteredItems = rawItems;
-
     // Always normalize items so company/city are available for all statuses
-    const normalizedItems = filteredItems.map((item) => {
+    const normalizedItems = rawItems.map((item) => {
       const normalized = normalizeResumeData(item);
 
       // Team leader naming differs between API paths (submitted list vs drilldowns).
@@ -698,14 +701,22 @@ export default function AdminPerformance({ setCurrentPage }) {
       console.debug("[AdminPerformance] drilldown sample", {
         selectedStatusKey,
         rawCount: rawItems.length,
-        filteredCount: filteredItems.length,
+        filteredCount: rawItems.length,
         normalizedCount: normalizedItems.length,
         dupResIds,
         sample,
       });
     }
 
-    return dedupeItemsByResId(normalizedItems);
+    const dedupedItems = dedupeItemsByResId(normalizedItems);
+
+    if (selectedStatusKey === "submitted") {
+      return dedupedItems;
+    }
+
+    return dedupedItems.filter(
+      (item) => normalizeStatus(item?.status) === normalizeStatus(selectedStatusKey),
+    );
   }, [
     data,
     drilldownKey,

@@ -181,8 +181,9 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   ]);
   const rid = pickNested(source, ["rid", "recruiterRid", "recruiter_rid"]);
   const status = pickFirst(
-    pickNested(source, ["workflowStatus", "workflow_status", "status"]),
+    pickNested(source, ["workflowStatus", "workflow_status"]),
     pickNested(source.selection || {}, ["status", "selection_status"]),
+    pickNested(source, ["status"]),
   );
   const jobJid = pickFirst(
     pickNested(source, [
