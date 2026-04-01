@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import "../styles/job-application.css";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../config/api";
 import PageBackButton from "../components/PageBackButton";
@@ -24,13 +24,14 @@ export default function JobApplication({ setCurrentPage }) {
   const [formData, setFormData] = useState(initialFormData);
   const [resumeFile, setResumeFile] = useState(null);
   const [parsedResume, setParsedResume] = useState(null);
-  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [isResumeProcessing, setIsResumeProcessing] = useState(false);
+  const [resumeProcessingStage, setResumeProcessingStage] = useState("");
   const [resumeMessage, setResumeMessage] = useState("");
   const [resumeMessageType, setResumeMessageType] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const activeResumeRequestIdRef = useRef(0);
 
   const selectedJob = useMemo(() => {
     try {
@@ -41,6 +42,31 @@ export default function JobApplication({ setCurrentPage }) {
     }
   }, []);
   const selectedJobId = String(selectedJob?.id ?? selectedJob?.jid ?? "").trim();
+
+  const beginResumeRequest = (stage) => {
+    const nextRequestId = activeResumeRequestIdRef.current + 1;
+    activeResumeRequestIdRef.current = nextRequestId;
+    setIsResumeProcessing(true);
+    setResumeProcessingStage(stage);
+    return nextRequestId;
+  };
+
+  const updateResumeRequestStage = (requestId, stage) => {
+    if (activeResumeRequestIdRef.current !== requestId) return;
+    setResumeProcessingStage(stage);
+  };
+
+  const finishResumeRequest = (requestId) => {
+    if (activeResumeRequestIdRef.current !== requestId) return;
+    setIsResumeProcessing(false);
+    setResumeProcessingStage("");
+  };
+
+  const cancelResumeRequest = () => {
+    activeResumeRequestIdRef.current += 1;
+    setIsResumeProcessing(false);
+    setResumeProcessingStage("");
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -86,19 +112,25 @@ export default function JobApplication({ setCurrentPage }) {
       reader.readAsDataURL(file);
     });
 
-  const parseResumeAndAutofill = async (file) => {
+  const parseResumeAndAutofill = async (file, options = {}) => {
     if (!selectedJobId) {
       setResumeMessageType("error");
       setResumeMessage("Select a job first, then upload resume.");
-      return;
+      return null;
     }
 
-    setIsParsingResume(true);
+    const requestId = options.requestId ?? beginResumeRequest("Parsing resume...");
+    const shouldReleaseLock = options.requestId === undefined;
     setResumeMessage("");
     setResumeMessageType("");
 
     try {
-      const resumeBase64 = await fileToDataUrl(file);
+      const resumeBase64 = options.resumeBase64 ?? (await fileToDataUrl(file));
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
+      updateResumeRequestStage(requestId, "Calculating ATS score...");
       const response = await fetch(`${API_BASE_URL}/api/applications/parse-resume`, {
         method: "POST",
         headers: {
@@ -113,8 +145,15 @@ export default function JobApplication({ setCurrentPage }) {
       });
 
       const data = await response.json();
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
       if (!response.ok) {
         throw new Error(data?.message || "Failed to parse resume.");
+      }
+      if (data?.processing && data.processing.submitAllowed !== true) {
+        throw new Error(data?.message || "Resume processing is not complete yet.");
       }
 
       const autofill = data?.autofill || {};
@@ -137,12 +176,18 @@ export default function JobApplication({ setCurrentPage }) {
         atsScore: data?.atsScore ?? null,
         atsMatchPercentage: data?.atsMatchPercentage ?? null,
         atsRawJson: data?.atsRawJson || null,
+        parserMeta: data?.parser_meta || null,
+        processing: data?.processing || null,
       };
       setParsedResume(parsedPayload);
       setResumeMessageType("success");
       setResumeMessage("Resume parsed and form auto-filled successfully.");
       return parsedPayload;
     } catch (error) {
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
       if (error instanceof TypeError) {
         setResumeMessageType("error");
         setResumeMessage(BACKEND_CONNECTION_ERROR);
@@ -153,12 +198,15 @@ export default function JobApplication({ setCurrentPage }) {
       setParsedResume(null);
       return null;
     } finally {
-      setIsParsingResume(false);
+      if (shouldReleaseLock) {
+        finishResumeRequest(requestId);
+      }
     }
   };
 
   const handleResumeFileChange = async (event) => {
     const file = event.target.files?.[0] || null;
+    cancelResumeRequest();
     setResumeMessage("");
     setResumeMessageType("");
     setParsedResume(null);
@@ -186,68 +234,75 @@ export default function JobApplication({ setCurrentPage }) {
     }
 
     setResumeFile(file);
-    await parseResumeAndAutofill(file);
+    const requestId = beginResumeRequest("Parsing resume...");
+    await parseResumeAndAutofill(file, { requestId });
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isResumeProcessing) {
+      return;
+    }
+
+    const requestId = beginResumeRequest("Submitting...");
     setSubmitted(false);
     setSubmitMessage("");
 
-    if (!selectedJobId) {
-      setSubmitMessage("No job selected. Please go back and choose a job first.");
-      return;
-    }
-
-    if (!resumeFile) {
-      setSubmitMessage("Please upload your resume before submitting.");
-      return;
-    }
-
-    let parsedResumePayload = parsedResume;
-    if (!parsedResumePayload) {
-      parsedResumePayload = await parseResumeAndAutofill(resumeFile);
-      if (!parsedResumePayload) {
-        setSubmitMessage("Resume parsing failed. Please re-upload and try again.");
-        return;
-      }
-    }
-
-    if (!/^\d{10}$/.test(formData.phone)) {
-      setPhoneError("Phone number must be exactly 10 digits.");
-      return;
-    }
-
-    if (!["yes", "no"].includes(formData.hasPriorExperience)) {
-      setSubmitMessage("Please select whether you have prior experience.");
-      return;
-    }
-
-    if (formData.hasPriorExperience === "yes") {
-      if (
-        !formData.experienceIndustry ||
-        !formData.currentSalary ||
-        !formData.expectedSalary ||
-        !formData.noticePeriod ||
-        !formData.yearsOfExperience
-      ) {
-        setSubmitMessage("Please complete all prior experience fields.");
-        return;
-      }
-
-      if (
-        formData.experienceIndustry === "others" &&
-        !String(formData.experienceIndustryOther || "").trim()
-      ) {
-        setSubmitMessage("Please specify the industry when selecting others.");
-        return;
-      }
-    }
-
-    setIsSubmitting(true);
-    setPhoneError("");
-
     try {
+      if (!selectedJobId) {
+        setSubmitMessage("No job selected. Please go back and choose a job first.");
+        return;
+      }
+
+      if (!resumeFile) {
+        setSubmitMessage("Please upload your resume before submitting.");
+        return;
+      }
+
+      let parsedResumePayload = parsedResume;
+      if (!parsedResumePayload) {
+        parsedResumePayload = await parseResumeAndAutofill(resumeFile, { requestId });
+        if (!parsedResumePayload) {
+          if (activeResumeRequestIdRef.current === requestId) {
+            setSubmitMessage("Resume parsing failed. Please re-upload and try again.");
+          }
+          return;
+        }
+      }
+
+      if (!/^\d{10}$/.test(formData.phone)) {
+        setPhoneError("Phone number must be exactly 10 digits.");
+        return;
+      }
+
+      if (!["yes", "no"].includes(formData.hasPriorExperience)) {
+        setSubmitMessage("Please select whether you have prior experience.");
+        return;
+      }
+
+      if (formData.hasPriorExperience === "yes") {
+        if (
+          !formData.experienceIndustry ||
+          !formData.currentSalary ||
+          !formData.expectedSalary ||
+          !formData.noticePeriod ||
+          !formData.yearsOfExperience
+        ) {
+          setSubmitMessage("Please complete all prior experience fields.");
+          return;
+        }
+
+        if (
+          formData.experienceIndustry === "others" &&
+          !String(formData.experienceIndustryOther || "").trim()
+        ) {
+          setSubmitMessage("Please specify the industry when selecting others.");
+          return;
+        }
+      }
+
+      setPhoneError("");
+      updateResumeRequestStage(requestId, "Submitting...");
       const response = await fetch(`${API_BASE_URL}/api/applications`, {
         method: "POST",
         headers: {
@@ -267,8 +322,15 @@ export default function JobApplication({ setCurrentPage }) {
       });
 
       const data = await response.json();
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data?.message || "Failed to submit application.");
+      }
+      if (data?.processing && data.processing.submitAllowed !== true) {
+        throw new Error(data?.message || "Application submission is not complete yet.");
       }
 
       setSubmitted(true);
@@ -279,13 +341,17 @@ export default function JobApplication({ setCurrentPage }) {
       setResumeMessage("");
       setResumeMessageType("");
     } catch (error) {
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return;
+      }
+
       if (error instanceof TypeError) {
         setSubmitMessage(BACKEND_CONNECTION_ERROR);
       } else {
         setSubmitMessage(error.message || "Application submission failed.");
       }
     } finally {
-      setIsSubmitting(false);
+      finishResumeRequest(requestId);
     }
   };
 
@@ -320,8 +386,8 @@ export default function JobApplication({ setCurrentPage }) {
                 onChange={handleResumeFileChange}
                 required
               />
-              {isParsingResume ? (
-                <p>Kindly be patient as the process may take a while.</p>
+              {isResumeProcessing && resumeProcessingStage ? (
+                <p>{resumeProcessingStage}</p>
               ) : null}
               {resumeMessage ? (
                 <p
@@ -554,8 +620,10 @@ export default function JobApplication({ setCurrentPage }) {
             </div>
 
             <div className="application-actions">
-              <button type="submit" className="apply-submit-btn" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit Application"}
+              <button type="submit" className="apply-submit-btn" disabled={isResumeProcessing}>
+                {isResumeProcessing && resumeProcessingStage
+                  ? resumeProcessingStage
+                  : "Submit Application"}
               </button>
             </div>
           </form>

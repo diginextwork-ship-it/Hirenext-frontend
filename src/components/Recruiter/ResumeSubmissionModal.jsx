@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { checkRecruiterJobAccess, submitRecruiterResume } from "../../services/jobAccessService";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../../config/api";
 
@@ -32,14 +32,15 @@ const allowedFilePattern = /\.(pdf|doc|docx)$/i;
 export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onClose, onSuccess }) {
   const [hasAccess, setHasAccess] = useState(null);
   const [checkingAccess, setCheckingAccess] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [isResumeProcessing, setIsResumeProcessing] = useState(false);
+  const [resumeProcessingStage, setResumeProcessingStage] = useState("");
   const [parseMessage, setParseMessage] = useState("");
   const [parseMessageType, setParseMessageType] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFormData] = useState(initialFormState);
   const [resumeBase64, setResumeBase64] = useState("");
   const [parsedPayload, setParsedPayload] = useState(null);
+  const activeResumeRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen || !jobId || !recruiterId) return;
@@ -70,11 +71,12 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
 
   useEffect(() => {
     if (!isOpen) {
+      activeResumeRequestIdRef.current += 1;
       setFormData(initialFormState);
       setHasAccess(null);
       setCheckingAccess(false);
-      setSubmitting(false);
-      setIsParsingResume(false);
+      setIsResumeProcessing(false);
+      setResumeProcessingStage("");
       setParseMessage("");
       setParseMessageType("");
       setErrorMessage("");
@@ -84,6 +86,31 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const beginResumeRequest = (stage) => {
+    const nextRequestId = activeResumeRequestIdRef.current + 1;
+    activeResumeRequestIdRef.current = nextRequestId;
+    setIsResumeProcessing(true);
+    setResumeProcessingStage(stage);
+    return nextRequestId;
+  };
+
+  const updateResumeRequestStage = (requestId, stage) => {
+    if (activeResumeRequestIdRef.current !== requestId) return;
+    setResumeProcessingStage(stage);
+  };
+
+  const finishResumeRequest = (requestId) => {
+    if (activeResumeRequestIdRef.current !== requestId) return;
+    setIsResumeProcessing(false);
+    setResumeProcessingStage("");
+  };
+
+  const cancelResumeRequest = () => {
+    activeResumeRequestIdRef.current += 1;
+    setIsResumeProcessing(false);
+    setResumeProcessingStage("");
+  };
 
   const setField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -108,15 +135,21 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       reader.readAsDataURL(file);
     });
 
-  const parseResumeAndAutofill = async (file, base64Override) => {
-    if (!file || !jobId) return;
+  const parseResumeAndAutofill = async (file, options = {}) => {
+    if (!file || !jobId) return null;
 
-    setIsParsingResume(true);
+    const requestId = options.requestId ?? beginResumeRequest("Parsing resume...");
+    const shouldReleaseLock = options.requestId === undefined;
     setParseMessage("");
     setParseMessageType("");
 
     try {
-      const encodedResume = base64Override || (await fileToDataUrl(file));
+      const encodedResume = options.resumeBase64 ?? (await fileToDataUrl(file));
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
+      updateResumeRequestStage(requestId, "Calculating ATS score...");
       const jid = String(jobId || "").trim();
       const response = await fetch(`${API_BASE_URL}/api/applications/parse-resume`, {
         method: "POST",
@@ -132,8 +165,15 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       });
 
       const data = await response.json();
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
       if (!response.ok) {
         throw new Error(data?.message || "Failed to parse resume.");
+      }
+      if (data?.processing && data.processing.submitAllowed !== true) {
+        throw new Error(data?.message || "Resume processing is not complete yet.");
       }
 
       const autofill = data?.autofill || {};
@@ -156,21 +196,40 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
         atsScore: data?.atsScore ?? null,
         atsMatchPercentage: data?.atsMatchPercentage ?? null,
         atsRawJson: data?.atsRawJson || null,
+        parserMeta: data?.parser_meta || null,
+        processing: data?.processing || null,
       });
+      return {
+        parsedData: data?.parsedData || null,
+        atsScore: data?.atsScore ?? null,
+        atsMatchPercentage: data?.atsMatchPercentage ?? null,
+        atsRawJson: data?.atsRawJson || null,
+        parserMeta: data?.parser_meta || null,
+        processing: data?.processing || null,
+      };
     } catch (error) {
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return null;
+      }
+
       setParseMessageType("error");
       if (error instanceof TypeError) {
         setParseMessage(BACKEND_CONNECTION_ERROR);
       } else {
         setParseMessage(error.message || "Resume parsing failed.");
       }
+      setParsedPayload(null);
+      return null;
     } finally {
-      setIsParsingResume(false);
+      if (shouldReleaseLock) {
+        finishResumeRequest(requestId);
+      }
     }
   };
 
   const handleResumeFileChange = async (event) => {
     const file = event.target.files?.[0] || null;
+    cancelResumeRequest();
     setErrorMessage("");
     setParseMessage("");
     setParseMessageType("");
@@ -185,10 +244,14 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       return;
     }
 
+    const requestId = beginResumeRequest("Parsing resume...");
     try {
       const encodedResume = await fileToDataUrl(file);
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return;
+      }
       setResumeBase64(encodedResume);
-      await parseResumeAndAutofill(file, encodedResume);
+      await parseResumeAndAutofill(file, { requestId, resumeBase64: encodedResume });
     } catch (error) {
       setErrorMessage(error.message || "Failed to read resume file.");
     }
@@ -196,33 +259,63 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!hasAccess) {
-      setErrorMessage("You don't have permission to submit resumes for this job.");
+    if (isResumeProcessing) {
       return;
     }
 
-    const fileError = validateFile(formData.resume_file);
-    if (fileError) {
-      setErrorMessage(fileError);
-      return;
-    }
-
-    const resumeFilename = String(formData.resume_file?.name || "").trim();
-    const jid = String(jobId || "").trim();
-    if (!jid || !resumeBase64 || !resumeFilename) {
-      setErrorMessage("jid, resumeBase64, and resumeFilename are required.");
-      return;
-    }
-
-    setSubmitting(true);
+    const requestId = beginResumeRequest("Submitting...");
     setErrorMessage("");
 
     try {
+      if (!hasAccess) {
+        setErrorMessage("You don't have permission to submit resumes for this job.");
+        return;
+      }
+
+      const fileError = validateFile(formData.resume_file);
+      if (fileError) {
+        setErrorMessage(fileError);
+        return;
+      }
+
+      const jid = String(jobId || "").trim();
+      const resumeFilename = String(formData.resume_file?.name || "").trim();
+      let currentResumeBase64 = resumeBase64;
+      let currentParsedPayload = parsedPayload;
+
+      if (!currentResumeBase64 && formData.resume_file) {
+        updateResumeRequestStage(requestId, "Parsing resume...");
+        currentResumeBase64 = await fileToDataUrl(formData.resume_file);
+        if (activeResumeRequestIdRef.current !== requestId) {
+          return;
+        }
+        setResumeBase64(currentResumeBase64);
+      }
+
+      if (!currentParsedPayload && formData.resume_file) {
+        currentParsedPayload = await parseResumeAndAutofill(formData.resume_file, {
+          requestId,
+          resumeBase64: currentResumeBase64,
+        });
+        if (!currentParsedPayload) {
+          if (activeResumeRequestIdRef.current === requestId) {
+            setErrorMessage("Resume parsing failed. Please re-upload and try again.");
+          }
+          return;
+        }
+      }
+
+      if (!jid || !currentResumeBase64 || !resumeFilename) {
+        setErrorMessage("jid, resumeBase64, and resumeFilename are required.");
+        return;
+      }
+
+      updateResumeRequestStage(requestId, "Submitting...");
       const payload = new FormData();
       payload.append("job_jid", String(jobId));
       payload.append("recruiter_rid", String(recruiterId));
       payload.append("jid", jid);
-      payload.append("resumeBase64", resumeBase64);
+      payload.append("resumeBase64", currentResumeBase64);
       payload.append("resumeFilename", resumeFilename);
       const candidateName = String(formData.candidate_name || "").trim();
       const candidateEmail = String(formData.email || "").trim();
@@ -251,21 +344,21 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
         payload.append("mobile_number", candidatePhone);
         payload.append("mobileNumber", candidatePhone);
       }
-      if (parsedPayload) {
-        if (parsedPayload.parsedData) {
-          payload.append("parsedData", JSON.stringify(parsedPayload.parsedData));
+      if (currentParsedPayload) {
+        if (currentParsedPayload.parsedData) {
+          payload.append("parsedData", JSON.stringify(currentParsedPayload.parsedData));
         }
-        if (parsedPayload.atsScore !== null && parsedPayload.atsScore !== undefined) {
-          payload.append("atsScore", String(parsedPayload.atsScore));
+        if (currentParsedPayload.atsScore !== null && currentParsedPayload.atsScore !== undefined) {
+          payload.append("atsScore", String(currentParsedPayload.atsScore));
         }
         if (
-          parsedPayload.atsMatchPercentage !== null &&
-          parsedPayload.atsMatchPercentage !== undefined
+          currentParsedPayload.atsMatchPercentage !== null &&
+          currentParsedPayload.atsMatchPercentage !== undefined
         ) {
-          payload.append("atsMatchPercentage", String(parsedPayload.atsMatchPercentage));
+          payload.append("atsMatchPercentage", String(currentParsedPayload.atsMatchPercentage));
         }
-        if (parsedPayload.atsRawJson) {
-          payload.append("atsRawJson", JSON.stringify(parsedPayload.atsRawJson));
+        if (currentParsedPayload.atsRawJson) {
+          payload.append("atsRawJson", JSON.stringify(currentParsedPayload.atsRawJson));
         }
       }
       Object.entries(formData).forEach(([key, value]) => {
@@ -274,12 +367,22 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       });
 
       const data = await submitRecruiterResume(payload);
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return;
+      }
+      if (data?.processing && data.processing.submitAllowed !== true) {
+        throw new Error(data?.message || "Resume submission is not complete yet.");
+      }
+
       onSuccess?.(data);
       onClose?.();
     } catch (error) {
+      if (activeResumeRequestIdRef.current !== requestId) {
+        return;
+      }
       setErrorMessage(error.message || "Failed to submit resume.");
     } finally {
-      setSubmitting(false);
+      finishResumeRequest(requestId);
     }
   };
 
@@ -387,7 +490,7 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
                 rows={3}
               />
             </div>
-            {isParsingResume ? <p>Parsing resume and calculating ATS...</p> : null}
+            {isResumeProcessing && resumeProcessingStage ? <p>{resumeProcessingStage}</p> : null}
             {parseMessage ? (
               <p className={parseMessageType === "success" ? "job-message" : "job-message job-message-error"}>
                 {parseMessage}
@@ -395,8 +498,10 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
             ) : null}
 
             <div className="resume-modal-actions">
-              <button type="submit" className="btn-primary" disabled={submitting}>
-                {submitting ? "Submitting..." : "Submit Resume"}
+              <button type="submit" className="btn-primary" disabled={isResumeProcessing}>
+                {isResumeProcessing && resumeProcessingStage
+                  ? resumeProcessingStage
+                  : "Submit Resume"}
               </button>
               <button type="button" className="btn-secondary" onClick={onClose}>
                 Cancel
