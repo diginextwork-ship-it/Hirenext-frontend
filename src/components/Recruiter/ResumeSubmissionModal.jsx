@@ -17,6 +17,7 @@ const initialFormState = {
   candidate_name: "",
   phone: "",
   email: "",
+  candidate_location: "",
   source: "",
   latest_education_level: "",
   board_university: "",
@@ -320,6 +321,16 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
               onChange={(event) => setField("email", event.target.value)}
               required
             />
+            <div className="resume-modal-field">
+              <label htmlFor="candidate_location">Candidate Current Location</label>
+              <input
+                id="candidate_location"
+                type="text"
+                placeholder="Candidate Current Location"
+                value={formData.candidate_location}
+                onChange={(event) => setField("candidate_location", event.target.value)}
+              />
+            </div>
             <select
               value={formData.source}
               onChange={(event) => setField("source", event.target.value)}
