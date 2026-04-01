@@ -126,6 +126,24 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "joined",
 ]);
 
+const ALLOWED_TRANSITIONS = {
+  submitted: ["verified", "rejected"],
+  verified: ["walk_in", "rejected"],
+  walk_in: ["selected", "rejected"],
+  selected: ["pending_joining", "dropout"],
+  pending_joining: ["joined", "dropout"],
+  joined: ["billed", "left"],
+};
+
+const ROLLBACK_TARGET_STATUS = {
+  verified: "submitted",
+  walk_in: "verified",
+  selected: "walk_in",
+  rejected: "verified",
+  pending_joining: "selected",
+  joined: "pending_joining",
+};
+
 function toDateStr(d) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -261,9 +279,18 @@ function formatDate(value) {
 }
 
 function normalizeStatus(value) {
-  return String(value || "")
+  const normalized = String(value || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (normalized === "walkin") return "walk_in";
+  if (normalized === "walk_in") return "walk_in";
+  if (normalized === "select") return "selected";
+  if (normalized === "pendingjoining") return "pending_joining";
+  if (normalized === "pending_joining") return "pending_joining";
+
+  return normalized;
 }
 
 const STATUS_PROGRESS_RANK = {
@@ -394,6 +421,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [statusOverrides, setStatusOverrides] = useState({});
 
   // Temporary debugging toggle:
   // set localStorage.setItem("perf_debug_admin","1") then refresh the page.
@@ -623,8 +651,15 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     }
 
+    for (const [resId, status] of Object.entries(statusOverrides)) {
+      const normalizedStatus = normalizeStatus(status);
+      const rank = getStatusRank(normalizedStatus);
+      if (rank < 0) continue;
+      map.set(String(resId), { status: normalizedStatus, rank });
+    }
+
     return map;
-  }, [statusDrilldown]);
+  }, [statusDrilldown, statusOverrides]);
   const drilldownKey = selectedStatusKey;
   const selectedStatusItems = useMemo(() => {
     const rawItems =
@@ -842,6 +877,15 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
+    const currentStatus = normalizeStatus(actionModalItem.status);
+    const normalizedTarget = normalizeStatus(actionTarget);
+    const allowedTargets = ALLOWED_TRANSITIONS[currentStatus] || [];
+    if (!allowedTargets.includes(normalizedTarget)) {
+      setActionError(
+        `Frontend blocked an invalid transition from '${currentStatus || "unknown"}' to '${normalizedTarget}'. Refresh the table if this row looks stale.`,
+      );
+      return;
+    }
     const normalizedReason = actionReason.trim();
     if (
       actionTarget === "pending_joining" &&
@@ -925,6 +969,10 @@ export default function AdminPerformance({ setCurrentPage }) {
         actionModalItem.resId,
         payload,
       );
+      setStatusOverrides((prev) => ({
+        ...prev,
+        [String(actionModalItem.resId)]: normalizedTarget,
+      }));
       let intakeSyncWarning = "";
       if (actionTarget === "billed") {
         const syncRevenueAmount = getExistingRevenueAmount(
@@ -951,6 +999,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
       closeActionModal();
       await fetchPerformance();
+      await fetchSubmittedResumes();
       if (intakeSyncWarning) {
         window.alert(intakeSyncWarning);
       }
@@ -995,6 +1044,7 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminRollback = async (item) => {
     if (!item?.resId) return;
+    const currentStatus = normalizeStatus(item.status);
     const confirmed = window.confirm(
       `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(item.status)} to the previous stage?`,
     );
@@ -1002,10 +1052,15 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     try {
       await adminRollbackStatus(item.resId);
-      await fetchPerformance();
-      if (selectedStatusKey === "submitted") {
-        await fetchSubmittedResumes();
+      const rollbackTarget = ROLLBACK_TARGET_STATUS[currentStatus];
+      if (rollbackTarget) {
+        setStatusOverrides((prev) => ({
+          ...prev,
+          [String(item.resId)]: rollbackTarget,
+        }));
       }
+      await fetchPerformance();
+      await fetchSubmittedResumes();
     } catch (err) {
       window.alert(err.message || "Failed to rollback resume status.");
     }

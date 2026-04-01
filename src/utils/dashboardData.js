@@ -84,6 +84,7 @@ export const normalizeJobData = (job) => {
 
 export const normalizeResumeData = (resume, fallbackJob = null) => {
   const source = resume || {};
+  const selection = source.selection || {};
   const nestedJob = normalizeJobData(
     pickFirst(
       source.job,
@@ -180,10 +181,34 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     "uploadedByEmail",
   ]);
   const rid = pickNested(source, ["rid", "recruiterRid", "recruiter_rid"]);
+  const resId = pickFirst(
+    pickNested(source, ["resId", "res_id", "resumeId", "resume_id"]),
+    pickNested(selection, ["resId", "res_id", "resumeId", "resume_id"]),
+  );
   const status = pickFirst(
     pickNested(source, ["workflowStatus", "workflow_status"]),
-    pickNested(source.selection || {}, ["status", "selection_status"]),
+    pickNested(selection, ["status", "selection_status"]),
     pickNested(source, ["status"]),
+  );
+  const walkInDate = pickFirst(
+    pickNested(source, ["walkInDate", "walk_in_date"]),
+    pickNested(selection, ["walkInDate", "walk_in_date"]),
+  );
+  const joiningDate = pickFirst(
+    pickNested(source, ["joiningDate", "joining_date"]),
+    pickNested(selection, ["joiningDate", "joining_date"]),
+  );
+  const joiningNote = pickFirst(
+    pickNested(source, ["joiningNote", "joining_note"]),
+    pickNested(selection, ["joiningNote", "joining_note"]),
+  );
+  const joinedReason = pickFirst(
+    pickNested(source, ["joinedReason", "joined_reason"]),
+    pickNested(selection, ["joinedReason", "joined_reason"]),
+  );
+  const dropoutReason = pickFirst(
+    pickNested(source, ["dropoutReason", "dropout_reason", "reason"]),
+    pickNested(selection, ["dropoutReason", "dropout_reason", "reason"]),
   );
   const jobJid = pickFirst(
     pickNested(source, [
@@ -262,6 +287,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
 
   return {
     ...source,
+    resId: pickFirst(source.resId, resId),
     rid: pickFirst(source.rid, rid),
     recruiterRid: pickFirst(source.recruiterRid, rid),
     recruiterName: pickFirst(source.recruiterName, recruiterName),
@@ -275,8 +301,13 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     candidatePhone: pickFirst(source.candidatePhone, candidatePhone),
     phone: pickFirst(source.phone, candidatePhone),
     mobile: pickFirst(source.mobile, candidatePhone),
-    status: pickFirst(source.status, status),
+    status: pickFirst(status, source.status),
     workflowStatus: pickFirst(source.workflowStatus, status),
+    walkInDate: pickFirst(source.walkInDate, walkInDate),
+    joiningDate: pickFirst(source.joiningDate, joiningDate),
+    joiningNote: pickFirst(source.joiningNote, joiningNote),
+    joinedReason: pickFirst(source.joinedReason, joinedReason),
+    dropoutReason: pickFirst(source.dropoutReason, dropoutReason),
     jobJid: pickFirst(source.jobJid, jobJid),
     companyName: pickFirst(source.companyName, companyName),
     company_name: pickFirst(source.company_name, companyName),
