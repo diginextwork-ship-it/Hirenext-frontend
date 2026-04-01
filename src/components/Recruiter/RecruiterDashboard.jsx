@@ -5,7 +5,7 @@ import {
   fetchRecruiterDashboard,
   markResumeLeft,
 } from "../../services/performanceService";
-import { getAuthToken } from "../../auth/session";
+import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
 import { normalizeResumeData } from "../../utils/dashboardData";
 
@@ -42,6 +42,34 @@ const STATUS_PROGRESS_RANK = {
   left: 7,
   dropout: 7,
   rejected: 7,
+};
+
+const normalizeStatusValue = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
+const getStatusRank = (status) => {
+  const normalized = normalizeStatusValue(status);
+  return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
+    ? STATUS_PROGRESS_RANK[normalized]
+    : -1;
+};
+
+const mapStatusToFilter = (status) => {
+  const normalized = normalizeStatusValue(status);
+  if (normalized === "submitted") return "submitted";
+  if (normalized === "verified") return "verified";
+  if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
+  if (normalized === "selected" || normalized === "select") return "selected";
+  if (normalized === "pending_joining" || normalized === "pending joining")
+    return "pending_joining";
+  if (normalized === "rejected" || normalized === "reject") return "rejected";
+  if (normalized === "joined") return "joined";
+  if (normalized === "dropout") return "dropout";
+  if (normalized === "billed") return "billed";
+  if (normalized === "left") return "left";
+  return "";
 };
 
 export default function RecruiterDashboard({ recruiterId }) {
@@ -95,35 +123,12 @@ export default function RecruiterDashboard({ recruiterId }) {
     setAppliedFilters({ startDate: "", endDate: "" });
   };
 
-  const readJsonResponse = async (response) => {
-    const raw = await response.text();
-    if (!raw) return {};
-    try {
-      return JSON.parse(raw);
-    } catch {
-      throw new Error(
-        `Server returned non-JSON response (${response.status}).`,
-      );
-    }
-  };
-
   const fetchRecruiterResumes = useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) throw new Error("Authentication required.");
-    const response = await fetch(
+    const payload = await authFetch(
       `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterId)}/resumes`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
+      {},
+      "Failed to fetch recruiter resumes.",
     );
-    const payload = await readJsonResponse(response);
-    if (!response.ok) {
-      throw new Error(
-        payload?.error ||
-          payload?.message ||
-          "Failed to fetch recruiter resumes.",
-      );
-    }
     return Array.isArray(payload.resumes)
       ? payload.resumes.map((item) => normalizeResumeData(item))
       : [];
@@ -167,32 +172,6 @@ export default function RecruiterDashboard({ recruiterId }) {
     };
   }, [recruiterId, appliedFilters, fetchRecruiterResumes]);
 
-  const normalizeStatus = (value) =>
-    String(value || "")
-      .trim()
-      .toLowerCase();
-  const getStatusRank = (status) => {
-    const normalized = normalizeStatus(status);
-    return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
-      ? STATUS_PROGRESS_RANK[normalized]
-      : -1;
-  };
-  const mapStatusToFilter = (status) => {
-    const normalized = normalizeStatus(status);
-    if (normalized === "submitted") return "submitted";
-    if (normalized === "verified") return "verified";
-    if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
-    if (normalized === "selected" || normalized === "select") return "selected";
-    if (normalized === "pending_joining" || normalized === "pending joining")
-      return "pending_joining";
-    if (normalized === "rejected" || normalized === "reject") return "rejected";
-    if (normalized === "joined") return "joined";
-    if (normalized === "dropout") return "dropout";
-    if (normalized === "billed") return "billed";
-    if (normalized === "left") return "left";
-    return "";
-  };
-
   const handleStatusCardClick = async (statusKey) => {
     const nextStatus = mapStatusToFilter(statusKey);
     setActiveStatus(nextStatus);
@@ -215,14 +194,14 @@ export default function RecruiterDashboard({ recruiterId }) {
   }, [activeStatus]);
 
   const filteredStatusResumes = useMemo(() => {
-    const normalizedStatus = normalizeStatus(activeStatus);
+    const normalizedStatus = normalizeStatusValue(activeStatus);
     const dedupedByLatestStatus = (() => {
       const byResId = new Map();
       for (const resume of Array.isArray(statusResumes) ? statusResumes : []) {
         const resId =
           resume?.resId ?? resume?.res_id ?? resume?.resumeId ?? resume?.resume_id;
         if (!resId || String(resId).trim() === "") continue;
-        const currentStatus = normalizeStatus(
+        const currentStatus = normalizeStatusValue(
           resume?.workflowStatus || resume?.workflow_status || resume?.status,
         );
         const currentRank = getStatusRank(currentStatus);
@@ -238,8 +217,8 @@ export default function RecruiterDashboard({ recruiterId }) {
         const prev = byResId.get(String(resId));
         if (
           !prev ||
-          next.rank > prev.rank ||
-          (next.rank === prev.rank && next.updatedAt > prev.updatedAt)
+          next.updatedAt > prev.updatedAt ||
+          (next.updatedAt === prev.updatedAt && next.rank > prev.rank)
         ) {
           byResId.set(String(resId), next);
         }
@@ -254,7 +233,8 @@ export default function RecruiterDashboard({ recruiterId }) {
     let resumes = dedupedByLatestStatus;
     if (normalizedStatus && normalizedStatus !== "submitted") {
       resumes = resumes.filter(
-        (resume) => normalizeStatus(resume.workflowStatus) === normalizedStatus,
+        (resume) =>
+          normalizeStatusValue(resume.workflowStatus) === normalizedStatus,
       );
     }
     const { startDate, endDate } = appliedFilters;
@@ -320,7 +300,7 @@ export default function RecruiterDashboard({ recruiterId }) {
   if (!data) return <p className="chart-empty">No dashboard data available.</p>;
 
   const billedResumePoints = statusResumes.reduce((sum, resume) => {
-    const normalizedStatus = normalizeStatus(resume?.workflowStatus);
+    const normalizedStatus = normalizeStatusValue(resume?.workflowStatus);
     if (!["billed", "left"].includes(normalizedStatus)) return sum;
     return sum + (Number(resume?.points) || 0);
   }, 0);
@@ -618,7 +598,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                             /_/g,
                             " ",
                           )}
-                          {normalizeStatus(resume.workflowStatus) === "left" &&
+                          {normalizeStatusValue(resume.workflowStatus) ===
+                            "left" &&
                           resume.leftReason ? (
                             <span
                               className="left-reason-tooltip"
@@ -678,7 +659,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                           >
                             Take Action
                           </button>
-                          {normalizeStatus(resume.workflowStatus) ===
+                          {normalizeStatusValue(resume.workflowStatus) ===
                           "billed" ? (
                             <button
                               type="button"

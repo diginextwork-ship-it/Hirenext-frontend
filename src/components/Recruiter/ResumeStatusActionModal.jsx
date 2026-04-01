@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAuthToken } from "../../auth/session";
+import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
 import { useNotification } from "../../context/NotificationContext";
 import {
@@ -80,10 +80,7 @@ export default function ResumeStatusActionModal({
     setSuccessMessage("");
 
     try {
-      const token = getAuthToken();
-      if (!token) throw new Error("Authentication required.");
-
-      const response = await fetch(
+      await authFetch(
         `${API_BASE_URL}/api/recruiters/${encodeURIComponent(
           normalizedResume.recruiterRid || "",
         )}/resumes/${encodeURIComponent(resume.resId)}/advance-status`,
@@ -91,7 +88,6 @@ export default function ResumeStatusActionModal({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             status: selectedAction,
@@ -110,17 +106,8 @@ export default function ResumeStatusActionModal({
               : {}),
           }),
         },
+        "Failed to advance resume status.",
       );
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          payload?.message ||
-            payload?.error ||
-            `Failed to advance resume status.`,
-        );
-      }
 
       const statusLabel = selectedAction.replace(/_/g, " ");
       const candidateName = normalizedResume.candidateName || "Unknown";

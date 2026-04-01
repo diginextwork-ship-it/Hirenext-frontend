@@ -5,6 +5,7 @@ import {
   getAuthSession,
   saveAuthSession,
 } from "../auth/session";
+import { authFetch } from "../auth/authFetch";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../config/api";
 import JobsListTable from "../components/JobAdder/JobsListTable";
 import JobAccessControlModal from "../components/JobAdder/JobAccessControlModal";
@@ -145,21 +146,11 @@ export default function RecruiterLogin() {
   const fetchApplications = async (rid) => {
     setIsLoadingApplications(true);
     try {
-      const response = await fetch(
+      const data = await authFetch(
         `${API_BASE_URL}/api/recruiters/${rid}/applications`,
-        {
-          headers: getAuthHeaders(),
-        },
+        {},
+        "Failed to fetch recruiter applications.",
       );
-      const data = await readJsonResponse(
-        response,
-        "Check VITE_API_BASE_URL and backend route setup.",
-      );
-      if (!response.ok) {
-        throw new Error(
-          data?.message || "Failed to fetch recruiter applications.",
-        );
-      }
       setApplications(
         Array.isArray(data.applications) ? data.applications : [],
       );
@@ -188,19 +179,11 @@ export default function RecruiterLogin() {
 
   const fetchRecruiterResumes = async (rid) => {
     try {
-      const response = await fetch(
+      const data = await authFetch(
         `${API_BASE_URL}/api/recruiters/${rid}/resumes`,
-        {
-          headers: getAuthHeaders(),
-        },
+        {},
+        "Failed to fetch resumes.",
       );
-      const data = await readJsonResponse(
-        response,
-        "Check VITE_API_BASE_URL and backend route setup.",
-      );
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to fetch resumes.");
-      }
 
       const resumes = Array.isArray(data.resumes)
         ? data.resumes.map((item) => normalizeResumeData(item))
@@ -496,6 +479,32 @@ export default function RecruiterLogin() {
     setApplications([]);
     setJobs([]);
     setUploadedResumes([]);
+    setAvailableRecruiters([]);
+    setIsAccessModalOpen(false);
+    setActiveAccessJobId(null);
+    setJobMessage("");
+    setJobMessageType("");
+    setJdFile(null);
+    setJdParseMessage("");
+    setJdParseMessageType("");
+    setJobData({
+      city: "",
+      state: "",
+      pincode: "",
+      company_name: "",
+      role_name: "",
+      positions_open: 1,
+      points_per_joining: 0,
+      skills: "",
+      job_description: "",
+      experience: "",
+      salary: "",
+      qualification: "",
+      benefits: "",
+      access_mode: "open",
+      recruiterIds: [],
+      accessNotes: "",
+    });
   };
 
   if (recruiter) {
@@ -520,7 +529,10 @@ export default function RecruiterLogin() {
             />
 
             {canUploadResumes ? (
-              <RecruiterDashboard recruiterId={recruiter.rid} />
+              <RecruiterDashboard
+                key={recruiter.rid}
+                recruiterId={recruiter.rid}
+              />
             ) : null}
 
             {canManageJobAccess ? <TeamLeaderDashboard /> : null}

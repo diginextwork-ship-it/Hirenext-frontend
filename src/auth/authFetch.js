@@ -82,6 +82,7 @@ export const authFetch = async (
 
   const response = await fetch(url, {
     ...options,
+    cache: options.cache || "no-store",
     headers: buildAuthHeaders(options.headers || {}),
   });
 
@@ -91,6 +92,7 @@ export const authFetch = async (
     // Retry with fresh token
     const retryResponse = await fetch(url, {
       ...options,
+      cache: options.cache || "no-store",
       headers: buildAuthHeaders(options.headers || {}),
     });
     const retryData = await readJsonBody(retryResponse);
@@ -130,6 +132,7 @@ export const authFetchMultipart = async (
 
   const response = await fetch(url, {
     method: "POST",
+    cache: "no-store",
     headers,
     body: formData,
   });
@@ -142,6 +145,7 @@ export const authFetchMultipart = async (
       : {};
     const retryResponse = await fetch(url, {
       method: "POST",
+      cache: "no-store",
       headers: retryHeaders,
       body: formData,
     });
