@@ -388,9 +388,8 @@ export default function ResumeSubmissionModal({
       const companyName = String(
         job?.company_name || data?.company_name || data?.companyName || "Unknown company",
       ).trim();
-      const candidatePhone = String(formData.phone || "").trim() || "N/A";
       addNotification(
-        `Candidate submitted successfully for ${companyName}. Phone: ${candidatePhone}`,
+        `Candidate submitted successfully for ${companyName}. Phone: ${candidatePhone || "N/A"}`,
         "success",
         5000,
       );
