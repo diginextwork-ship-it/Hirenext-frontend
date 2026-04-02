@@ -8,11 +8,13 @@ const RESUME_SOURCE_OPTIONS = [
   "Shine",
   "Reference",
   "Apna Job",
+  "Job Hai",
+  "Work India",
   "LinkedIn",
   "Internal Database",
 ];
 
-const EDUCATION_LEVEL_OPTIONS = ["Bachelor's", "Master's", "PhD"];
+const EDUCATION_LEVEL_OPTIONS = ["Undergraduate", "Bachelor's", "Master's", "PhD"];
 
 const initialFormState = {
   candidate_name: "",
