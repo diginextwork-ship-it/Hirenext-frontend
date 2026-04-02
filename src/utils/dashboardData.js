@@ -148,6 +148,8 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(source, [
       "candidatePhone",
       "candidate_phone",
+      "applicantPhone",
+      "applicant_phone",
       "phone",
       "mobile",
       "phoneNumber",
@@ -160,6 +162,8 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(nestedCandidate, [
       "candidatePhone",
       "candidate_phone",
+      "applicantPhone",
+      "applicant_phone",
       "phone",
       "mobile",
       "phoneNumber",
@@ -299,6 +303,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     applicantEmail: pickFirst(source.applicantEmail, candidateEmail),
     email: pickFirst(source.email, candidateEmail),
     candidatePhone: pickFirst(source.candidatePhone, candidatePhone),
+    applicantPhone: pickFirst(source.applicantPhone, candidatePhone),
     phone: pickFirst(source.phone, candidatePhone),
     mobile: pickFirst(source.mobile, candidatePhone),
     status: pickFirst(status, source.status),

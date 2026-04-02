@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { getAuthSession } from "../../auth/session";
+import { API_BASE_URL } from "../../config/api";
 import { fetchMyJobs } from "../../services/jobAccessService";
 import {
   fetchJobResumeStatuses,
   updateJobResumeStatus,
-  markResumeLeft,
 } from "../../services/performanceService";
 import { useNotification } from "../../context/NotificationContext";
 import {
@@ -37,6 +38,16 @@ const getResumeCompanyName = (resume, selectedJob) =>
   "N/A";
 const getResumeCityName = (resume, selectedJob) =>
   normalizeResumeData(resume, selectedJob).city || selectedJob?.city || "N/A";
+const getResumeCandidatePhone = (resume, selectedJob) => {
+  const normalized = normalizeResumeData(resume, selectedJob);
+  return (
+    normalized.candidatePhone ||
+    normalized.applicantPhone ||
+    normalized.phone ||
+    normalized.mobile ||
+    "N/A"
+  );
+};
 
 const isPostWalkInStatus = (status) =>
   ["walk_in", "pending_joining", "joined", "billed", "left"].includes(
@@ -274,6 +285,18 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
     }
   };
 
+  const handleResumeOpen = (resume) => {
+    const token = getAuthSession()?.token;
+    const rid = resume?.rid || resume?.recruiterRid;
+    const resId = resume?.resId;
+    if (!token || !rid || !resId) return;
+    window.open(
+      `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   return (
     <section className="resume-status-manager">
       <div className="recruiter-performance-head">
@@ -340,9 +363,9 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                   <td>{resume.rid}</td>
                   <td>{resume.recruiterName || "N/A"}</td>
                   <td>
-                    {resume.candidatePhone ? (
-                      <a href={`tel:${resume.candidatePhone}`}>
-                        {resume.candidatePhone}
+                    {getResumeCandidatePhone(resume, selectedJob) !== "N/A" ? (
+                      <a href={`tel:${getResumeCandidatePhone(resume, selectedJob)}`}>
+                        {getResumeCandidatePhone(resume, selectedJob)}
                       </a>
                     ) : (
                       "N/A"
@@ -357,7 +380,26 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                       {getResumeCityName(resume, selectedJob)}
                     </div>
                   </td>
-                  <td>{resume.resumeFilename || "N/A"}</td>
+                  <td>
+                    <div className="table-cell-wrap">
+                      <div>
+                        {resume.resumeFilename || resume.resId || "N/A"}
+                        {resume.resumeType
+                          ? ` (${String(resume.resumeType).toUpperCase()})`
+                          : ""}
+                      </div>
+                      <div className="ui-mt-xs">
+                        <button
+                          type="button"
+                          className="resume-action-btn"
+                          onClick={() => handleResumeOpen(resume)}
+                          disabled={!resume?.rid || !resume?.resId}
+                        >
+                          View Resume
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                   <td>
                     {resume.atsMatchPercentage === null ||
                     resume.atsMatchPercentage === undefined
