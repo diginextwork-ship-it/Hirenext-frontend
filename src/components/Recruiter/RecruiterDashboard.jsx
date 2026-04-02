@@ -550,7 +550,10 @@ export default function RecruiterDashboard({ recruiterId }) {
                     } else if (activeStatus === "selected") {
                       currentReasonField = resume.selectReason;
                     } else if (activeStatus === "pending_joining") {
-                      currentReasonField = resume.selectReason;
+                      currentReasonField =
+                        resume.pendingJoiningReason ||
+                        resume.joiningNote ||
+                        resume.selectReason;
                     } else if (activeStatus === "joined") {
                       currentReasonField = resume.joinedReason;
                     } else if (activeStatus === "dropout") {
