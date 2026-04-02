@@ -3,6 +3,51 @@ const isPresent = (value) =>
 
 const pickFirst = (...values) => values.find(isPresent);
 
+const normalizeDisplayText = (value) => {
+  if (Array.isArray(value)) {
+    const uniqueValues = [];
+    for (const item of value) {
+      const normalizedItem = normalizeDisplayText(item);
+      if (
+        isPresent(normalizedItem) &&
+        !uniqueValues.some(
+          (existing) =>
+            String(existing).trim().toLowerCase() ===
+            String(normalizedItem).trim().toLowerCase(),
+        )
+      ) {
+        uniqueValues.push(normalizedItem);
+      }
+    }
+    return uniqueValues[0];
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const parts = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) {
+    return value.trim();
+  }
+
+  const uniqueParts = [];
+  for (const part of parts) {
+    if (
+      !uniqueParts.some(
+        (existing) => existing.trim().toLowerCase() === part.toLowerCase(),
+      )
+    ) {
+      uniqueParts.push(part);
+    }
+  }
+
+  return uniqueParts.join(", ");
+};
+
 const pickNested = (source, paths) => {
   for (const path of paths) {
     const parts = String(path).split(".");
@@ -106,25 +151,27 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     {},
   );
 
-  const candidateName = pickFirst(
-    pickNested(source, [
-      "candidateName",
-      "candidate_name",
-      "applicantName",
-      "applicant_name",
-      "name",
-      "fullName",
-      "full_name",
-    ]),
-    pickNested(nestedCandidate, [
-      "candidateName",
-      "candidate_name",
-      "applicantName",
-      "applicant_name",
-      "name",
-      "fullName",
-      "full_name",
-    ]),
+  const candidateName = normalizeDisplayText(
+    pickFirst(
+      pickNested(source, [
+        "candidateName",
+        "candidate_name",
+        "applicantName",
+        "applicant_name",
+        "name",
+        "fullName",
+        "full_name",
+      ]),
+      pickNested(nestedCandidate, [
+        "candidateName",
+        "candidate_name",
+        "applicantName",
+        "applicant_name",
+        "name",
+        "fullName",
+        "full_name",
+      ]),
+    ),
   );
   const candidateEmail = pickFirst(
     pickNested(source, [
