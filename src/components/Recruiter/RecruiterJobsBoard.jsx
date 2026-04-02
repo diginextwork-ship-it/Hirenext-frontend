@@ -18,6 +18,7 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [activeJobId, setActiveJobId] = useState(null);
+  const [activeJob, setActiveJob] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
   const totalPages = useMemo(
@@ -66,13 +67,17 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
   }, [recruiterId, filters.location, filters.company, filters.search, offset]);
 
   const openSubmitModal = (jobId) => {
+    const selectedJob =
+      jobs.find((job) => String(job?.jid) === String(jobId)) || null;
     setActiveJobId(jobId);
+    setActiveJob(selectedJob);
     setIsSubmitModalOpen(true);
   };
 
   const closeSubmitModal = () => {
     setIsSubmitModalOpen(false);
     setActiveJobId(null);
+    setActiveJob(null);
   };
 
   const handleRefreshJobs = async () => {
@@ -161,6 +166,7 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
       <ResumeSubmissionModal
         recruiterId={recruiterId}
         jobId={activeJobId}
+        job={activeJob}
         isOpen={isSubmitModalOpen}
         onClose={closeSubmitModal}
         onSuccess={onResumeSubmitted}

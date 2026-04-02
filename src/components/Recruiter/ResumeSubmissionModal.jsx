@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { checkRecruiterJobAccess, submitRecruiterResume } from "../../services/jobAccessService";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../../config/api";
+import { useNotification } from "../../context/NotificationContext";
 
 const RESUME_SOURCE_OPTIONS = [
   "Naukri",
@@ -29,7 +30,15 @@ const initialFormState = {
 
 const allowedFilePattern = /\.(pdf|doc|docx)$/i;
 
-export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onClose, onSuccess }) {
+export default function ResumeSubmissionModal({
+  recruiterId,
+  jobId,
+  job,
+  isOpen,
+  onClose,
+  onSuccess,
+}) {
+  const { addNotification } = useNotification();
   const [hasAccess, setHasAccess] = useState(null);
   const [checkingAccess, setCheckingAccess] = useState(false);
   const [isResumeProcessing, setIsResumeProcessing] = useState(false);
@@ -254,6 +263,8 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
       await parseResumeAndAutofill(file, { requestId, resumeBase64: encodedResume });
     } catch (error) {
       setErrorMessage(error.message || "Failed to read resume file.");
+    } finally {
+      finishResumeRequest(requestId);
     }
   };
 
@@ -374,6 +385,15 @@ export default function ResumeSubmissionModal({ recruiterId, jobId, isOpen, onCl
         throw new Error(data?.message || "Resume submission is not complete yet.");
       }
 
+      const companyName = String(
+        job?.company_name || data?.company_name || data?.companyName || "Unknown company",
+      ).trim();
+      const candidatePhone = String(formData.phone || "").trim() || "N/A";
+      addNotification(
+        `Candidate submitted successfully for ${companyName}. Phone: ${candidatePhone}`,
+        "success",
+        5000,
+      );
       onSuccess?.(data);
       onClose?.();
     } catch (error) {

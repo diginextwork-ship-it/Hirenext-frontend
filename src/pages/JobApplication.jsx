@@ -235,7 +235,11 @@ export default function JobApplication({ setCurrentPage }) {
 
     setResumeFile(file);
     const requestId = beginResumeRequest("Parsing resume...");
-    await parseResumeAndAutofill(file, { requestId });
+    try {
+      await parseResumeAndAutofill(file, { requestId });
+    } finally {
+      finishResumeRequest(requestId);
+    }
   };
 
   const handleSubmit = async (event) => {
