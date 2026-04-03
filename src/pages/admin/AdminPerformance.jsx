@@ -43,6 +43,12 @@ const STATUS_CARDS = [
     tone: "green",
   },
   {
+    key: "shortlisted",
+    label: "Shortlisted",
+    summaryKey: "totalShortlisted",
+    tone: "blue",
+  },
+  {
     key: "selected",
     label: "Selected",
     summaryKey: "totalSelected",
@@ -53,12 +59,6 @@ const STATUS_CARDS = [
     label: "Rejected",
     summaryKey: "totalRejected",
     tone: "red",
-  },
-  {
-    key: "pending_joining",
-    label: "Pending Joining",
-    summaryKey: "totalPendingJoining",
-    tone: "blue",
   },
   {
     key: "joined",
@@ -96,18 +96,18 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   walk_in: [
-    { value: "selected", label: "Selected", color: "#16a34a" },
+    { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
-  selected: [
+  shortlisted: [
     {
-      value: "pending_joining",
-      label: "Pending Joining",
-      color: "#2563eb",
+      value: "selected",
+      label: "Selected",
+      color: "#16a34a",
     },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
   ],
-  pending_joining: [
+  selected: [
     { value: "joined", label: "Joined", color: "#16a34a" },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
   ],
@@ -122,26 +122,26 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "walk_in",
   "selected",
   "rejected",
-  "pending_joining",
+  "shortlisted",
   "joined",
 ]);
 
 const ALLOWED_TRANSITIONS = {
   submitted: ["verified", "rejected"],
   verified: ["walk_in", "rejected"],
-  walk_in: ["selected", "rejected"],
-  selected: ["pending_joining", "dropout"],
-  pending_joining: ["joined", "dropout"],
+  walk_in: ["shortlisted", "rejected"],
+  shortlisted: ["selected", "dropout"],
+  selected: ["joined", "dropout"],
   joined: ["billed", "left"],
 };
 
 const ROLLBACK_TARGET_STATUS = {
   verified: "submitted",
   walk_in: "verified",
-  selected: "walk_in",
+  shortlisted: "walk_in",
+  selected: "shortlisted",
   rejected: "verified",
-  pending_joining: "selected",
-  joined: "pending_joining",
+  joined: "selected",
 };
 
 function toDateStr(d) {
@@ -287,8 +287,8 @@ function normalizeStatus(value) {
   if (normalized === "walkin") return "walk_in";
   if (normalized === "walk_in") return "walk_in";
   if (normalized === "select") return "selected";
-  if (normalized === "pendingjoining") return "pending_joining";
-  if (normalized === "pending_joining") return "pending_joining";
+  if (normalized === "pendingjoining") return "shortlisted";
+  if (normalized === "pending_joining") return "shortlisted";
 
   return normalized;
 }
@@ -297,8 +297,8 @@ const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
   walk_in: 2,
-  selected: 3,
-  pending_joining: 4,
+  shortlisted: 3,
+  selected: 4,
   joined: 5,
   billed: 6,
   left: 7,
@@ -888,7 +888,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
     const normalizedReason = actionReason.trim();
     if (
-      actionTarget === "pending_joining" &&
+      actionTarget === "selected" &&
       !String(actionJoiningDate || "").trim()
     ) {
       setActionError("Please provide a joining date.");
@@ -938,7 +938,7 @@ export default function AdminPerformance({ setCurrentPage }) {
           : {
               status: actionTarget,
               ...buildCandidatePayloadAliases(actionModalItem),
-              ...(!["pending_joining"].includes(actionTarget)
+              ...(!["selected"].includes(actionTarget)
                 ? {
                     reason: normalizedReason || null,
                   }
@@ -950,7 +950,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     selectReason: normalizedReason || null,
                   }
                 : {}),
-              ...((actionTarget === "pending_joining" || actionTarget === "joined") &&
+              ...((actionTarget === "selected" || actionTarget === "joined") &&
               actionJoiningDate
                 ? { joining_date: actionJoiningDate }
                 : {}),
@@ -1248,7 +1248,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                       {[
                         "dropout",
-                        "pending_joining",
+                        "selected",
                         "joined",
                         "billed",
                         "left",
@@ -1256,7 +1256,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <th>
                           {selectedStatusKey === "dropout"
                             ? "Dropout Reason"
-                            : selectedStatusKey === "pending_joining"
+                            : selectedStatusKey === "selected"
                               ? "Joining Date"
                               : "Joining Info"}
                         </th>
@@ -1313,7 +1313,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         )}
                         {[
                           "dropout",
-                          "pending_joining",
+                          "selected",
                           "joined",
                           "billed",
                           "left",
@@ -1321,7 +1321,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>
                             {selectedStatusKey === "dropout" ? (
                               item.dropoutReason || item.reason || "Not set"
-                            ) : selectedStatusKey === "pending_joining" ? (
+                            ) : selectedStatusKey === "selected" ? (
                               formatDate(item.joiningDate)
                             ) : item.joiningDate ||
                               item.joiningNote ||
@@ -1432,8 +1432,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Name</th>
                       <th>Submitted</th>
                       <th>Verified</th>
+                      <th>Walk-in</th>
+                      <th>Shortlisted</th>
                       <th>Selected</th>
-                      <th>Pending Joining</th>
                       <th>Joined</th>
                       <th>Billed</th>
                       <th>Left</th>
@@ -1447,8 +1448,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{r.name}</td>
                         <td>{r.submitted}</td>
                         <td>{r.verified}</td>
+                        <td>{r.walk_in}</td>
+                        <td>{r.shortlisted ?? 0}</td>
                         <td>{r.selected}</td>
-                        <td>{r.pending_joining ?? 0}</td>
                         <td>{r.joined}</td>
                         <td>{r.billed ?? 0}</td>
                         <td>{r.left ?? 0}</td>
@@ -1623,6 +1625,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                     </th>
                     <th
                       className="perf-sortable"
+                      onClick={() => handleSort("shortlisted")}
+                    >
+                      Shortlisted{sortIndicator("shortlisted")}
+                    </th>
+                    <th
+                      className="perf-sortable"
                       onClick={() => handleSort("selected")}
                     >
                       Selected{sortIndicator("selected")}
@@ -1633,7 +1641,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                     >
                       Rejected{sortIndicator("rejected")}
                     </th>
-                    <th>Pending Joining</th>
                     <th
                       className="perf-sortable"
                       onClick={() => handleSort("joined")}
@@ -1681,9 +1688,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{r.submitted}</td>
                       <td>{r.verified}</td>
                       <td>{r.walk_in}</td>
+                      <td>{r.shortlisted ?? 0}</td>
                       <td>{r.selected}</td>
                       <td>{r.rejected}</td>
-                      <td>{r.pending_joining ?? 0}</td>
                       <td>{r.joined}</td>
                       <td>{r.dropout}</td>
                       <td>{r.billed ?? 0}</td>
@@ -1819,7 +1826,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
             </div>
 
-            {actionTarget === "pending_joining" ? (
+            {actionTarget === "selected" ? (
               <>
                 <div style={{ marginBottom: "10px" }}>
                   <label
@@ -1841,6 +1848,31 @@ export default function AdminPerformance({ setCurrentPage }) {
                       padding: "8px",
                       borderRadius: "4px",
                       border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Selection Reason (optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder="Enter selection reason..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      fontFamily: "inherit",
                     }}
                   />
                 </div>
@@ -1968,7 +2000,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                     ? "Rejection Reason (optional)"
                     : actionTarget === "verified"
                       ? "Verification Note (optional)"
-                      : actionTarget === "selected"
+                      : actionTarget === "shortlisted"
+                        ? "Shortlist Reason (optional)"
+                        : actionTarget === "selected"
                         ? "Selection Reason (optional)"
                         : actionTarget === "walk_in"
                           ? "Walk-in Reason (optional)"
@@ -2019,7 +2053,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 onClick={handleAdminAdvanceStatus}
                 disabled={
                   actionSubmitting ||
-                  (actionTarget === "pending_joining" &&
+                  (actionTarget === "selected" &&
                     !actionJoiningDate.trim()) ||
                   (actionTarget === "joined" &&
                     !String(actionRevenue || "").trim()) ||

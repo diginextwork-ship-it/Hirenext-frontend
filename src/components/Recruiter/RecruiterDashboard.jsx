@@ -35,8 +35,8 @@ const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
   walk_in: 2,
-  selected: 3,
-  pending_joining: 4,
+  shortlisted: 3,
+  selected: 4,
   joined: 5,
   billed: 6,
   left: 7,
@@ -61,9 +61,14 @@ const mapStatusToFilter = (status) => {
   if (normalized === "submitted") return "submitted";
   if (normalized === "verified") return "verified";
   if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
+  if (
+    normalized === "shortlisted" ||
+    normalized === "pending_joining" ||
+    normalized === "pending joining"
+  ) {
+    return "shortlisted";
+  }
   if (normalized === "selected" || normalized === "select") return "selected";
-  if (normalized === "pending_joining" || normalized === "pending joining")
-    return "pending_joining";
   if (normalized === "rejected" || normalized === "reject") return "rejected";
   if (normalized === "joined") return "joined";
   if (normalized === "dropout") return "dropout";
@@ -400,6 +405,13 @@ export default function RecruiterDashboard({ recruiterId }) {
           onClick={() => handleStatusCardClick("walk_in")}
         />
         <PerformanceMetricCard
+          title="Shortlisted"
+          color="blue"
+          value={toDisplay(data.stats?.shortlisted)}
+          clickable
+          onClick={() => handleStatusCardClick("shortlisted")}
+        />
+        <PerformanceMetricCard
           title="Selected"
           color="purple"
           value={toDisplay(data.stats?.select)}
@@ -412,13 +424,6 @@ export default function RecruiterDashboard({ recruiterId }) {
           value={toDisplay(data.stats?.reject)}
           clickable
           onClick={() => handleStatusCardClick("rejected")}
-        />
-        <PerformanceMetricCard
-          title="Pending Joining"
-          color="blue"
-          value={toDisplay(data.stats?.pending_joining)}
-          clickable
-          onClick={() => handleStatusCardClick("pending_joining")}
         />
         <PerformanceMetricCard
           title="Joined"
@@ -517,9 +522,10 @@ export default function RecruiterDashboard({ recruiterId }) {
                     <th>
                       {activeStatus === "walk_in"
                         ? "Walk In Reason"
-                        : activeStatus === "selected" ||
-                            activeStatus === "pending_joining"
-                          ? "Selection Reason"
+                        : activeStatus === "shortlisted"
+                          ? "Shortlist Reason"
+                          : activeStatus === "selected"
+                            ? "Selection Reason"
                           : activeStatus === "joined"
                             ? "Joined Reason"
                             : activeStatus === "dropout"
@@ -535,7 +541,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                     <th>Status</th>
                     <th>Updated</th>
                     {activeStatus === "walk_in" && <th>Walk-in Date</th>}
-                    {(activeStatus === "pending_joining" ||
+                    {(activeStatus === "selected" ||
                       activeStatus === "joined" ||
                       activeStatus === "billed" ||
                       activeStatus === "left") && <th>Joining Info</th>}
@@ -547,13 +553,12 @@ export default function RecruiterDashboard({ recruiterId }) {
                     let currentReasonField = null;
                     if (activeStatus === "walk_in") {
                       currentReasonField = resume.walkInReason;
+                    } else if (activeStatus === "shortlisted") {
+                      currentReasonField =
+                        resume.shortlistedReason ||
+                        resume.pendingJoiningReason;
                     } else if (activeStatus === "selected") {
                       currentReasonField = resume.selectReason;
-                    } else if (activeStatus === "pending_joining") {
-                      currentReasonField =
-                        resume.pendingJoiningReason ||
-                        resume.joiningNote ||
-                        resume.selectReason;
                     } else if (activeStatus === "joined") {
                       currentReasonField = resume.joinedReason;
                     } else if (activeStatus === "dropout") {
@@ -624,7 +629,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                         {activeStatus === "walk_in" && (
                           <td>{formatDate(resume.walkInDate)}</td>
                         )}
-                        {(activeStatus === "pending_joining" ||
+                        {(activeStatus === "selected" ||
                           activeStatus === "joined" ||
                           activeStatus === "billed" ||
                           activeStatus === "left") && (

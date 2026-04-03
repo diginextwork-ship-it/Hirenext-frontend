@@ -324,7 +324,7 @@ export default function AdminManualSelection({ setCurrentPage }) {
                       <td className="table-cell-wrap">
                         {[
                           "walk_in",
-                          "pending_joining",
+                          "shortlisted",
                           "joined",
                           "billed",
                           "left",

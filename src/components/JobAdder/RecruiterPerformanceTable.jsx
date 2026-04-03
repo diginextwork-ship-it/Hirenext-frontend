@@ -105,9 +105,9 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                   </th>
                   <th>Verified</th>
                   <th>Walk-in</th>
+                  <th>Shortlisted</th>
                   <th>Selected</th>
                   <th>Rejected</th>
-                  <th>Pending Joining</th>
                   <th>Joined</th>
                   <th>Dropout</th>
                   <th>
@@ -154,15 +154,15 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                       {metricDisplay(item.stats?.walk_in)}
                     </td>
                     <td className="metric-value">
+                      <span className="status-pill status-pending-joining">
+                        {metricDisplay(item.stats?.shortlisted)}
+                      </span>
+                    </td>
+                    <td className="metric-value">
                       {metricDisplay(item.stats?.select)}
                     </td>
                     <td className="metric-value">
                       {metricDisplay(item.stats?.reject)}
-                    </td>
-                    <td className="metric-value">
-                      <span className="status-pill status-pending-joining">
-                        {metricDisplay(item.stats?.pending_joining)}
-                      </span>
                     </td>
                     <td className="metric-value">
                       {metricDisplay(item.stats?.joined)}

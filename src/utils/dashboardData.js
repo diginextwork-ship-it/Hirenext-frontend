@@ -292,14 +292,18 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(source, ["rejectReason", "reject_reason"]),
     pickNested(selection, ["rejectReason", "reject_reason"]),
   );
-  const pendingJoiningReason = pickFirst(
+  const shortlistedReason = pickFirst(
     pickNested(source, [
+      "shortlistedReason",
+      "shortlisted_reason",
       "pendingJoiningReason",
       "pending_joining_reason",
       "pendingReason",
       "pending_reason",
     ]),
     pickNested(selection, [
+      "shortlistedReason",
+      "shortlisted_reason",
       "pendingJoiningReason",
       "pending_joining_reason",
       "pendingReason",
@@ -422,9 +426,10 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     walkInReason: pickFirst(source.walkInReason, walkInReason),
     selectReason: pickFirst(source.selectReason, selectReason),
     rejectReason: pickFirst(source.rejectReason, rejectReason),
+    shortlistedReason: pickFirst(source.shortlistedReason, shortlistedReason),
     pendingJoiningReason: pickFirst(
       source.pendingJoiningReason,
-      pendingJoiningReason,
+      shortlistedReason,
     ),
     walkInDate: pickFirst(source.walkInDate, walkInDate),
     joiningDate: pickFirst(source.joiningDate, joiningDate),

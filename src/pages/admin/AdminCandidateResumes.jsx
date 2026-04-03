@@ -380,7 +380,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           headers: getAdminHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             resId: pendingResume.resId,
-            selection_status: "selected",
+            selection_status: "shortlisted",
             selection_note:
               "Shortlisted from candidate submitted resumes panel.",
             selected_by_admin: "admin-panel",
@@ -662,7 +662,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     <td className="table-cell-wrap">
                       {[
                         "walk_in",
-                        "pending_joining",
+                        "shortlisted",
                         "joined",
                         "billed",
                         "left",

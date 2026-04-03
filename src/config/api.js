@@ -17,12 +17,20 @@ const normalizeApiBaseUrl = (rawBaseUrl) => {
   return parsed.toString().replace(/\/+$/, "");
 };
 
-export const API_BASE_URL = normalizeApiBaseUrl(
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL
-);
+const resolveApiBaseUrl = () => {
+  // When the frontend is running locally via Vite dev, always talk to the
+  // locally running backend so local actions never hit production APIs.
+  if (import.meta.env.DEV) {
+    return FALLBACK_API_BASE_URL;
+  }
+
+  return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+};
+
+export const API_BASE_URL = normalizeApiBaseUrl(resolveApiBaseUrl());
 
 export const BACKEND_CONNECTION_ERROR =
-  "Cannot connect to backend. Check VITE_API_URL and backend deployment.";
+  "Cannot connect to backend. Check your local backend in development or your deployed backend URL in production.";
 
 export const buildApiUrl = (endpointPath) => {
   const normalizedEndpointPath = endpointPath.startsWith("/")

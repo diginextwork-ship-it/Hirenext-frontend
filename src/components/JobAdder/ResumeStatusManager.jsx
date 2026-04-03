@@ -50,7 +50,7 @@ const getResumeCandidatePhone = (resume, selectedJob) => {
 };
 
 const isPostWalkInStatus = (status) =>
-  ["walk_in", "pending_joining", "joined", "billed", "left"].includes(
+  ["walk_in", "shortlisted", "joined", "billed", "left"].includes(
     String(status || "").trim().toLowerCase(),
   );
 
@@ -546,7 +546,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                   </td>
                   <td className="table-cell-wrap">
                     {resume.status === "walk_in" ||
-                    resume.status === "pending_joining" ||
+                    resume.status === "shortlisted" ||
                     resume.status === "joined" ||
                     resume.status === "billed" ||
                     resume.status === "left" ? (
