@@ -292,7 +292,6 @@ export default function ResumeSubmissionModal({
       }
 
       const jid = String(jobId || "").trim();
-      const resumeFilename = String(formData.resume_file?.name || "").trim();
       let currentResumeBase64 = resumeBase64;
       let currentParsedPayload = parsedPayload;
 
@@ -318,8 +317,8 @@ export default function ResumeSubmissionModal({
         }
       }
 
-      if (!jid || !currentResumeBase64 || !resumeFilename) {
-        setErrorMessage("jid, resumeBase64, and resumeFilename are required.");
+      if (!jid || !formData.resume_file) {
+        setErrorMessage("A valid job and resume file are required.");
         return;
       }
 
@@ -328,8 +327,6 @@ export default function ResumeSubmissionModal({
       payload.append("job_jid", String(jobId));
       payload.append("recruiter_rid", String(recruiterId));
       payload.append("jid", jid);
-      payload.append("resumeBase64", currentResumeBase64);
-      payload.append("resumeFilename", resumeFilename);
       const candidateName = String(formData.candidate_name || "").trim();
       const candidateEmail = String(formData.email || "").trim();
       const candidatePhone = String(formData.phone || "").trim();
