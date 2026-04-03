@@ -31,6 +31,26 @@ export const fetchTeamLeaderDashboard = () =>
     "Failed to fetch team leader dashboard.",
   );
 
+export const fetchTeamLeaderPerformanceDashboard = ({
+  startDate = "",
+  endDate = "",
+} = {}) => {
+  const params = new URLSearchParams();
+  if (String(startDate || "").trim()) {
+    params.set("startDate", String(startDate).trim());
+  }
+  if (String(endDate || "").trim()) {
+    params.set("endDate", String(endDate).trim());
+  }
+  const query = params.toString();
+
+  return authFetch(
+    `${API_BASE_URL}/api/dashboard/team-leader/performance${query ? `?${query}` : ""}`,
+    {},
+    "Failed to fetch team leader performance dashboard.",
+  );
+};
+
 export const fetchRecruiterDashboard = (
   rid,
   { startDate = "", endDate = "" } = {},
@@ -65,6 +85,15 @@ export const updateJobResumeStatus = (jobId, payload) =>
       body: JSON.stringify(payload || {}),
     },
     "Failed to update resume status.",
+  );
+
+export const rollbackJobResumeStatus = (jobId, resId) =>
+  authFetch(
+    `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/resume-statuses/${encodeURIComponent(resId)}/rollback`,
+    {
+      method: "POST",
+    },
+    "Failed to rollback resume status.",
   );
 
 export const markResumeLeft = (jobId, payload) =>

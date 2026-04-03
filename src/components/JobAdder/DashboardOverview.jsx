@@ -47,23 +47,6 @@ export default function DashboardOverview({ data, loading }) {
           value={Number(overview.totalLeft) || 0}
         />
       </div>
-
-      <div className="dashboard-panels">
-        <article className="dashboard-panel">
-          <h3>Top Performers</h3>
-          {Array.isArray(data.topPerformers) && data.topPerformers.length ? (
-            data.topPerformers.map((item) => (
-              <div className="performer-row" key={item.rid}>
-                <span>{item.name}</span>
-                <span>{item.submitted || 0} submitted</span>
-                <span>{item.points || 0} points</span>
-              </div>
-            ))
-          ) : (
-            <p className="empty-state">No top performers yet.</p>
-          )}
-        </article>
-      </div>
     </section>
   );
 }
