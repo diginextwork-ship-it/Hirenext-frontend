@@ -6,6 +6,28 @@ import { fetchAccessibleJobs } from "../../services/jobAccessService";
 
 const PAGE_SIZE = 12;
 
+const toDisplayText = (value) => {
+  const normalized = String(value ?? "").trim();
+  return normalized ? normalized : "";
+};
+
+const splitList = (value) =>
+  String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const formatDate = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,6 +42,7 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
   const [activeJobId, setActiveJobId] = useState(null);
   const [activeJob, setActiveJob] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(total / PAGE_SIZE)),
@@ -74,10 +97,30 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
     setIsSubmitModalOpen(true);
   };
 
+  const openDetailsModal = (job) => {
+    setActiveJob(job || null);
+    setIsDetailsModalOpen(true);
+  };
+
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    if (!isSubmitModalOpen) {
+      setActiveJob(null);
+    }
+  };
+
   const closeSubmitModal = () => {
     setIsSubmitModalOpen(false);
     setActiveJobId(null);
-    setActiveJob(null);
+    if (!isDetailsModalOpen) {
+      setActiveJob(null);
+    }
+  };
+
+  const handleSubmitFromDetails = () => {
+    if (!activeJob?.jid) return;
+    setIsDetailsModalOpen(false);
+    openSubmitModal(activeJob.jid);
   };
 
   const handleRefreshJobs = async () => {
@@ -134,7 +177,7 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
       {!loading && jobs.length > 0 ? (
         <div className="recruiter-jobs-grid">
           {jobs.map((job) => (
-            <JobCard key={job.jid} job={job} onSubmitResume={openSubmitModal} />
+            <JobCard key={job.jid} job={job} onViewDetails={openDetailsModal} />
           ))}
         </div>
       ) : null}
@@ -160,6 +203,119 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
           >
             Next
           </button>
+        </div>
+      ) : null}
+
+      {isDetailsModalOpen && activeJob ? (
+        <div
+          className="job-details-modal-overlay"
+          role="presentation"
+          onClick={closeDetailsModal}
+        >
+          <div
+            className="job-details-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="job-details-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="job-details-modal-header">
+              <div>
+                <h2 id="job-details-modal-title">
+                  {toDisplayText(activeJob.role_name) || "Untitled Role"}
+                </h2>
+                {toDisplayText(activeJob.company_name) ? (
+                  <p className="job-detail-company">
+                    {toDisplayText(activeJob.company_name)}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeDetailsModal}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="job-detail-top-meta">
+              {[toDisplayText(activeJob.city), toDisplayText(activeJob.state)]
+                .filter(Boolean)
+                .join(", ") ? (
+                <span className="job-detail-meta-chip">
+                  {[toDisplayText(activeJob.city), toDisplayText(activeJob.state)]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              ) : null}
+              {toDisplayText(activeJob.salary) ? (
+                <span className="job-detail-meta-chip">
+                  {toDisplayText(activeJob.salary)}
+                </span>
+              ) : null}
+              {Number(activeJob.positions_open) ? (
+                <span className="job-detail-meta-chip">
+                  {Number(activeJob.positions_open)} positions
+                </span>
+              ) : null}
+              {toDisplayText(activeJob.experience) ? (
+                <span className="job-detail-meta-chip">
+                  {toDisplayText(activeJob.experience)}
+                </span>
+              ) : null}
+              {toDisplayText(activeJob.qualification) ? (
+                <span className="job-detail-meta-chip">
+                  {toDisplayText(activeJob.qualification)}
+                </span>
+              ) : null}
+            </div>
+
+            {toDisplayText(activeJob.job_description) ? (
+              <section className="job-detail-section">
+                <h3>Job Description</h3>
+                <p className="job-description-text">
+                  {toDisplayText(activeJob.job_description)}
+                </p>
+              </section>
+            ) : null}
+
+            {splitList(activeJob.skills).length ? (
+              <section className="job-detail-section">
+                <h3>Skills</h3>
+                <div className="job-skills">
+                  {splitList(activeJob.skills).map((skill) => (
+                    <span key={skill} className="skill-tag">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {toDisplayText(activeJob.benefits) ? (
+              <section className="job-detail-section">
+                <h3>Benefits</h3>
+                <p className="job-description-text">
+                  {toDisplayText(activeJob.benefits)}
+                </p>
+              </section>
+            ) : null}
+
+            {formatDate(activeJob.created_at) ? (
+              <p className="job-footer">Posted {formatDate(activeJob.created_at)}</p>
+            ) : null}
+
+            <div className="job-details-modal-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSubmitFromDetails}
+              >
+                Submit Resume
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
