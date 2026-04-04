@@ -17,6 +17,7 @@ import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import { normalizeJobData, normalizeResumeData } from "../utils/dashboardData";
+import { fetchWithRetry, getNetworkErrorMessage } from "../utils/network";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
 import "../styles/reimbursement.css";
@@ -94,6 +95,7 @@ export default function RecruiterLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginMessage, setLoginMessage] = useState("");
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [recruiter, setRecruiter] = useState(null);
@@ -201,15 +203,23 @@ export default function RecruiterLogin() {
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setLoginMessage("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/recruiters/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetchWithRetry(
+        `${API_BASE_URL}/api/recruiters/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
         },
-        body: JSON.stringify({ email, password }),
-      });
+        {
+          timeoutMs: 20000,
+          retries: 1,
+        },
+      );
 
       const data = await readJsonResponse(
         response,
@@ -217,7 +227,7 @@ export default function RecruiterLogin() {
       );
 
       if (!response.ok) {
-        alert(data?.message || "Invalid credentials");
+        setLoginMessage(data?.message || "Invalid credentials");
         return;
       }
 
@@ -237,11 +247,20 @@ export default function RecruiterLogin() {
       setEmail("");
       setPassword("");
     } catch (error) {
-      if (error instanceof TypeError) {
-        alert(BACKEND_CONNECTION_ERROR);
+      if (error instanceof TypeError || error?.name === "AbortError") {
+        setLoginMessage(
+          getNetworkErrorMessage(error, {
+            timeoutMessage:
+              "Login is taking longer than expected on this connection. Please try again.",
+            unstableMessage:
+              "The network is slow or unstable right now, so login could not finish. Please try again.",
+            offlineMessage:
+              "Your internet connection appears to be offline. Please reconnect and try again.",
+          }),
+        );
         return;
       }
-      alert("Unable to login right now. Please try again.");
+      setLoginMessage(error.message || "Unable to login right now. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1120,6 +1139,9 @@ export default function RecruiterLogin() {
             >
               {isSubmitting ? "Logging in..." : "Login"}
             </button>
+            {loginMessage ? (
+              <p className="job-message job-message-error">{loginMessage}</p>
+            ) : null}
           </form>
         </div>
       </section>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { API_BASE_URL } from "../config/api";
 import { readJsonResponse } from "../auth/authFetch";
 import { saveAuthSession } from "../auth/session";
+import { fetchWithRetry, getNetworkErrorMessage } from "../utils/network";
 import "../styles/recruiter-login.css";
 
 export default function AdminLogin({ onLoginSuccess }) {
@@ -15,11 +16,18 @@ export default function AdminLogin({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminKey }),
-      });
+      const response = await fetchWithRetry(
+        `${API_BASE_URL}/api/admin/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminKey }),
+        },
+        {
+          timeoutMs: 20000,
+          retries: 1,
+        },
+      );
       const data = await readJsonResponse(
         response,
         "Check VITE_API_BASE_URL and backend route setup.",
@@ -36,6 +44,18 @@ export default function AdminLogin({ onLoginSuccess }) {
       saveAuthSession(session);
       onLoginSuccess?.(session);
     } catch (error) {
+      if (error instanceof TypeError || error?.name === "AbortError") {
+        setMessage(
+          getNetworkErrorMessage(error, {
+            timeoutMessage:
+              "Login is taking longer than expected on this connection. Please try again.",
+            unstableMessage:
+              "The network is slow or unstable right now, so login could not finish. Please try again.",
+          }),
+        );
+        return;
+      }
+
       setMessage(error.message || "Unable to login right now.");
     } finally {
       setIsSubmitting(false);
