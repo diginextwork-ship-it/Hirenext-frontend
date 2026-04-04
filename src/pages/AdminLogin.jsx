@@ -24,7 +24,7 @@ export default function AdminLogin({ onLoginSuccess }) {
           body: JSON.stringify({ adminKey }),
         },
         {
-          timeoutMs: 20000,
+          timeoutMs: 35000,
           retries: 1,
         },
       );

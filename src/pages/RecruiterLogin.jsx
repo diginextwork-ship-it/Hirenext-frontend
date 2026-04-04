@@ -216,7 +216,7 @@ export default function RecruiterLogin() {
           body: JSON.stringify({ email, password }),
         },
         {
-          timeoutMs: 20000,
+          timeoutMs: 35000,
           retries: 1,
         },
       );
