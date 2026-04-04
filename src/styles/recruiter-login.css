@@ -34,6 +34,31 @@
   color: var(--text-primary);
 }
 
+.recruiter-dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.recruiter-dashboard-header-copy {
+  min-width: 0;
+}
+
+.recruiter-dashboard-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.recruiter-dashboard-logo {
+  width: clamp(120px, 14vw, 180px);
+  height: auto;
+  object-fit: contain;
+}
+
 .recruiter-login-card form {
   display: flex;
   flex-direction: column;
@@ -590,6 +615,15 @@
     border-radius: 0.8rem;
   }
 
+  .recruiter-dashboard-header {
+    flex-direction: column;
+  }
+
+  .recruiter-dashboard-header-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+
   .job-form-grid {
     grid-template-columns: 1fr;
   }
@@ -656,6 +690,10 @@
   .recruiter-login-card input,
   .recruiter-login-card select {
     font-size: 16px;
+  }
+
+  .recruiter-dashboard-logo {
+    width: 132px;
   }
 
   .password-input-wrap input {

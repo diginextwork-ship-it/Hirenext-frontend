@@ -1,5 +1,6 @@
 import useAdminDashboard from "./admin/useAdminDashboard";
 import "../styles/admin-panel.css";
+import logo from "../assets/Logo.png";
 
 export default function AdminPanel({ setCurrentPage, onLogout }) {
   const { dashboard, isLoadingDashboard, errorMessage, refreshDashboard } =
@@ -59,6 +60,11 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
           </p>
         </div>
         <div className="admin-page-actions">
+          <img
+            src={logo}
+            alt="HireNext logo"
+            className="admin-dashboard-logo"
+          />
           <button type="button" className="admin-back-btn" onClick={onLogout}>
             Logout
           </button>

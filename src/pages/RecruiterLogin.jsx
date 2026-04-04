@@ -20,6 +20,7 @@ import { normalizeJobData, normalizeResumeData } from "../utils/dashboardData";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
 import "../styles/reimbursement.css";
+import logo from "../assets/Logo.png";
 
 const formatDateTime = (dateValue) => {
   if (!dateValue) return "";
@@ -512,17 +513,28 @@ export default function RecruiterLogin() {
       <main className="recruiter-login-page ui-page">
         <section className="recruiter-login-shell recruiter-job-shell ui-shell">
           <div className="recruiter-login-card recruiter-job-card">
-            <h1>recruiter dashboard</h1>
-            <p>
-              Logged in as <strong>{recruiter.name}</strong>.
-            </p>
-            <button
-              type="button"
-              className="admin-back-btn"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+            <div className="recruiter-dashboard-header">
+              <div className="recruiter-dashboard-header-copy">
+                <h1>recruiter dashboard</h1>
+                <p>
+                  Logged in as <strong>{recruiter.name}</strong>.
+                </p>
+              </div>
+              <div className="recruiter-dashboard-header-actions">
+                <img
+                  src={logo}
+                  alt="HireNext logo"
+                  className="recruiter-dashboard-logo"
+                />
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
 
             <ReimbursementButton
               visible={canUploadResumes || canManageJobAccess}
