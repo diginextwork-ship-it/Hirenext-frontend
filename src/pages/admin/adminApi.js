@@ -52,6 +52,17 @@ export const adminDeleteRecruiter = async (rid) =>
     "Failed to delete recruiter.",
   );
 
+export const adminUpdateRecruiterAccountStatus = async (rid, status) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/account-status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+    "Failed to update recruiter account status.",
+  );
+
 export const adminDeleteCandidate = async (resId) =>
   authFetch(
     `${API_BASE_URL}/api/admin/candidates/${encodeURIComponent(resId)}`,

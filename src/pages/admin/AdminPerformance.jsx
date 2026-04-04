@@ -7,6 +7,7 @@ import {
   adminAdvanceStatus,
   adminRollbackStatus,
   adminDeleteRecruiter,
+  adminUpdateRecruiterAccountStatus,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
 import {
@@ -293,6 +294,12 @@ function normalizeStatus(value) {
   return normalized;
 }
 
+function formatAccountStatusLabel(status) {
+  return String(status || "").trim().toLowerCase() === "inactive"
+    ? "Deactivated"
+    : "Active";
+}
+
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
@@ -416,6 +423,9 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteDeleting, setDeleteDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [statusTarget, setStatusTarget] = useState(null);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [statusError, setStatusError] = useState("");
 
   // Timeline filter state
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
@@ -1092,6 +1102,56 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const openStatusModal = (person, nextStatus) => {
+    setStatusTarget({
+      rid: person?.rid,
+      name: person?.name,
+      role: person?.role,
+      nextStatus,
+    });
+    setStatusError("");
+  };
+
+  const closeStatusModal = () => {
+    if (statusSubmitting) return;
+    setStatusTarget(null);
+    setStatusError("");
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!statusTarget?.rid || !statusTarget?.nextStatus) return;
+    setStatusSubmitting(true);
+    setStatusError("");
+    try {
+      await adminUpdateRecruiterAccountStatus(
+        statusTarget.rid,
+        statusTarget.nextStatus,
+      );
+      setData((prev) => {
+        if (!prev) return prev;
+        const applyStatus = (items) =>
+          Array.isArray(items)
+            ? items.map((item) =>
+                item.rid === statusTarget.rid
+                  ? { ...item, accountStatus: statusTarget.nextStatus }
+                  : item,
+              )
+            : items;
+        return {
+          ...prev,
+          teamLeaders: applyStatus(prev.teamLeaders),
+          recruiters: applyStatus(prev.recruiters),
+        };
+      });
+      closeStatusModal();
+      await fetchPerformance();
+    } catch (err) {
+      setStatusError(err.message || "Failed to update account status.");
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+
   return (
     <AdminLayout
       title="Performance Dashboard"
@@ -1526,6 +1586,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>RID</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Status</th>
                     <th>Jobs Created</th>
                     <th>Open Jobs</th>
                     <th>Restricted Jobs</th>
@@ -1540,6 +1601,47 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <td>{tl.rid}</td>
                       <td>{tl.name}</td>
                       <td>{tl.email}</td>
+                      <td>
+                        <div className="admin-status-cell">
+                          <span
+                            className={`admin-status-badge ${
+                              String(tl.accountStatus || "active").toLowerCase() ===
+                              "inactive"
+                                ? "admin-status-badge-inactive"
+                                : "admin-status-badge-active"
+                            }`}
+                          >
+                            {formatAccountStatusLabel(tl.accountStatus)}
+                          </span>
+                          <button
+                            type="button"
+                            className={`admin-back-btn ${
+                              String(tl.accountStatus || "active").toLowerCase() ===
+                              "inactive"
+                                ? "admin-activate-btn"
+                                : "admin-deactivate-btn"
+                            }`}
+                            onClick={() =>
+                              openStatusModal(
+                                {
+                                  rid: tl.rid,
+                                  name: tl.name,
+                                  role: "Team Leader",
+                                },
+                                String(tl.accountStatus || "active").toLowerCase() ===
+                                  "inactive"
+                                  ? "active"
+                                  : "inactive",
+                              )
+                            }
+                          >
+                            {String(tl.accountStatus || "active").toLowerCase() ===
+                            "inactive"
+                              ? "Activate"
+                              : "Deactivate"}
+                          </button>
+                        </div>
+                      </td>
                       <td>{tl.jobsCreated}</td>
                       <td>{tl.openJobs}</td>
                       <td>{tl.restrictedJobs}</td>
@@ -1599,6 +1701,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 <thead>
                   <tr>
                     <th>RID</th>
+                    <th>Status</th>
                     <th
                       className="perf-sortable"
                       onClick={() => handleSort("name")}
@@ -1684,6 +1787,47 @@ export default function AdminPerformance({ setCurrentPage }) {
                   {filteredRecruiters.map((r) => (
                     <tr key={r.rid}>
                       <td>{r.rid}</td>
+                      <td>
+                        <div className="admin-status-cell">
+                          <span
+                            className={`admin-status-badge ${
+                              String(r.accountStatus || "active").toLowerCase() ===
+                              "inactive"
+                                ? "admin-status-badge-inactive"
+                                : "admin-status-badge-active"
+                            }`}
+                          >
+                            {formatAccountStatusLabel(r.accountStatus)}
+                          </span>
+                          <button
+                            type="button"
+                            className={`admin-back-btn ${
+                              String(r.accountStatus || "active").toLowerCase() ===
+                              "inactive"
+                                ? "admin-activate-btn"
+                                : "admin-deactivate-btn"
+                            }`}
+                            onClick={() =>
+                              openStatusModal(
+                                {
+                                  rid: r.rid,
+                                  name: r.name,
+                                  role: "Recruiter",
+                                },
+                                String(r.accountStatus || "active").toLowerCase() ===
+                                  "inactive"
+                                  ? "active"
+                                  : "inactive",
+                              )
+                            }
+                          >
+                            {String(r.accountStatus || "active").toLowerCase() ===
+                            "inactive"
+                              ? "Activate"
+                              : "Deactivate"}
+                          </button>
+                        </div>
+                      </td>
                       <td>{r.name}</td>
                       <td>{r.submitted}</td>
                       <td>{r.verified}</td>
@@ -1732,6 +1876,69 @@ export default function AdminPerformance({ setCurrentPage }) {
           )}
         </div>
       )}
+
+      {statusTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeStatusModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: "10px" }}>
+              {statusTarget.nextStatus === "inactive"
+                ? "Deactivate profile"
+                : "Activate profile"}
+            </h3>
+            <p style={{ margin: 0, color: "#475569", lineHeight: 1.55 }}>
+              {statusTarget.nextStatus === "inactive"
+                ? `Do you want to deactivate this profile for ${statusTarget.name || statusTarget.rid}?`
+                : `Do you want to activate this profile for ${statusTarget.name || statusTarget.rid}?`}
+            </p>
+            <p style={{ margin: "10px 0 0", color: "#64748b", fontSize: "0.9rem" }}>
+              {statusTarget.nextStatus === "inactive"
+                ? "Confirm will replace the current password with a random value."
+                : "Confirm will reset the password to 12345678."}
+            </p>
+            {statusError ? (
+              <p
+                style={{
+                  marginTop: "12px",
+                  color: "#b91c1c",
+                  fontSize: "0.92rem",
+                }}
+              >
+                {statusError}
+              </p>
+            ) : null}
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeStatusModal}
+                disabled={statusSubmitting}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                className={`admin-back-btn ${
+                  statusTarget.nextStatus === "inactive"
+                    ? "admin-deactivate-btn"
+                    : "admin-activate-btn"
+                }`}
+                onClick={handleStatusConfirm}
+                disabled={statusSubmitting}
+              >
+                {statusSubmitting ? "Saving..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Delete confirmation modal */}
       {deleteTarget ? (
