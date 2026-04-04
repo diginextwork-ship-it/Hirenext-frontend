@@ -8,7 +8,14 @@ const PAGE_SIZE = 12;
 
 const toDisplayText = (value) => {
   const normalized = String(value ?? "").trim();
-  return normalized ? normalized : "";
+  if (!normalized) return "";
+  if (["n/a", "na", "not specified"].includes(normalized.toLowerCase())) {
+    return "";
+  }
+  if (normalized === "000000") {
+    return "";
+  }
+  return normalized;
 };
 
 const splitList = (value) =>
@@ -26,6 +33,34 @@ const formatDate = (value) => {
     month: "short",
     year: "numeric",
   });
+};
+
+const buildDetailRows = (job) => {
+  const location = [
+    toDisplayText(job?.city),
+    toDisplayText(job?.state),
+    toDisplayText(job?.pincode),
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const rows = [
+    ["Job ID", toDisplayText(job?.jid)],
+    ["Company", toDisplayText(job?.company_name)],
+    ["Role", toDisplayText(job?.role_name)],
+    ["Access", toDisplayText(job?.access_mode)],
+    ["Location", location],
+    ["Salary", toDisplayText(job?.salary)],
+    [
+      "Positions Open",
+      Number(job?.positions_open) > 0 ? String(Number(job.positions_open)) : "",
+    ],
+    ["Experience", toDisplayText(job?.experience)],
+    ["Qualification", toDisplayText(job?.qualification)],
+    ["Posted On", formatDate(job?.created_at)],
+  ];
+
+  return rows.filter(([, value]) => value);
 };
 
 export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
@@ -144,6 +179,15 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
     }
   };
 
+  const detailRows = useMemo(
+    () => (activeJob ? buildDetailRows(activeJob) : []),
+    [activeJob],
+  );
+  const activeSkills = useMemo(
+    () => (activeJob ? splitList(activeJob.skills) : []),
+    [activeJob],
+  );
+
   return (
     <section className="recruiter-jobs-board">
       <div className="recruiter-jobs-board-head">
@@ -240,11 +284,19 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
             </div>
 
             <div className="job-detail-top-meta">
-              {[toDisplayText(activeJob.city), toDisplayText(activeJob.state)]
+              {[
+                toDisplayText(activeJob.city),
+                toDisplayText(activeJob.state),
+                toDisplayText(activeJob.pincode),
+              ]
                 .filter(Boolean)
                 .join(", ") ? (
                 <span className="job-detail-meta-chip">
-                  {[toDisplayText(activeJob.city), toDisplayText(activeJob.state)]
+                  {[
+                    toDisplayText(activeJob.city),
+                    toDisplayText(activeJob.state),
+                    toDisplayText(activeJob.pincode),
+                  ]
                     .filter(Boolean)
                     .join(", ")}
                 </span>
@@ -271,6 +323,20 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
               ) : null}
             </div>
 
+            {detailRows.length ? (
+              <section className="job-detail-section">
+                <h3>Job Details</h3>
+                <div className="job-detail-info-grid">
+                  {detailRows.map(([label, value]) => (
+                    <div key={label} className="job-detail-info-item">
+                      <span className="job-detail-info-label">{label}</span>
+                      <strong className="job-detail-info-value">{value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {toDisplayText(activeJob.job_description) ? (
               <section className="job-detail-section">
                 <h3>Job Description</h3>
@@ -280,11 +346,11 @@ export default function RecruiterJobsBoard({ recruiterId, onResumeSubmitted }) {
               </section>
             ) : null}
 
-            {splitList(activeJob.skills).length ? (
+            {activeSkills.length ? (
               <section className="job-detail-section">
                 <h3>Skills</h3>
                 <div className="job-skills">
-                  {splitList(activeJob.skills).map((skill) => (
+                  {activeSkills.map((skill) => (
                     <span key={skill} className="skill-tag">
                       {skill}
                     </span>

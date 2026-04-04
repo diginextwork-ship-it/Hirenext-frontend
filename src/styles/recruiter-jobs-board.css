@@ -200,6 +200,35 @@
   font-size: 1rem;
 }
 
+.job-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.job-detail-info-item {
+  padding: 14px 16px;
+  border: 1px solid #ebe5e5;
+  border-radius: 14px;
+  background: #fcfaf9;
+  display: grid;
+  gap: 6px;
+}
+
+.job-detail-info-label {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.job-detail-info-value {
+  color: #1f2937;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
 .job-description-text {
   margin: 0;
   color: #374151;
@@ -313,6 +342,10 @@
   .job-details-modal {
     width: 100%;
     padding: 18px;
+  }
+
+  .job-detail-info-grid {
+    grid-template-columns: 1fr;
   }
 }
 
