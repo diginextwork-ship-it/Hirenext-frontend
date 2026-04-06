@@ -64,10 +64,10 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
   return (
     <section className="recruiter-performance-wrap">
       <div className="recruiter-performance-head">
-        <h2>Recruiter Performance</h2>
+        <h2>Team Performance</h2>
         <input
           type="text"
-          placeholder="Search recruiter by name or email"
+          placeholder="Search team member by name or email"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -93,6 +93,7 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                       Name
                     </button>
                   </th>
+                  <th>Role</th>
                   <th>Email</th>
                   <th>
                     <button
@@ -143,6 +144,9 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
                 {rows.map((item) => (
                   <tr key={item.rid}>
                     <td>{item.name}</td>
+                    <td style={{ textTransform: "capitalize" }}>
+                      {item.role || "recruiter"}
+                    </td>
                     <td>{item.email}</td>
                     <td className="metric-value">
                       {item.stats?.submitted || 0}
@@ -193,7 +197,7 @@ export default function RecruiterPerformanceTable({ refreshKey = 0 }) {
               {summary?.totalSubmitted ?? derived.totalSubmitted}
             </p>
             <p>
-              Average per Recruiter:{" "}
+              Average per Team Member:{" "}
               {summary?.avgSubmittedPerRecruiter ?? derived.avg}
             </p>
             <p>Total Billed: {summary?.totalBilled ?? 0}</p>

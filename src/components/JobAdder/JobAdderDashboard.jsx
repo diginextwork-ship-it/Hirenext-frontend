@@ -23,7 +23,7 @@ export default function TeamLeaderDashboard() {
           className={activeTab === "performance" ? "active" : ""}
           onClick={() => setActiveTab("performance")}
         >
-          Recruiter Performance
+          Team Performance
         </button>
       </div>
 

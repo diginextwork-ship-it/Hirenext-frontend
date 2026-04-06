@@ -133,13 +133,14 @@ export default function RecruiterLogin() {
   const normalizedRole = String(recruiter?.role || "")
     .trim()
     .toLowerCase();
+  const isTeamLeader = isTeamLeaderRole(normalizedRole);
   const canCreateJobs =
     normalizedRole === "job creator" ||
-    isTeamLeaderRole(normalizedRole) ||
+    isTeamLeader ||
     Boolean(recruiter?.addjob);
-  const canManageJobAccess = isTeamLeaderRole(normalizedRole);
+  const canManageJobAccess = isTeamLeader;
   const canUploadResumes =
-    normalizedRole === "recruiter" || isTeamLeaderRole(normalizedRole);
+    normalizedRole === "recruiter" || isTeamLeader;
   const getAuthHeaders = (extraHeaders = {}) => {
     const token = getAuthSession()?.token || "";
     return token
@@ -551,7 +552,7 @@ export default function RecruiterLogin() {
               visible={canUploadResumes || canManageJobAccess}
             />
 
-            {canUploadResumes ? (
+            {canUploadResumes && !canManageJobAccess ? (
               <RecruiterDashboard
                 key={recruiter.rid}
                 recruiterId={recruiter.rid}
