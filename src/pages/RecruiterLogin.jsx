@@ -216,7 +216,7 @@ export default function RecruiterLogin() {
           body: JSON.stringify({ email, password }),
         },
         {
-          timeoutMs: 35000,
+          timeoutMs: 0,
           retries: 1,
         },
       );
@@ -250,10 +250,8 @@ export default function RecruiterLogin() {
       if (error instanceof TypeError || error?.name === "AbortError") {
         setLoginMessage(
           getNetworkErrorMessage(error, {
-            timeoutMessage:
-              "Login is taking longer than expected on this connection. Please try again.",
             unstableMessage:
-              "The network is slow or unstable right now, so login could not finish. Please try again.",
+              "Unable to reach the server right now. Please try again.",
             offlineMessage:
               "Your internet connection appears to be offline. Please reconnect and try again.",
           }),

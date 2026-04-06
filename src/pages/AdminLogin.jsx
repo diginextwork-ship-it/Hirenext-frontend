@@ -24,7 +24,7 @@ export default function AdminLogin({ onLoginSuccess }) {
           body: JSON.stringify({ adminKey }),
         },
         {
-          timeoutMs: 35000,
+          timeoutMs: 0,
           retries: 1,
         },
       );
@@ -47,10 +47,8 @@ export default function AdminLogin({ onLoginSuccess }) {
       if (error instanceof TypeError || error?.name === "AbortError") {
         setMessage(
           getNetworkErrorMessage(error, {
-            timeoutMessage:
-              "Login is taking longer than expected on this connection. Please try again.",
             unstableMessage:
-              "The network is slow or unstable right now, so login could not finish. Please try again.",
+              "Unable to reach the server right now. Please try again.",
           }),
         );
         return;
