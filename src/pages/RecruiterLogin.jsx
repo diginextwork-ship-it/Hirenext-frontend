@@ -17,7 +17,7 @@ import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import { normalizeJobData, normalizeResumeData } from "../utils/dashboardData";
-import { fetchWithRetry, getNetworkErrorMessage } from "../utils/network";
+import { fetchWithRetry } from "../utils/network";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
 import "../styles/reimbursement.css";
@@ -247,18 +247,11 @@ export default function RecruiterLogin() {
       setEmail("");
       setPassword("");
     } catch (error) {
-      if (error instanceof TypeError || error?.name === "AbortError") {
-        setLoginMessage(
-          getNetworkErrorMessage(error, {
-            unstableMessage:
-              "Unable to reach the server right now. Please try again.",
-            offlineMessage:
-              "Your internet connection appears to be offline. Please reconnect and try again.",
-          }),
-        );
-        return;
-      }
-      setLoginMessage(error.message || "Unable to login right now. Please try again.");
+      setLoginMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Login failed. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }

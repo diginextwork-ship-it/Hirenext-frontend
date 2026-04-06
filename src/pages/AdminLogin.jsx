@@ -2,7 +2,7 @@ import { useState } from "react";
 import { API_BASE_URL } from "../config/api";
 import { readJsonResponse } from "../auth/authFetch";
 import { saveAuthSession } from "../auth/session";
-import { fetchWithRetry, getNetworkErrorMessage } from "../utils/network";
+import { fetchWithRetry } from "../utils/network";
 import "../styles/recruiter-login.css";
 
 export default function AdminLogin({ onLoginSuccess }) {
@@ -44,17 +44,11 @@ export default function AdminLogin({ onLoginSuccess }) {
       saveAuthSession(session);
       onLoginSuccess?.(session);
     } catch (error) {
-      if (error instanceof TypeError || error?.name === "AbortError") {
-        setMessage(
-          getNetworkErrorMessage(error, {
-            unstableMessage:
-              "Unable to reach the server right now. Please try again.",
-          }),
-        );
-        return;
-      }
-
-      setMessage(error.message || "Unable to login right now.");
+      setMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Login failed. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
