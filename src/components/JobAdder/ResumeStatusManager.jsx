@@ -446,15 +446,6 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                           </button>
                           <button
                             type="button"
-                            className={`resume-action-btn resume-action-select ${
-                              resume.status === "selected" ? "active" : ""
-                            }`}
-                            onClick={() => handleStatusChange(resume, "selected")}
-                          >
-                            Select
-                          </button>
-                          <button
-                            type="button"
                             className={`resume-action-btn resume-action-reject ${
                               resume.status === "rejected" ? "active" : ""
                             }`}

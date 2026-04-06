@@ -138,7 +138,8 @@ export default function RecruiterLogin() {
     isTeamLeaderRole(normalizedRole) ||
     Boolean(recruiter?.addjob);
   const canManageJobAccess = isTeamLeaderRole(normalizedRole);
-  const canUploadResumes = normalizedRole === "recruiter";
+  const canUploadResumes =
+    normalizedRole === "recruiter" || isTeamLeaderRole(normalizedRole);
   const getAuthHeaders = (extraHeaders = {}) => {
     const token = getAuthSession()?.token || "";
     return token

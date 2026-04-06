@@ -449,7 +449,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         <div>
           <h2 style={{ margin: 0 }}>Performance Dashboard</h2>
           <p className="admin-muted" style={{ margin: "8px 0 0" }}>
-            Track recruiter performance for jobs created by you.
+            Track recruiter and team leader activity across all team leader jobs.
           </p>
         </div>
         <button
