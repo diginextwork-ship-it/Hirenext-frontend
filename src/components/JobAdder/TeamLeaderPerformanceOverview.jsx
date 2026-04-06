@@ -320,13 +320,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
     const dedupedItems = dedupeItemsByResId(normalizedItems);
 
-    if (selectedStatusKey === "submitted") {
-      return dedupedItems;
-    }
-
-    return dedupedItems.filter(
-      (item) => normalizeStatus(item?.status) === normalizeStatus(selectedStatusKey),
-    );
+    return dedupedItems;
   }, [latestStatusByResId, selectedStatusKey, statusDrilldown]);
 
   const handleResumeOpen = (resId) => {
