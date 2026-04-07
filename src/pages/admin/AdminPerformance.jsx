@@ -294,6 +294,16 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
+function getCandidateDisplayName(item) {
+  return (
+    item?.candidateName ||
+    item?.applicantName ||
+    item?.name ||
+    item?.fullName ||
+    "N/A"
+  );
+}
+
 function normalizeStatus(value) {
   const normalized = String(value || "")
     .trim()
@@ -1442,6 +1452,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 <table className="admin-table admin-table-wide">
                   <thead>
                     <tr>
+                      <th>Candidate</th>
                       <th>Recruiter</th>
                       <th>Team Leader</th>
                       <th>Contact Number</th>
@@ -1477,6 +1488,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                         rowActionState.canRollback;
                       return (
                       <tr key={`${selectedStatusKey}-${item.resId}`}>
+                        <td>
+                          <strong>{getCandidateDisplayName(item)}</strong>
+                        </td>
                         <td>
                           <strong>{item.recruiterName || "N/A"}</strong>
                           <div className="admin-muted">
