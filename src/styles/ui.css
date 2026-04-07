@@ -126,8 +126,7 @@
 
 .ui-btn-primary:hover {
   background: linear-gradient(135deg, var(--primary-red-hover), var(--red-deep));
-  transform: translateY(-2px);
-  box-shadow: 0 22px 42px rgba(184, 56, 43, 0.28);
+  box-shadow: 0 20px 36px rgba(184, 56, 43, 0.26);
 }
 
 .ui-btn-primary:disabled {
