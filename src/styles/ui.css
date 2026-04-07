@@ -14,8 +14,6 @@
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 1.4rem;
   box-shadow: var(--shadow-md);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   transition:
     transform 0.28s var(--ease-standard),
     box-shadow 0.28s var(--ease-standard),

@@ -1528,7 +1528,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         </td>
                         <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
-                          <td>{formatDate(item.walkInDate)}</td>
+                          <td>{item.walkInReason || formatDate(item.walkInDate)}</td>
                         )}
                         {[
                           "dropout",
