@@ -113,18 +113,34 @@
 
 .navbar-home .nav-link {
     color: #fff;
-    background: rgba(12, 19, 31, 0.58);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    padding: 0.45rem 0.95rem;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0.2rem 0;
+    box-shadow: none;
+    position: relative;
 }
 
 .navbar-home .nav-link:hover {
     color: #fff;
-    background: rgba(18, 29, 46, 0.82);
-    border-color: rgba(223, 83, 61, 0.26);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+}
+
+.navbar-home .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.25rem;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-red), rgba(223, 83, 61, 0));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s var(--ease-standard);
+}
+
+.navbar-home .nav-link:hover::after {
+    transform: scaleX(1);
 }
 
 .dropdown {
@@ -222,7 +238,7 @@
 }
 
 .navbar-home .btn-secondary {
-    background: linear-gradient(135deg, rgba(223, 83, 61, 0.92), rgba(141, 34, 30, 0.95));
+    background: linear-gradient(135deg, rgba(223, 83, 61, 0.96), rgba(141, 34, 30, 1));
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 999px;
@@ -291,9 +307,7 @@
     }
 
     .navbar-home .navbar-menu.open {
-        background: rgba(0, 0, 0, 0.55);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(10, 18, 30, 0.94);
     }
 
     .navbar-menu.open {
