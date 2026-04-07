@@ -2062,6 +2062,21 @@
   white-space: nowrap;
 }
 
+.admin-candidate-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .admin-candidate-resumes-table th:nth-child(11),
 .admin-candidate-resumes-table td:nth-child(11) {
   min-width: 180px;

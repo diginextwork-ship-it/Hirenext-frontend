@@ -24,6 +24,20 @@ const formatPercent = (value) => {
   return `${resolved}%`;
 };
 
+const formatStatusLabel = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (!normalized) return "Submitted";
+
+  return normalized
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
 const SOURCE_FILTERS = {
   ALL: "all",
   CANDIDATE: "candidate",
@@ -251,6 +265,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                   <th>Candidate Name</th>
                   <th>Job Company Name</th>
                   <th>ATS Score</th>
+                  <th>Latest Status</th>
                   <th>Submitted At</th>
                   <th>Resume File</th>
                 </tr>
@@ -272,6 +287,13 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     <td>
                       <span className="admin-stat-pill">
                         {formatPercent(resume.atsScore)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="admin-candidate-status-badge">
+                        {formatStatusLabel(
+                          resume.workflowStatus || resume.status,
+                        )}
                       </span>
                     </td>
                     <td>{formatDateTime(resume.uploadedAt)}</td>
