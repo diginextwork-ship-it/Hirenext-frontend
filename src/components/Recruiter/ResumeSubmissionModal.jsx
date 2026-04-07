@@ -5,6 +5,7 @@ import { useNotification } from "../../context/NotificationContext";
 
 const RESUME_SOURCE_OPTIONS = [
   "Naukri",
+  "Indeed",
   "Shine",
   "Reference",
   "Apna Job",

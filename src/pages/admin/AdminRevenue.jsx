@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
+import useDailyRefresh from "../../hooks/useDailyRefresh";
 import "../../styles/admin-panel.css";
 
 const toCurrency = (value) =>
@@ -116,6 +117,14 @@ export default function AdminRevenue({ setCurrentPage }) {
     loadRecruiters();
     loadReimbursements();
   }, []);
+
+  useDailyRefresh(() => {
+    loadReimbursements();
+  });
+
+  const handleRefreshDashboard = async () => {
+    await Promise.all([loadRevenue(), loadReimbursements()]);
+  };
 
   const filteredEntries = entries.filter((item) => {
     const fromDateQuery = searchFilters.fromDate.trim();
@@ -267,7 +276,12 @@ export default function AdminRevenue({ setCurrentPage }) {
       subtitle="Track money intake and expenses including salaries, electricity bills, and client payments."
       setCurrentPage={setCurrentPage}
       actions={
-        <button type="button" className="admin-refresh-btn" onClick={loadRevenue} disabled={isLoading}>
+        <button
+          type="button"
+          className="admin-refresh-btn"
+          onClick={handleRefreshDashboard}
+          disabled={isLoading}
+        >
           {isLoading ? "Refreshing..." : "Refresh"}
         </button>
       }

@@ -4,6 +4,7 @@ import {
   fetchMyReimbursements,
 } from "../services/reimbursementService";
 import { useNotification } from "../context/NotificationContext";
+import useDailyRefresh from "../hooks/useDailyRefresh";
 import "../styles/reimbursement.css";
 
 export default function ReimbursementButton({ visible = true }) {
@@ -16,23 +17,30 @@ export default function ReimbursementButton({ visible = true }) {
   const [statusList, setStatusList] = useState([]);
   const [loadingStatus, setLoadingStatus] = useState(false);
 
+  const loadStatuses = async () => {
+    setLoadingStatus(true);
+    try {
+      const data = await fetchMyReimbursements();
+      setStatusList(
+        Array.isArray(data.reimbursements) ? data.reimbursements : [],
+      );
+    } catch (err) {
+      setError(err.message || "Failed to load reimbursements.");
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-    const load = async () => {
-      setLoadingStatus(true);
-      try {
-        const data = await fetchMyReimbursements();
-        setStatusList(
-          Array.isArray(data.reimbursements) ? data.reimbursements : [],
-        );
-      } catch (err) {
-        setError(err.message || "Failed to load reimbursements.");
-      } finally {
-        setLoadingStatus(false);
-      }
-    };
-    load();
+    loadStatuses();
   }, [isOpen]);
+
+  useDailyRefresh(() => {
+    if (isOpen) {
+      loadStatuses();
+    }
+  }, visible && isOpen);
 
   const resetForm = () => {
     setAmount("");
@@ -57,10 +65,7 @@ export default function ReimbursementButton({ visible = true }) {
         5000,
       );
       resetForm();
-      const data = await fetchMyReimbursements();
-      setStatusList(
-        Array.isArray(data.reimbursements) ? data.reimbursements : [],
-      );
+      await loadStatuses();
     } catch (err) {
       setError(err.message || "Failed to submit reimbursement.");
       addNotification(
