@@ -1,12 +1,27 @@
 .features {
     padding: var(--spacing-3xl) 0;
-    background-color: var(--white);
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.75)),
+        linear-gradient(180deg, #f7f5f0 0%, #fffdf9 100%);
+}
+
+.features-backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at left center, rgba(223, 83, 61, 0.08), transparent 26%),
+        radial-gradient(circle at right top, rgba(29, 95, 168, 0.08), transparent 28%);
+    pointer-events: none;
 }
 
 .features-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+    position: relative;
+    z-index: 1;
 }
 
 .features-header {
@@ -18,61 +33,83 @@
 }
 
 .features-title {
-    font-size: clamp(2rem, 6vw, 2.8rem);
-    color: var(--primary-red);
+    font-size: clamp(2.4rem, 6vw, 3.5rem);
+    color: var(--text-primary);
     margin-bottom: var(--spacing-xl);
-    line-height: 1.2;
+    line-height: 1.05;
 }
 
 .features-description {
-    font-size: 1.1rem;
+    font-size: 1.08rem;
     color: var(--text-secondary);
     margin-bottom: var(--spacing-md);
-    line-height: 1.6;
+    line-height: 1.8;
 }
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-2xl);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.4rem;
     margin-top: var(--spacing-2xl);
 }
 
 .feature-card {
-    padding: var(--spacing-xl);
-    background-color: var(--gray-bg);
-    border-radius: 0.75rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    border: 1px solid var(--border-color);
+    padding: 1.6rem;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.75));
+    border-radius: 1.5rem;
+    text-align: left;
+    transition:
+        transform 0.35s var(--ease-standard),
+        box-shadow 0.35s var(--ease-standard),
+        border-color 0.35s var(--ease-standard);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: fadeUp 0.8s var(--ease-standard) both;
 }
 
 .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    background-color: var(--white);
-    border-color: var(--primary-red);
+    transform: translateY(-10px);
+    box-shadow: 0 28px 55px rgba(15, 23, 42, 0.14);
+    border-color: rgba(223, 83, 61, 0.24);
 }
 
 .feature-icon {
-    font-size: 3rem;
-    margin-bottom: var(--spacing-lg);
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    height: 80px;
+    height: 4.25rem;
+}
+
+.feature-icon span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.25rem;
+    height: 4.25rem;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, rgba(223, 83, 61, 0.14), rgba(29, 95, 168, 0.16));
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
 }
 
 .feature-card h3 {
     color: var(--text-primary);
-    margin-bottom: var(--spacing-md);
-    font-size: 1.25rem;
+    margin-bottom: 0.65rem;
+    font-size: 1.35rem;
 }
 
 .feature-card p {
     color: var(--text-secondary);
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: 0.98rem;
+    line-height: 1.75;
     margin: 0;
 }
 
@@ -90,7 +127,7 @@
     }
 
     .features-title {
-        font-size: 1.75rem;
+        font-size: 1.95rem;
     }
 
     .features-description {
@@ -112,7 +149,7 @@
     }
 
     .features-title {
-        font-size: 1.5rem;
+        font-size: 1.65rem;
     }
 
     .feature-card {
@@ -120,7 +157,11 @@
     }
 
     .feature-icon {
-        font-size: 2rem;
-        height: 60px;
+        height: 3.5rem;
+    }
+
+    .feature-icon span {
+        width: 3.5rem;
+        height: 3.5rem;
     }
 }

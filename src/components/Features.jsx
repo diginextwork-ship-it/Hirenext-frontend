@@ -1,6 +1,27 @@
 import "../styles/features.css";
 import SplitText from "./SplitText";
 
+const FEATURE_CARDS = [
+  {
+    icon: "01",
+    title: "Quick Turnaround",
+    copy:
+      "Fill open roles faster with a responsive hiring pipeline and curated candidate flow.",
+  },
+  {
+    icon: "02",
+    title: "Screened Professionals",
+    copy:
+      "Every profile is reviewed for fit, quality, and team readiness before it reaches you.",
+  },
+  {
+    icon: "03",
+    title: "Precision Matching",
+    copy:
+      "We align hiring goals, role nuance, and candidate strengths to improve every shortlist.",
+  },
+];
+
 export default function Features() {
   const handleAnimationComplete = () => {
     console.log("All letters have animated!");
@@ -8,6 +29,7 @@ export default function Features() {
 
   return (
     <section className="features">
+      <div className="features-backdrop" aria-hidden="true"></div>
       <div className="features-container">
         <div className="features-header">
           <SplitText
@@ -54,38 +76,19 @@ export default function Features() {
         </div>
 
         <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">
-              <span>⚡</span>
-            </div>
-            <h3>Quick Turnaround</h3>
-            <p>
-              Fill your open positions faster with our extensive network of
-              qualified candidates.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">
-              <span>👥</span>
-            </div>
-            <h3>Screened Professionals</h3>
-            <p>
-              Every candidate is thoroughly vetted to ensure they meet your
-              standards and culture.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">
-              <span>🎯</span>
-            </div>
-            <h3>Perfect Match</h3>
-            <p>
-              We take time to understand your needs and match you with the ideal
-              candidates.
-            </p>
-          </div>
+          {FEATURE_CARDS.map((card, index) => (
+            <article
+              className="feature-card"
+              key={card.title}
+              style={{ animationDelay: `${index * 120}ms` }}
+            >
+              <div className="feature-icon">
+                <span>{card.icon}</span>
+              </div>
+              <h3>{card.title}</h3>
+              <p>{card.copy}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

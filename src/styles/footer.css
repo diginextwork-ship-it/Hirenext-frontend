@@ -1,14 +1,30 @@
 .footer {
-  background-color: #1f2b3d;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(223, 83, 61, 0.16), transparent 26%),
+    linear-gradient(180deg, #152236 0%, #0d1726 100%);
   color: var(--white);
   padding: var(--spacing-3xl) 0 var(--spacing-lg);
   margin-top: var(--spacing-3xl);
+}
+
+.footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    radial-gradient(circle at right, rgba(29, 95, 168, 0.12), transparent 24%);
+  pointer-events: none;
 }
 
 .footer-container {
   max-width: 1320px;
   margin: 0 auto;
   padding: 0 var(--spacing-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .footer-main {
@@ -24,7 +40,7 @@
 }
 
 .footer-brand-logo {
-  height: 64px;
+  height: 72px;
   width: auto;
   display: block;
   margin: 0 0 var(--spacing-lg);
@@ -44,40 +60,41 @@
 }
 
 .footer-legal-copy a {
-  color: #6f84ff;
+  color: #8fb8ff;
   font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 1px;
 }
 
 .footer-legal-copy a:hover {
-  color: #9aabff;
+  color: #b8d1ff;
 }
 
 .footer-admin-btn {
   margin-top: var(--spacing-lg);
   border: 0;
-  border-radius: 2rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--primary-red);
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary-red), var(--red-deep));
   color: var(--white);
   font-size: 0.95rem;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 20px 36px rgba(184, 56, 43, 0.28);
 }
 
 .footer-admin-btn:hover {
-  background: var(--primary-red-hover);
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--primary-red-hover), var(--red-deep));
+  transform: translateY(-3px);
 }
 
 .footer-map {
   width: 100%;
   max-width: 640px;
   justify-self: end;
-  border-radius: 0.75rem;
+  border-radius: 1.5rem;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 26px 60px rgba(3, 8, 15, 0.24);
 }
 
 .footer-map iframe {
@@ -111,7 +128,7 @@
 }
 
 .footer-bottom-links a {
-  color: #6f84ff;
+  color: #8fb8ff;
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: underline;
@@ -119,7 +136,7 @@
 }
 
 .footer-bottom-links a:hover {
-  color: #9aabff;
+  color: #b8d1ff;
 }
 
 .footer-minimal {

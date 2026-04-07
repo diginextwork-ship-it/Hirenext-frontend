@@ -5,16 +5,20 @@
 }
 
 :root {
-    --primary-red: #E74C3C;
-    --primary-red-hover: #C0392B;
-    --gray-dark: #1F2937;
-    --gray-medium: #6B7280;
-    --gray-light: #9CA3AF;
-    --gray-bg: #F3F4F6;
-    --white: #FFFFFF;
-    --text-primary: #1F2937;
-    --text-secondary: #6B7280;
-    --border-color: #E5E7EB;
+    --primary-red: #df533d;
+    --primary-red-hover: #b8382b;
+    --gray-dark: #142132;
+    --gray-medium: #5e6f86;
+    --gray-light: #97a5b8;
+    --gray-bg: #f2f4f8;
+    --white: #ffffff;
+    --text-primary: #142132;
+    --text-secondary: #66758b;
+    --border-color: rgba(20, 33, 50, 0.12);
+    --surface-panel: rgba(255, 255, 255, 0.76);
+    --surface-panel-strong: rgba(255, 255, 255, 0.92);
+    --accent-blue: #1d5fa8;
+    --accent-mint: #1f9d84;
 
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -30,11 +34,11 @@ html {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-body);
     font-size: 1rem;
     line-height: 1.6;
     color: var(--text-primary);
-    background-color: var(--white);
+    background: transparent;
 }
 
 h1,
@@ -44,7 +48,7 @@ h4,
 h5,
 h6 {
     line-height: 1.2;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: var(--spacing-lg);
 }
 
@@ -68,7 +72,7 @@ p {
 a {
     text-decoration: none;
     color: var(--primary-red);
-    transition: color 0.2s ease;
+    transition: color 0.25s var(--ease-standard);
 }
 
 a:hover {
@@ -76,21 +80,28 @@ a:hover {
 }
 
 button {
-    font-family: inherit;
     cursor: pointer;
     border: none;
-    transition: all 0.2s ease;
+    transition:
+        transform 0.25s var(--ease-standard),
+        background-color 0.25s var(--ease-standard),
+        border-color 0.25s var(--ease-standard),
+        box-shadow 0.25s var(--ease-standard),
+        color 0.25s var(--ease-standard);
 }
 
 input,
 select,
 textarea {
-    font-family: inherit;
     font-size: 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     padding: var(--spacing-md);
-    transition: border-color 0.2s ease;
+    background: rgba(255, 255, 255, 0.94);
+    transition:
+        border-color 0.25s var(--ease-standard),
+        box-shadow 0.25s var(--ease-standard),
+        background-color 0.25s var(--ease-standard);
 }
 
 input:focus,
@@ -98,13 +109,19 @@ select:focus,
 textarea:focus {
     outline: none;
     border-color: var(--primary-red);
-    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    box-shadow: 0 0 0 4px rgba(223, 83, 61, 0.14);
+    background: var(--white);
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+}
+
+.app {
+    position: relative;
+    isolation: isolate;
 }
 
 @media (max-width: 768px) {

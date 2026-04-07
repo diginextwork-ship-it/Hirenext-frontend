@@ -10,16 +10,18 @@
 }
 
 .dashboard-tabs button {
-  border: 1px solid #d8d2d2;
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border: 1px solid rgba(20, 33, 50, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  padding: 10px 14px;
   cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(14px);
 }
 
 .dashboard-tabs button.active {
-  background: #c62828;
-  border-color: #c62828;
+  background: linear-gradient(135deg, var(--primary-red), var(--red-deep));
+  border-color: transparent;
   color: #fff;
 }
 
@@ -30,10 +32,12 @@
 }
 
 .summary-card {
-  border: 1px solid #eee8e8;
-  background: #fffdfd;
-  border-radius: 10px;
-  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.74));
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .summary-card h4 {
@@ -56,10 +60,12 @@
 }
 
 .dashboard-panel {
-  border: 1px solid #eee8e8;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.76));
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .performer-row,
@@ -86,16 +92,16 @@
 
 .recruiter-performance-head input {
   width: min(320px, 100%);
-  padding: 8px 10px;
-  border: 1px solid #d8d2d2;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(20, 33, 50, 0.12);
+  border-radius: 12px;
 }
 
 .recruiter-performance-head select {
   width: min(360px, 100%);
-  padding: 8px 10px;
-  border: 1px solid #d8d2d2;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(20, 33, 50, 0.12);
+  border-radius: 12px;
   background: #fff;
 }
 
@@ -257,15 +263,15 @@
 
 .metric-card {
   border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 18px;
+  padding: 14px;
   background: #fff;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
+    transform 0.25s var(--ease-standard),
+    box-shadow 0.25s var(--ease-standard),
+    filter 0.25s var(--ease-standard);
 }
 
 .metric-card-button {
@@ -290,7 +296,7 @@
 }
 
 .metric-card.blue {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #2d7de0, #1d5fa8);
 }
 
 .metric-card.green {
@@ -302,7 +308,7 @@
 }
 
 .metric-card.purple {
-  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  background: linear-gradient(135deg, #e6714d, #bb3f35);
 }
 
 .metric-card.gold {
@@ -341,10 +347,11 @@
 }
 
 .info-card {
-  border: 1px solid #eee8e8;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.76));
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
 }
 
 .big-number {
@@ -355,10 +362,11 @@
 
 .points-progress-card {
   margin-top: 12px;
-  border: 1px solid #eee8e8;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.76));
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
 }
 
 .points-progress-head {
@@ -646,7 +654,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(8, 15, 24, 0.52);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -655,11 +663,12 @@
 }
 
 .modal-content {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 20px;
+  box-shadow: 0 26px 70px rgba(8, 15, 24, 0.2);
   max-height: 90vh;
   overflow-y: auto;
+  backdrop-filter: blur(18px);
 }
 
 .modal-header {

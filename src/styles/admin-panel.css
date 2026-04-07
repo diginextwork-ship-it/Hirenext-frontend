@@ -2,7 +2,7 @@
   min-height: 80vh;
   padding: clamp(2.5rem, 4vw, 4rem) var(--spacing-md);
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   color: var(--text-primary);
   overflow-x: visible;
 }

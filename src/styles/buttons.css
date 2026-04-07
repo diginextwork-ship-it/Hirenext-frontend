@@ -6,27 +6,28 @@
 }
 
 .btn {
-    padding: 0.75rem 2rem;
-    border-radius: 2rem;
-    font-weight: 600;
-    font-size: 1rem;
+    padding: 0.92rem 1.9rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.96rem;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: lowercase;
+    transition: all 0.3s var(--ease-standard);
+    text-transform: none;
     white-space: nowrap;
+    letter-spacing: 0.01em;
 }
 
 .btn-primary {
-    background-color: var(--primary-red);
+    background: linear-gradient(135deg, var(--primary-red), var(--red-deep));
     color: var(--white);
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 20px 38px rgba(184, 56, 43, 0.32);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-red-hover);
-    box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4);
-    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--primary-red-hover), var(--red-deep));
+    box-shadow: 0 26px 46px rgba(184, 56, 43, 0.36);
+    transform: translateY(-3px) scale(1.01);
 }
 
 .btn-primary:active {
@@ -34,16 +35,17 @@
 }
 
 .btn-secondary-light {
-    background-color: rgba(107, 114, 128, 0.7);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--white);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    box-shadow: 0 18px 36px rgba(5, 10, 18, 0.18);
 }
 
 .btn-secondary-light:hover {
-    background-color: rgba(107, 114, 128, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    transform: translateY(-3px);
 }
 
 .btn-secondary-light:active {
@@ -51,12 +53,12 @@
 }
 
 .btn-secondary {
-    background-color: var(--gray-medium);
+    background: rgba(20, 33, 50, 0.08);
     color: var(--white);
 }
 
 .btn-secondary:hover {
-    background-color: var(--gray-light);
+    background: rgba(20, 33, 50, 0.16);
     transform: translateY(-2px);
 }
 
@@ -66,8 +68,8 @@
     }
 
     .btn {
-        padding: 0.65rem 1.5rem;
-        font-size: 0.95rem;
+        padding: 0.8rem 1.4rem;
+        font-size: 0.92rem;
     }
 }
 
@@ -80,6 +82,6 @@
 
     .btn {
         width: 100%;
-        padding: 0.75rem 1rem;
+        padding: 0.8rem 1rem;
     }
 }
