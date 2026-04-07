@@ -2141,3 +2141,175 @@
     width: 100%;
   }
 }
+
+/* Responsive hardening for phone and tablet layouts */
+.admin-chart-wrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-table-wrap {
+  scrollbar-width: thin;
+  scroll-padding-inline: 1rem;
+}
+
+.admin-table-wrap::-webkit-scrollbar {
+  height: 10px;
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 999px;
+}
+
+.admin-modal-card {
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .admin-chart-wrap {
+    height: 280px;
+  }
+
+  .admin-page-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-dashboard-card,
+  .admin-panel-card {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-chart-wrap {
+    height: 240px;
+  }
+
+  .admin-table {
+    min-width: 500px;
+  }
+
+  .admin-table-wide {
+    min-width: 1120px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    font-size: 0.84rem;
+    padding: 0.56rem 0.58rem;
+  }
+
+  .admin-table th:last-child,
+  .admin-table td:last-child {
+    min-width: 132px;
+    max-width: 180px;
+  }
+
+  .admin-table td > div[style*="display: flex"],
+  .admin-attendance-actions,
+  .admin-actions-cell {
+    gap: 0.4rem;
+  }
+
+  .admin-attendance-actions button,
+  .admin-actions-cell button {
+    min-height: 38px;
+  }
+
+  .admin-page-head,
+  .admin-hero,
+  .admin-page-actions {
+    gap: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-chart-wrap {
+    height: 220px;
+  }
+
+  .admin-table {
+    min-width: 460px;
+  }
+
+  .admin-table-wide {
+    min-width: 980px;
+  }
+
+  .admin-modal-card {
+    width: min(100%, 100vw - 1rem);
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .admin-modal-actions > * {
+    width: 100%;
+  }
+
+  .admin-attendance-actions {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-attendance-actions .admin-back-btn,
+  .admin-attendance-actions .admin-attendance-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+    text-align: center;
+  }
+
+  .admin-chart-empty {
+    padding: 1.25rem 0.75rem;
+    font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-chart-wrap {
+    height: 200px;
+  }
+
+  .admin-dashboard-card,
+  .admin-panel-card,
+  .admin-card {
+    padding: 0.85rem;
+  }
+
+  .admin-table {
+    min-width: 420px;
+  }
+
+  .admin-table-wide {
+    min-width: 900px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    font-size: 0.78rem;
+    padding: 0.48rem 0.5rem;
+  }
+
+  .admin-status-cell,
+  .admin-actions-cell,
+  .admin-candidate-resumes-table .admin-actions-cell {
+    min-width: 150px;
+    max-width: 150px;
+  }
+
+  .admin-attendance-actions .admin-back-btn,
+  .admin-attendance-actions .admin-attendance-btn {
+    flex-basis: 100%;
+  }
+
+  .admin-page-actions {
+    align-items: stretch;
+  }
+
+  .admin-page-actions > * {
+    width: 100%;
+  }
+}

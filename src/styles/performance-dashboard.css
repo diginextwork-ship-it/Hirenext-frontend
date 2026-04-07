@@ -7,6 +7,9 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 14px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .dashboard-tabs button {
@@ -17,6 +20,8 @@
   cursor: pointer;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(14px);
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .dashboard-tabs button.active {
@@ -374,6 +379,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .points-progress-head h3 {
@@ -459,6 +465,10 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .performance-table {
+    min-width: 780px;
+  }
+
   .performer-row {
     grid-template-columns: 1fr 1fr;
     font-size: 0.82rem;
@@ -472,6 +482,17 @@
   .recruiter-performance-head input,
   .recruiter-performance-head select {
     width: 100%;
+  }
+
+  .dashboard-panel,
+  .info-card,
+  .points-progress-card {
+    padding: 12px;
+  }
+
+  .table-summary {
+    gap: 10px;
+    font-size: 0.86rem;
   }
 }
 
@@ -489,6 +510,10 @@
     grid-template-columns: 1fr;
   }
 
+  .performance-table {
+    min-width: 640px;
+  }
+
   .performance-table th,
   .performance-table td {
     white-space: nowrap;
@@ -499,6 +524,26 @@
   .dashboard-tabs button {
     padding: 6px 10px;
     font-size: 0.85rem;
+  }
+
+  .metric-card {
+    padding: 12px;
+  }
+
+  .metric-card .metric-value,
+  .big-number {
+    font-size: 1.05rem;
+  }
+
+  .resume-status-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .resume-action-btn,
+  .dashboard-date-btn {
+    width: 100%;
+    text-align: center;
   }
 }
 
