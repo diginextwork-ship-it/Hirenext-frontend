@@ -77,6 +77,7 @@ const getResumeCompanyName = (item) =>
   "N/A";
 const getResumeCityName = (item) =>
   item?.city || item?.job?.city || item?.jobCity || "N/A";
+const INITIAL_VISIBLE_APPLICATIONS = 5;
 
 const isTeamLeaderRole = (role) => {
   const normalized = String(role || "")
@@ -101,6 +102,7 @@ export default function RecruiterLogin() {
   const [recruiter, setRecruiter] = useState(null);
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [applications, setApplications] = useState([]);
+  const [showAllApplications, setShowAllApplications] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [activeAccessJobId, setActiveAccessJobId] = useState(null);
@@ -141,6 +143,12 @@ export default function RecruiterLogin() {
   const canManageJobAccess = isTeamLeader;
   const canUploadResumes =
     normalizedRole === "recruiter" || isTeamLeader;
+  const shouldCollapseApplications =
+    canManageJobAccess && applications.length > INITIAL_VISIBLE_APPLICATIONS;
+  const visibleApplications =
+    shouldCollapseApplications && !showAllApplications
+      ? applications.slice(0, INITIAL_VISIBLE_APPLICATIONS)
+      : applications;
   const getAuthHeaders = (extraHeaders = {}) => {
     const token = getAuthSession()?.token || "";
     return token
@@ -156,6 +164,7 @@ export default function RecruiterLogin() {
         {},
         "Failed to fetch recruiter applications.",
       );
+      setShowAllApplications(false);
       setApplications(
         Array.isArray(data.applications) ? data.applications : [],
       );
@@ -616,7 +625,7 @@ export default function RecruiterLogin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {applications.map((item) => (
+                      {visibleApplications.map((item) => (
                         <tr key={item.id}>
                           <td>{item.candidateName}</td>
                           <td>{item.email}</td>
@@ -646,6 +655,19 @@ export default function RecruiterLogin() {
                       ))}
                     </tbody>
                   </table>
+                  {shouldCollapseApplications ? (
+                    <div className="ui-mt-xs">
+                      <button
+                        type="button"
+                        className="click-here-btn"
+                        onClick={() =>
+                          setShowAllApplications((current) => !current)
+                        }
+                      >
+                        {showAllApplications ? "View Less" : "View More"}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
