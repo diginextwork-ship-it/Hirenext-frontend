@@ -87,6 +87,21 @@ const STATUS_CARDS = [
   },
 ];
 
+const PERSON_METRIC_CARDS = [
+  { key: "submitted", label: "Submitted", tone: "submitted" },
+  { key: "verified", label: "Verified", tone: "green" },
+  { key: "walk_in", label: "Verified Walk-in", tone: "green" },
+  { key: "shortlisted", label: "Shortlisted", tone: "blue" },
+  { key: "selected", label: "Selected", tone: "purple" },
+  { key: "rejected", label: "Rejected", tone: "red" },
+  { key: "joined", label: "Joined", tone: "gold" },
+  { key: "dropout", label: "Dropout", tone: "pink" },
+  { key: "billed", label: "Billed", tone: "teal" },
+  { key: "left", label: "Left", tone: "orange" },
+  { key: "on_hold", label: "On Hold", tone: "blue" },
+  { key: "points", label: "Points", tone: "teal" },
+];
+
 const ADMIN_ACTIONS_BY_STATUS = {
   submitted: [
     { value: "verified", label: "Verify", color: "#2563eb" },
@@ -300,6 +315,10 @@ function formatAccountStatusLabel(status) {
     : "Active";
 }
 
+function normalizeLookupKey(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
@@ -402,6 +421,8 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [sortField, setSortField] = useState("submitted");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
+  const [selectedRecruiterRid, setSelectedRecruiterRid] = useState("");
+  const [selectedTeamLeaderRid, setSelectedTeamLeaderRid] = useState("");
 
   // Admin status action modal state
   const [actionModalItem, setActionModalItem] = useState(null);
@@ -619,8 +640,100 @@ export default function AdminPerformance({ setCurrentPage }) {
     );
   });
 
+  const selectedRecruiter = useMemo(
+    () =>
+      (data?.recruiters || []).find((recruiter) => recruiter.rid === selectedRecruiterRid) ||
+      null,
+    [data?.recruiters, selectedRecruiterRid],
+  );
+
+  const selectedTeamLeader = useMemo(
+    () =>
+      (data?.teamLeaders || []).find(
+        (teamLeader) => teamLeader.rid === selectedTeamLeaderRid,
+      ) || null,
+    [data?.teamLeaders, selectedTeamLeaderRid],
+  );
+
   const summary = data?.summary || {};
   const statusDrilldown = data?.statusDrilldown || {};
+  const teamLeaderMetricMap = useMemo(() => {
+    const baseMetrics = () => ({
+      submitted: 0,
+      verified: 0,
+      walk_in: 0,
+      shortlisted: 0,
+      selected: 0,
+      rejected: 0,
+      joined: 0,
+      dropout: 0,
+      billed: 0,
+      left: 0,
+      on_hold: 0,
+      points: 0,
+    });
+
+    const teamLeaders = data?.teamLeaders || [];
+    const map = new Map();
+    const teamLeaderByName = new Map();
+
+    for (const teamLeader of teamLeaders) {
+      map.set(teamLeader.rid, {
+        ...baseMetrics(),
+        points: Number(teamLeader.points) || 0,
+      });
+      teamLeaderByName.set(normalizeLookupKey(teamLeader.name), teamLeader);
+    }
+
+    const incrementFromBucket = (bucketKey, items) => {
+      if (!Array.isArray(items)) return;
+      for (const item of items) {
+        const matchedTeamLeader = teamLeaderByName.get(
+          normalizeLookupKey(item?.teamLeaderName),
+        );
+        if (!matchedTeamLeader) continue;
+        const current = map.get(matchedTeamLeader.rid) || {
+          ...baseMetrics(),
+          points: Number(matchedTeamLeader.points) || 0,
+        };
+        current[bucketKey] = (Number(current[bucketKey]) || 0) + 1;
+        current.points = Number(matchedTeamLeader.points) || 0;
+        map.set(matchedTeamLeader.rid, current);
+      }
+    };
+
+    incrementFromBucket("submitted", statusDrilldown.submitted);
+    incrementFromBucket("verified", statusDrilldown.verified);
+    incrementFromBucket("walk_in", statusDrilldown.walk_in);
+    incrementFromBucket("shortlisted", statusDrilldown.shortlisted);
+    incrementFromBucket("selected", statusDrilldown.selected);
+    incrementFromBucket("rejected", statusDrilldown.rejected);
+    incrementFromBucket("joined", statusDrilldown.joined);
+    incrementFromBucket("dropout", statusDrilldown.dropout);
+    incrementFromBucket("billed", statusDrilldown.billed);
+    incrementFromBucket("left", statusDrilldown.left);
+
+    return map;
+  }, [data?.teamLeaders, statusDrilldown]);
+  const selectedTeamLeaderMetrics = useMemo(() => {
+    if (!selectedTeamLeader) return null;
+    return (
+      teamLeaderMetricMap.get(selectedTeamLeader.rid) || {
+        submitted: 0,
+        verified: 0,
+        walk_in: 0,
+        shortlisted: 0,
+        selected: 0,
+        rejected: 0,
+        joined: 0,
+        dropout: 0,
+        billed: 0,
+        left: 0,
+        on_hold: 0,
+        points: Number(selectedTeamLeader.points) || 0,
+      }
+    );
+  }, [selectedTeamLeader, teamLeaderMetricMap]);
   const performanceSubmittedItems =
     statusDrilldown?.submitted && Array.isArray(statusDrilldown.submitted)
       ? statusDrilldown.submitted
@@ -1152,6 +1265,38 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const renderPersonMetrics = (person, metrics, roleLabel) => {
+    if (!person || !metrics) return null;
+
+    return (
+      <div className="perf-person-detail">
+        <div className="perf-person-detail-head">
+          <div>
+            <p className="perf-person-detail-kicker">{roleLabel} Performance</p>
+            <h3 className="perf-section-title" style={{ marginBottom: "0.35rem" }}>
+              {person.name || person.rid}
+            </h3>
+            <p className="admin-muted" style={{ margin: 0 }}>
+              {person.email || "Email not available"}
+            </p>
+          </div>
+        </div>
+
+        <div className="perf-summary-grid" style={{ marginBottom: 0 }}>
+          {PERSON_METRIC_CARDS.map((card) => (
+            <div
+              key={`${roleLabel}-${person.rid}-${card.key}`}
+              className={`perf-stat-card perf-stat-card-${card.tone}`}
+            >
+              <span className="perf-stat-label">{card.label}</span>
+              <span className="perf-stat-value">{metrics[card.key] ?? 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <AdminLayout
       title="Performance Dashboard"
@@ -1573,101 +1718,50 @@ export default function AdminPerformance({ setCurrentPage }) {
             <input
               type="text"
               className="perf-search"
-              placeholder="Search by name, email, or RID..."
+              placeholder="Search team leaders by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {filteredTLs.length > 0 ? (
+          {selectedTeamLeader ? (
+            <>
+              <div className="perf-person-actions">
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  onClick={() => setSelectedTeamLeaderRid("")}
+                >
+                  Back to Team Leaders
+                </button>
+              </div>
+              {renderPersonMetrics(
+                selectedTeamLeader,
+                selectedTeamLeaderMetrics,
+                "Team Leader",
+              )}
+            </>
+          ) : filteredTLs.length > 0 ? (
             <div className="admin-table-wrap">
-              <table className="admin-table admin-table-wide">
+              <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>RID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Status</th>
-                    <th>Jobs Created</th>
-                    <th>Open Jobs</th>
-                    <th>Restricted Jobs</th>
-                    <th>Total Positions</th>
-                    <th>Points</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTLs.map((tl) => (
                     <tr key={tl.rid}>
-                      <td>{tl.rid}</td>
-                      <td>{tl.name}</td>
-                      <td>{tl.email}</td>
-                      <td>
-                        <div className="admin-status-cell">
-                          <span
-                            className={`admin-status-badge ${
-                              String(tl.accountStatus || "active").toLowerCase() ===
-                              "inactive"
-                                ? "admin-status-badge-inactive"
-                                : "admin-status-badge-active"
-                            }`}
-                          >
-                            {formatAccountStatusLabel(tl.accountStatus)}
-                          </span>
-                          <button
-                            type="button"
-                            className={`admin-back-btn ${
-                              String(tl.accountStatus || "active").toLowerCase() ===
-                              "inactive"
-                                ? "admin-activate-btn"
-                                : "admin-deactivate-btn"
-                            }`}
-                            onClick={() =>
-                              openStatusModal(
-                                {
-                                  rid: tl.rid,
-                                  name: tl.name,
-                                  role: "Team Leader",
-                                },
-                                String(tl.accountStatus || "active").toLowerCase() ===
-                                  "inactive"
-                                  ? "active"
-                                  : "inactive",
-                              )
-                            }
-                          >
-                            {String(tl.accountStatus || "active").toLowerCase() ===
-                            "inactive"
-                              ? "Activate"
-                              : "Deactivate"}
-                          </button>
-                        </div>
-                      </td>
-                      <td>{tl.jobsCreated}</td>
-                      <td>{tl.openJobs}</td>
-                      <td>{tl.restrictedJobs}</td>
-                      <td>{tl.totalPositions}</td>
-                      <td>{tl.points}</td>
                       <td>
                         <button
                           type="button"
-                          className="admin-back-btn"
-                          style={{
-                            backgroundColor: "#dc2626",
-                            color: "#fff",
-                            border: "none",
-                          }}
-                          onClick={() =>
-                            openDeleteModal({
-                              rid: tl.rid,
-                              name: tl.name,
-                              email: tl.email,
-                              role: "Team Leader",
-                            })
-                          }
+                          className="perf-person-link"
+                          onClick={() => setSelectedTeamLeaderRid(tl.rid)}
                         >
-                          Delete
+                          {tl.name || tl.rid}
                         </button>
                       </td>
+                      <td>{tl.email || "N/A"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1690,178 +1784,51 @@ export default function AdminPerformance({ setCurrentPage }) {
             <input
               type="text"
               className="perf-search"
-              placeholder="Search by name, email, or RID..."
+              placeholder="Search recruiters by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {filteredRecruiters.length > 0 ? (
+          {selectedRecruiter ? (
+            <>
+              <div className="perf-person-actions">
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  onClick={() => setSelectedRecruiterRid("")}
+                >
+                  Back to Recruiters
+                </button>
+              </div>
+              {renderPersonMetrics(selectedRecruiter, selectedRecruiter, "Recruiter")}
+            </>
+          ) : filteredRecruiters.length > 0 ? (
             <div className="admin-table-wrap">
-              <table className="admin-table admin-table-wide">
+              <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>RID</th>
-                    <th>Status</th>
                     <th
                       className="perf-sortable"
                       onClick={() => handleSort("name")}
                     >
                       Name{sortIndicator("name")}
                     </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("submitted")}
-                    >
-                      Submitted{sortIndicator("submitted")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("verified")}
-                    >
-                      Verified{sortIndicator("verified")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("walk_in")}
-                    >
-                      Walk-in{sortIndicator("walk_in")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("shortlisted")}
-                    >
-                      Shortlisted{sortIndicator("shortlisted")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("selected")}
-                    >
-                      Selected{sortIndicator("selected")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("rejected")}
-                    >
-                      Rejected{sortIndicator("rejected")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("joined")}
-                    >
-                      Joined{sortIndicator("joined")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("dropout")}
-                    >
-                      Dropout{sortIndicator("dropout")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("billed")}
-                    >
-                      Billed{sortIndicator("billed")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("left")}
-                    >
-                      Left{sortIndicator("left")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("on_hold")}
-                    >
-                      On Hold{sortIndicator("on_hold")}
-                    </th>
-                    <th
-                      className="perf-sortable"
-                      onClick={() => handleSort("points")}
-                    >
-                      Points{sortIndicator("points")}
-                    </th>
-                    <th>Actions</th>
+                    <th>Email</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRecruiters.map((r) => (
                     <tr key={r.rid}>
-                      <td>{r.rid}</td>
-                      <td>
-                        <div className="admin-status-cell">
-                          <span
-                            className={`admin-status-badge ${
-                              String(r.accountStatus || "active").toLowerCase() ===
-                              "inactive"
-                                ? "admin-status-badge-inactive"
-                                : "admin-status-badge-active"
-                            }`}
-                          >
-                            {formatAccountStatusLabel(r.accountStatus)}
-                          </span>
-                          <button
-                            type="button"
-                            className={`admin-back-btn ${
-                              String(r.accountStatus || "active").toLowerCase() ===
-                              "inactive"
-                                ? "admin-activate-btn"
-                                : "admin-deactivate-btn"
-                            }`}
-                            onClick={() =>
-                              openStatusModal(
-                                {
-                                  rid: r.rid,
-                                  name: r.name,
-                                  role: "Recruiter",
-                                },
-                                String(r.accountStatus || "active").toLowerCase() ===
-                                  "inactive"
-                                  ? "active"
-                                  : "inactive",
-                              )
-                            }
-                          >
-                            {String(r.accountStatus || "active").toLowerCase() ===
-                            "inactive"
-                              ? "Activate"
-                              : "Deactivate"}
-                          </button>
-                        </div>
-                      </td>
-                      <td>{r.name}</td>
-                      <td>{r.submitted}</td>
-                      <td>{r.verified}</td>
-                      <td>{r.walk_in}</td>
-                      <td>{r.shortlisted ?? 0}</td>
-                      <td>{r.selected}</td>
-                      <td>{r.rejected}</td>
-                      <td>{r.joined}</td>
-                      <td>{r.dropout}</td>
-                      <td>{r.billed ?? 0}</td>
-                      <td>{r.left ?? 0}</td>
-                      <td>{r.on_hold}</td>
-                      <td>{r.points}</td>
                       <td>
                         <button
                           type="button"
-                          className="admin-back-btn"
-                          style={{
-                            backgroundColor: "#dc2626",
-                            color: "#fff",
-                            border: "none",
-                          }}
-                          onClick={() =>
-                            openDeleteModal({
-                              rid: r.rid,
-                              name: r.name,
-                              email: r.email,
-                              role: "Recruiter",
-                            })
-                          }
+                          className="perf-person-link"
+                          onClick={() => setSelectedRecruiterRid(r.rid)}
                         >
-                          Delete
+                          {r.name || r.rid}
                         </button>
                       </td>
+                      <td>{r.email || "N/A"}</td>
                     </tr>
                   ))}
                 </tbody>

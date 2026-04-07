@@ -1037,6 +1037,54 @@
   color: #c62828;
 }
 
+.perf-person-actions {
+  margin-bottom: 1rem;
+}
+
+.perf-person-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.perf-person-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.perf-person-detail-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #c62828;
+}
+
+.perf-person-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #b91c1c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.perf-person-link:hover {
+  color: #991b1b;
+  text-decoration: underline;
+}
+
+.perf-person-link:focus-visible {
+  outline: 2px solid #991b1b;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ALERTS & MODALS
    ═══════════════════════════════════════════════════════════════ */
