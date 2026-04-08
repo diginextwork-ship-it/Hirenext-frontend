@@ -3,6 +3,11 @@
   background: #060c14;
 }
 
+.contactus-page + .footer,
+.contactus-page + .footer.footer-minimal {
+  margin-top: 0;
+}
+
 .contactus-shell {
   position: relative;
   width: min(1280px, calc(100% - 2.5rem));
@@ -21,7 +26,7 @@
 
 .contactus-panel {
   position: relative;
-  min-height: 100vh;
+  min-height: max(100vh, 920px);
   width: 100%;
   overflow: hidden;
   display: grid;
@@ -244,7 +249,7 @@
   }
 
   .contactus-panel {
-    min-height: 100vh;
+    min-height: auto;
   }
 
   .contactus-intro {
