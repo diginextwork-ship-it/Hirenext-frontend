@@ -1,50 +1,96 @@
 .job-application-page {
   min-height: 100vh;
-  background: #f2f4f7;
-  padding: 0;
+  background:
+    radial-gradient(circle at top left, rgba(223, 83, 61, 0.12), transparent 22%),
+    linear-gradient(180deg, #f7ede6 0%, #f3f6fa 36%, #eef3f8 100%);
 }
 
 .job-application-shell {
-  width: min(720px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
 }
 
+.job-application-layout {
+  display: grid;
+  justify-items: center;
+  gap: 1.4rem;
+}
+
+.job-application-intro {
+  width: min(760px, 100%);
+  text-align: center;
+}
+
+.job-application-kicker {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(223, 83, 61, 0.12);
+  color: var(--red-deep);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.job-application-intro h1 {
+  margin-bottom: 0.65rem;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
 .job-application-card {
-  background: var(--white);
-  border: 1px solid #d7dce3;
-  border-radius: 1rem;
-  padding: var(--spacing-2xl);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  width: min(760px, 100%);
+  padding: clamp(1.1rem, 2.3vw, 2rem);
+  border: 1px solid rgba(20, 33, 50, 0.08);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.08);
 }
 
-.job-application-card h1 {
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  margin-bottom: var(--spacing-sm);
+.job-application-role-card {
+  margin-bottom: 1.35rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #dce4ec;
+  border-radius: 1.15rem;
+  background: linear-gradient(135deg, #fff7f2, #f7fafc);
 }
 
-.job-application-card p {
-  margin-bottom: var(--spacing-xl);
+.job-application-role-card span {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  color: #62748a;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.job-application-role-card h2 {
+  margin-bottom: 0.35rem;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.job-application-role-card p {
+  margin-bottom: 0;
 }
 
 .job-application-form {
   display: grid;
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .application-field {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: 0.42rem;
 }
 
 .application-field label {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
-.application-field input {
-  width: 100%;
-}
-
+.application-field input,
 .application-field select {
   width: 100%;
 }
@@ -52,92 +98,64 @@
 .application-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .application-experience-block {
   display: grid;
-  gap: var(--spacing-md);
+  gap: 1rem;
   padding: 1rem;
-  border: 1px solid #d7dce3;
-  border-radius: 0.9rem;
-  background: #f8fafc;
+  border: 1px solid #dde5ee;
+  border-radius: 1.15rem;
+  background: #f8fbff;
 }
 
 .application-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-  margin-top: var(--spacing-sm);
-}
-
-.apply-submit-btn,
-.application-back-btn {
-  border-radius: 0.8rem;
-  padding: 0.85rem 1.2rem;
-  font-weight: 700;
+  margin-top: 0.25rem;
 }
 
 .apply-submit-btn {
-  background: var(--primary-red);
+  width: 100%;
+  min-height: 52px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-red), var(--red-deep));
   color: var(--white);
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 18px 34px rgba(184, 56, 43, 0.22);
 }
 
 .apply-submit-btn:hover {
-  background: var(--primary-red-hover);
-}
-
-.application-back-btn {
-  border: 1px solid #d5dbe3;
-  background: #f8fafc;
-  color: #334155;
-}
-
-.application-back-btn:hover {
-  background: #eef2f7;
+  background: linear-gradient(135deg, var(--primary-red-hover), var(--red-deep));
 }
 
 .application-success-message {
-  margin-top: var(--spacing-md);
+  margin-top: 1rem;
   margin-bottom: 0;
   color: #166534;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .application-error-message {
   margin: 0;
   color: #b91c1c;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .application-grid {
     grid-template-columns: 1fr;
   }
 
   .job-application-card {
-    padding: var(--spacing-lg);
-  }
-
-  .application-actions {
-    flex-direction: column;
-  }
-
-  .apply-submit-btn,
-  .application-back-btn {
-    width: 100%;
+    border-radius: 1.2rem;
   }
 }
 
 @media (max-width: 480px) {
-  .job-application-shell {
-    width: 100%;
-  }
-
   .job-application-card {
     padding: 1rem;
-    border-radius: 0.75rem;
   }
 
   .application-field input,

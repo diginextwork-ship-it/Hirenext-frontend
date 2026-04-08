@@ -16,6 +16,7 @@ const AboutUs = lazy(() => import("./pages/AboutUs"));
 const Contact = lazy(() => import("./pages/contact"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const JobSearch = lazy(() => import("./pages/JobSearch"));
+const JobDetails = lazy(() => import("./pages/JobDetails"));
 const JobApplication = lazy(() => import("./pages/JobApplication"));
 const RecruiterLogin = lazy(() => import("./pages/RecruiterLogin"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
@@ -80,37 +81,80 @@ const normalizePath = (pathname) => {
   return pathname;
 };
 
-const getPageFromPath = (pathname) => {
+const getRouteFromPath = (pathname) => {
   const normalizedPath = normalizePath(pathname);
-  if (normalizedPath === "/") return "home";
-  if (normalizedPath === "/jobs") return "jobs";
-  if (normalizedPath === "/jobs/apply") return "applyjob";
-  if (normalizedPath === "/contactus") return "contactus";
-  if (normalizedPath === "/about-us") return "aboutus";
-  if (normalizedPath === "/gallery") return "gallery";
-  if (normalizedPath === "/schedule-call") return "schedulecall";
-  if (normalizedPath === "/recruiter-login") return "recruiterlogin";
-  if (normalizedPath === "/admin-login") return "adminlogin";
-  if (normalizedPath === "/admin-panel") return "adminpanel";
-  if (normalizedPath === "/admin-panel/create-recruiter") return "admincreate";
+  if (normalizedPath === "/") return { page: "home", params: {} };
+  if (normalizedPath === "/jobs") return { page: "jobs", params: {} };
+  if (normalizedPath === "/jobs/apply") return { page: "applyjob", params: {} };
+
+  const applyMatch = normalizedPath.match(/^\/jobs\/([^/]+)\/apply$/);
+  if (applyMatch) {
+    return {
+      page: "applyjob",
+      params: { jobId: decodeURIComponent(applyMatch[1]) },
+    };
+  }
+
+  const detailsMatch = normalizedPath.match(/^\/jobs\/([^/]+)$/);
+  if (detailsMatch) {
+    return {
+      page: "jobdetail",
+      params: { jobId: decodeURIComponent(detailsMatch[1]) },
+    };
+  }
+
+  if (normalizedPath === "/contactus") return { page: "contactus", params: {} };
+  if (normalizedPath === "/about-us") return { page: "aboutus", params: {} };
+  if (normalizedPath === "/gallery") return { page: "gallery", params: {} };
+  if (normalizedPath === "/schedule-call") {
+    return { page: "schedulecall", params: {} };
+  }
+  if (normalizedPath === "/recruiter-login") {
+    return { page: "recruiterlogin", params: {} };
+  }
+  if (normalizedPath === "/admin-login") return { page: "adminlogin", params: {} };
+  if (normalizedPath === "/admin-panel") return { page: "adminpanel", params: {} };
+  if (normalizedPath === "/admin-panel/create-recruiter")
+    return { page: "admincreate", params: {} };
   if (normalizedPath === "/admin-panel/recruiter-uploads")
-    return "adminuploads";
-  if (normalizedPath === "/admin-panel/performance") return "adminperformance";
+    return { page: "adminuploads", params: {} };
+  if (normalizedPath === "/admin-panel/performance")
+    return { page: "adminperformance", params: {} };
   if (normalizedPath === "/admin-panel/candidate-submitted-resumes")
-    return "admincandidateresumes";
+    return { page: "admincandidateresumes", params: {} };
   if (normalizedPath === "/admin-panel/manual-selection")
-    return "adminmanualselection";
-  if (normalizedPath === "/admin-panel/revenue") return "adminrevenue";
-  if (normalizedPath === "/admin-panel/attendance") return "adminattendance";
-  if (normalizedPath === "/admin-panel/billing") return "adminbilling";
-  return "notfound";
+    return { page: "adminmanualselection", params: {} };
+  if (normalizedPath === "/admin-panel/revenue")
+    return { page: "adminrevenue", params: {} };
+  if (normalizedPath === "/admin-panel/attendance")
+    return { page: "adminattendance", params: {} };
+  if (normalizedPath === "/admin-panel/billing")
+    return { page: "adminbilling", params: {} };
+  return { page: "notfound", params: {} };
+};
+
+const buildPathForPage = (page, params = {}) => {
+  if (page === "jobdetail" && params.jobId) {
+    return `/jobs/${encodeURIComponent(params.jobId)}`;
+  }
+
+  if (page === "applyjob" && params.jobId) {
+    return `/jobs/${encodeURIComponent(params.jobId)}/apply`;
+  }
+
+  if (page === "jobdetail") {
+    return PAGE_TO_PATH.jobs;
+  }
+
+  return PAGE_TO_PATH[page] || "/";
 };
 
 export default function App() {
   const [authSession, setAuthSession] = useState(() => getAuthSession());
-  const [currentPage, setCurrentPageState] = useState(() =>
-    getPageFromPath(window.location.pathname),
+  const [currentRoute, setCurrentRoute] = useState(() =>
+    getRouteFromPath(window.location.pathname),
   );
+  const currentPage = currentRoute.page;
   const isAdmin = useMemo(
     () =>
       String(authSession?.role || "")
@@ -125,7 +169,7 @@ export default function App() {
   useEffect(() => {
     const handleSessionExpired = () => {
       setAuthSession(null);
-      setCurrentPageState("home");
+      setCurrentRoute({ page: "home", params: {} });
       const homePath = PAGE_TO_PATH.home;
       if (normalizePath(window.location.pathname) !== homePath) {
         window.history.replaceState({ page: "home" }, "", homePath);
@@ -139,7 +183,7 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPageState(getPageFromPath(window.location.pathname));
+      setCurrentRoute(getRouteFromPath(window.location.pathname));
       setAuthSession(getAuthSession());
     };
 
@@ -155,17 +199,18 @@ export default function App() {
     }
   }, [currentPage, isAdmin]);
 
-  const setCurrentPage = (page) => {
+  const setCurrentPage = (page, params = {}) => {
     if (ADMIN_ONLY_PAGES.has(page) && !isAdmin) {
       page = "adminlogin";
+      params = {};
     }
 
-    const nextPath = PAGE_TO_PATH[page] || "/";
+    const nextPath = buildPathForPage(page, params);
     const activePath = normalizePath(window.location.pathname);
-    setCurrentPageState(page);
+    setCurrentRoute({ page, params });
 
     if (activePath !== nextPath) {
-      window.history.pushState({ page }, "", nextPath);
+      window.history.pushState({ page, params }, "", nextPath);
     }
 
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -187,8 +232,20 @@ export default function App() {
         return <Gallery setCurrentPage={setCurrentPage} />;
       case "jobs":
         return <JobSearch setCurrentPage={setCurrentPage} />;
+      case "jobdetail":
+        return (
+          <JobDetails
+            setCurrentPage={setCurrentPage}
+            routeJobId={currentRoute.params?.jobId || ""}
+          />
+        );
       case "applyjob":
-        return <JobApplication setCurrentPage={setCurrentPage} />;
+        return (
+          <JobApplication
+            setCurrentPage={setCurrentPage}
+            routeJobId={currentRoute.params?.jobId || ""}
+          />
+        );
       case "schedulecall":
         return <ScheduleCall setCurrentPage={setCurrentPage} />;
       case "recruiterlogin":
@@ -198,7 +255,7 @@ export default function App() {
           <AdminLogin
             onLoginSuccess={(session) => {
               setAuthSession(session || getAuthSession());
-              setCurrentPageState("adminpanel");
+              setCurrentRoute({ page: "adminpanel", params: {} });
               const adminPanelPath = PAGE_TO_PATH.adminpanel;
               if (normalizePath(window.location.pathname) !== adminPanelPath) {
                 window.history.pushState(

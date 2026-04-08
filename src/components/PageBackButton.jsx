@@ -1,6 +1,7 @@
 export default function PageBackButton({
   setCurrentPage,
   fallbackPage = "home",
+  fallbackParams,
   label = "Back",
   className = "",
 }) {
@@ -14,7 +15,7 @@ export default function PageBackButton({
     }
 
     if (typeof setCurrentPage === "function") {
-      setCurrentPage(fallbackPage);
+      setCurrentPage(fallbackPage, fallbackParams);
     }
   };
 

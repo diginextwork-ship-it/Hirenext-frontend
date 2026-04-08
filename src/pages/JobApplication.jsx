@@ -1,7 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/job-application.css";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../config/api";
 import PageBackButton from "../components/PageBackButton";
+import {
+  fetchJobsFromApi,
+  readStoredJob,
+  storeSelectedJob,
+} from "../utils/jobSearch";
 
 const initialFormData = {
   name: "",
@@ -20,7 +25,7 @@ const initialFormData = {
   age: "",
 };
 
-export default function JobApplication({ setCurrentPage }) {
+export default function JobApplication({ setCurrentPage, routeJobId }) {
   const [formData, setFormData] = useState(initialFormData);
   const [resumeFile, setResumeFile] = useState(null);
   const [parsedResume, setParsedResume] = useState(null);
@@ -31,17 +36,55 @@ export default function JobApplication({ setCurrentPage }) {
   const [submitted, setSubmitted] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [selectedJob, setSelectedJob] = useState(() => {
+    const storedJob = readStoredJob();
+    return storedJob?.id === routeJobId ? storedJob : null;
+  });
+  const [isJobLoading, setIsJobLoading] = useState(() => !selectedJob && Boolean(routeJobId));
   const activeResumeRequestIdRef = useRef(0);
-
-  const selectedJob = useMemo(() => {
-    try {
-      const raw = sessionStorage.getItem("selectedJob");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  }, []);
   const selectedJobId = String(selectedJob?.id ?? selectedJob?.jid ?? "").trim();
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadSelectedJob = async () => {
+      const storedJob = readStoredJob();
+      if (storedJob?.id === routeJobId) {
+        setSelectedJob(storedJob);
+        setIsJobLoading(false);
+        return;
+      }
+
+      if (!routeJobId) {
+        setSelectedJob(storedJob || null);
+        setIsJobLoading(false);
+        return;
+      }
+
+      setIsJobLoading(true);
+      try {
+        const jobs = await fetchJobsFromApi();
+        if (!isActive) return;
+        const matchedJob = jobs.find((job) => job.id === routeJobId) || null;
+        setSelectedJob(matchedJob);
+        if (matchedJob) {
+          storeSelectedJob(matchedJob);
+        }
+      } catch (_error) {
+        if (!isActive) return;
+        setSelectedJob(storedJob || null);
+      } finally {
+        if (isActive) {
+          setIsJobLoading(false);
+        }
+      }
+    };
+
+    loadSelectedJob();
+    return () => {
+      isActive = false;
+    };
+  }, [routeJobId]);
 
   const beginResumeRequest = (stage) => {
     const nextRequestId = activeResumeRequestIdRef.current + 1;
@@ -363,23 +406,40 @@ export default function JobApplication({ setCurrentPage }) {
     <main className="job-application-page ui-page">
       <section className="job-application-shell ui-shell">
         <div className="ui-page-back">
-          <PageBackButton setCurrentPage={setCurrentPage} fallbackPage="jobs" />
+          <PageBackButton
+            setCurrentPage={setCurrentPage}
+            fallbackPage={selectedJobId ? "jobdetail" : "jobs"}
+            fallbackParams={selectedJobId ? { jobId: selectedJobId } : undefined}
+          />
         </div>
-        <div className="job-application-card">
-          <h1>Job application form</h1>
-          <p>Complete the form below to submit your application.</p>
+        <div className="job-application-layout">
+          <div className="job-application-intro">
+            <span className="job-application-kicker">Job Application Form</span>
+            <h1>Complete the form below to submit your application.</h1>
+            {isJobLoading ? (
+              <p>Loading selected job details...</p>
+            ) : selectedJob ? (
+              <p>
+                Applying for <strong>{selectedJob.title}</strong> at{" "}
+                <strong>{selectedJob.company}</strong>
+              </p>
+            ) : (
+              <p className="application-error-message">
+                No job selected. Use Back to jobs and click Apply now on a job.
+              </p>
+            )}
+          </div>
 
-          {selectedJob ? (
-            <p>
-              Applying for <strong>{selectedJob.title}</strong> at <strong>{selectedJob.company}</strong>
-            </p>
-          ) : (
-            <p className="application-error-message">
-              No job selected. Use Back to jobs and click Apply now on a job.
-            </p>
-          )}
+          <div className="job-application-card">
+            {selectedJob ? (
+              <div className="job-application-role-card">
+                <span>{selectedJob.company}</span>
+                <h2>{selectedJob.title}</h2>
+                <p>{selectedJob.location}</p>
+              </div>
+            ) : null}
 
-          <form className="job-application-form" onSubmit={handleSubmit}>
+            <form className="job-application-form" onSubmit={handleSubmit}>
             <div className="application-field">
               <label htmlFor="resumeUpload">Upload resume (PDF/DOCX) *</label>
               <input
@@ -630,10 +690,11 @@ export default function JobApplication({ setCurrentPage }) {
                   : "Submit Application"}
               </button>
             </div>
-          </form>
+            </form>
 
-          {submitted ? <p className="application-success-message">Application submitted successfully.</p> : null}
-          {submitMessage && !submitted ? <p className="application-error-message">{submitMessage}</p> : null}
+            {submitted ? <p className="application-success-message">Application submitted successfully.</p> : null}
+            {submitMessage && !submitted ? <p className="application-error-message">{submitMessage}</p> : null}
+          </div>
         </div>
       </section>
     </main>

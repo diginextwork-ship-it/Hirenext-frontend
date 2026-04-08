@@ -1,47 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "../styles/job-search.css";
 import PageBackButton from "../components/PageBackButton";
-import {
-  BACKEND_CONNECTION_ERROR,
-  buildApiUrl,
-} from "../config/api";
-
-const readJsonResponse = async (response, fallbackMessage) => {
-  const rawBody = await response.text();
-  if (!rawBody) return {};
-
-  try {
-    return JSON.parse(rawBody);
-  } catch {
-    throw new Error(
-      `Jobs API returned non-JSON response (${response.status}) from ${response.url}. ${fallbackMessage}`
-    );
-  }
-};
-
-const toUiJob = (job) => {
-  const city = job.city?.trim() || "";
-  const state = job.state?.trim() || "";
-  const location = [city, state].filter(Boolean).join(", ") || "Location not specified";
-  const skills = (job.skills || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  return {
-    id: job.jid,
-    recruiterRid: job.recruiter_rid || null,
-    title: job.role_name || "Untitled role",
-    company: job.company_name || "Unknown company",
-    location,
-    salary: job.salary || "Salary not specified",
-    type: job.qualification || "Qualification not specified",
-    experience: job.experience || "Experience not specified",
-    description: job.job_description || "No description provided.",
-    tags: skills,
-    easyApply: false,
-  };
-};
+import { fetchJobsFromApi, storeSelectedJob } from "../utils/jobSearch";
 
 export default function JobSearch({ setCurrentPage }) {
   const [jobs, setJobs] = useState([]);
@@ -49,76 +9,53 @@ export default function JobSearch({ setCurrentPage }) {
   const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
-  const [experience, setExperience] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState(null);
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    let isActive = true;
+
+    const loadJobs = async () => {
       setIsLoading(true);
       setLoadError("");
 
       try {
-        const jobsUrl = buildApiUrl("/api/jobs");
-        const response = await fetch(jobsUrl, {
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        const data = await readJsonResponse(
-          response,
-          "Check VITE_API_BASE_URL and ensure backend is restarted with GET /api/jobs route."
-        );
-
-        if (!response.ok) {
-          throw new Error(data?.message || "Failed to fetch jobs.");
-        }
-
-        const mappedJobs = (data.jobs || []).map(toUiJob);
-        setJobs(mappedJobs);
-        setSelectedJobId(mappedJobs[0]?.id ?? null);
+        const nextJobs = await fetchJobsFromApi();
+        if (!isActive) return;
+        setJobs(nextJobs);
       } catch (error) {
-        if (error instanceof TypeError) {
-          setLoadError(BACKEND_CONNECTION_ERROR);
-        } else {
-          setLoadError(error.message || "Unable to load jobs right now.");
-        }
+        if (!isActive) return;
+        setLoadError(error.message || "Unable to load jobs right now.");
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchJobs();
+    loadJobs();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
+      const normalizedQuery = searchQuery.toLowerCase();
+      const normalizedLocation = locationQuery.toLowerCase();
       const matchesQuery =
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchQuery.toLowerCase());
+        !normalizedQuery ||
+        job.title.toLowerCase().includes(normalizedQuery) ||
+        job.company.toLowerCase().includes(normalizedQuery) ||
+        job.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
       const matchesLocation =
-        !locationQuery ||
-        job.location.toLowerCase().includes(locationQuery.toLowerCase());
-      const matchesExperience = !experience || job.experience === experience;
-      return matchesQuery && matchesLocation && matchesExperience;
+        !normalizedLocation || job.location.toLowerCase().includes(normalizedLocation);
+
+      return matchesQuery && matchesLocation;
     });
-  }, [jobs, searchQuery, locationQuery, experience]);
+  }, [jobs, searchQuery, locationQuery]);
 
-  useEffect(() => {
-    if (!filteredJobs.length) return;
-    const exists = filteredJobs.some((job) => job.id === selectedJobId);
-    if (!exists) {
-      setSelectedJobId(filteredJobs[0].id);
-    }
-  }, [filteredJobs, selectedJobId]);
-
-  const selectedJob =
-    filteredJobs.find((job) => job.id === selectedJobId) || filteredJobs[0];
-
-  const handleApplyNow = () => {
-    if (selectedJob) {
-      sessionStorage.setItem("selectedJob", JSON.stringify(selectedJob));
-    }
-    setCurrentPage("applyjob");
+  const handleOpenJob = (job) => {
+    storeSelectedJob(job);
+    setCurrentPage("jobdetail", { jobId: job.id });
   };
 
   return (
@@ -127,124 +64,117 @@ export default function JobSearch({ setCurrentPage }) {
         <div className="ui-page-back">
           <PageBackButton setCurrentPage={setCurrentPage} />
         </div>
+
+        <section className="job-search-hero">
+          <div>
+            <span className="job-search-kicker">Search All Jobs</span>
+            <h1>Find the next role that fits you best</h1>
+            <p>
+              Explore active openings, compare hiring details quickly, and open the
+              full job page before you apply.
+            </p>
+          </div>
+        </section>
+
         <div className="job-search-topbar">
           <div className="search-field">
-            <span className="search-icon" aria-hidden="true">
-              o
-            </span>
+            <span className="search-label">Skills / Designation / Company</span>
             <input
               type="text"
-              placeholder="Job title, keywords, or company"
+              placeholder="Search jobs, companies, or keywords"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
+
           <div className="search-divider" />
+
           <div className="search-field">
-            <span className="search-icon" aria-hidden="true">
-              *
-            </span>
+            <span className="search-label">Location</span>
             <input
               type="text"
-              placeholder='City, state, zip code, or "remote"'
+              placeholder="Enter city or state"
               value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
+              onChange={(event) => setLocationQuery(event.target.value)}
             />
           </div>
+
           <div className="search-divider" />
-          <div className="search-field search-field-select">
-            <span className="search-icon" aria-hidden="true">
-              exp
-            </span>
-            <select
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-              aria-label="Filter by experience"
-            >
-              <option value="">Experience</option>
-              <option value="Internship">Internship</option>
-              <option value="0-2 years">0-2 years</option>
-              <option value="3-5 years">3-5 years</option>
-              <option value="5-7+ years">5-7+ years</option>
-            </select>
+
+          <button type="button" className="job-search-btn ui-btn-primary">
+            Search
+          </button>
+        </div>
+
+        <section className="job-results-panel">
+          <div className="job-results-header">
+            <div>
+              <h2>Recommended openings</h2>
+              <p>Click any card to open the full job details page.</p>
+            </div>
+            <span className="job-results-count">{filteredJobs.length} jobs</span>
           </div>
-          <button className="job-search-btn ui-btn-primary">Find jobs</button>
-        </div>
 
-        <div className="job-results-layout">
-          <section className="job-list-column">
-            <h1>Jobs for you</h1>
-            <p className="results-subtitle">
-              Open positions based on your search
-            </p>
-
-            {isLoading ? (
-              <div className="empty-results">
-                <p>Loading jobs...</p>
-              </div>
-            ) : loadError ? (
-              <div className="empty-results">
-                <p>{loadError}</p>
-              </div>
-            ) : filteredJobs.length ? (
-              <div className="job-cards">
-                {filteredJobs.map((job) => (
-                  <article
-                    key={job.id}
-                    className={`job-list-card ${
-                      selectedJobId === job.id ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedJobId(job.id)}
-                  >
-                    <h3>{job.title}</h3>
-                    <p className="job-company">{job.company}</p>
-                    <p className="job-location">{job.location}</p>
-
-                    <div className="job-tags">
-                      <span>{job.salary}</span>
-                      <span>{job.type}</span>
-                      <span>{job.experience}</span>
-                      {job.tags.slice(0, 3).map((tag) => (
-                        <span key={tag}>{tag}</span>
-                      ))}
+          {isLoading ? (
+            <div className="empty-results">
+              <p>Loading jobs...</p>
+            </div>
+          ) : loadError ? (
+            <div className="empty-results">
+              <p>{loadError}</p>
+            </div>
+          ) : filteredJobs.length ? (
+            <div className="job-cards">
+              {filteredJobs.map((job) => (
+                <article
+                  key={job.id}
+                  className="job-list-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenJob(job)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleOpenJob(job);
+                    }
+                  }}
+                >
+                  <div className="job-card-topline">
+                    <div>
+                      <h3>{job.title}</h3>
+                      <p className="job-company">{job.company}</p>
                     </div>
+                    <span className="job-openings-pill">{job.positionsOpen} openings</span>
+                  </div>
 
-                    {job.easyApply ? (
-                      <p className="easy-apply">Quick apply available</p>
-                    ) : null}
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-results">
-                <p>No jobs match your current search. Try broader keywords.</p>
-              </div>
-            )}
-          </section>
+                  <div className="job-card-meta">
+                    <span>{job.location}</span>
+                    <span>{job.experience}</span>
+                    <span>{job.salary}</span>
+                  </div>
 
-          <aside className="job-detail-column">
-            {selectedJob ? (
-              <div className="job-detail-card">
-                <h2>{selectedJob.title}</h2>
-                <p className="job-detail-company">{selectedJob.company}</p>
-                <p>{selectedJob.location}</p>
-                <p className="job-detail-salary">{selectedJob.salary}</p>
-                <p className="job-detail-description">{selectedJob.description}</p>
+                  <p className="job-card-summary">{job.summary}</p>
 
-                <div className="job-detail-actions">
-                  <button className="apply-btn ui-btn-primary" onClick={handleApplyNow}>Apply now</button>
-                </div>
-              </div>
-            ) : (
-              <div className="job-detail-card">
-                <h2>No job selected</h2>
-                <p>Pick a role from the list to see full details.</p>
-              </div>
-            )}
-          </aside>
-        </div>
+                  <div className="job-tags">
+                    {job.tags.slice(0, 5).map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+
+                  <div className="job-card-footer">
+                    <span>{job.type}</span>
+                    <span className="job-card-link">View details</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-results">
+              <p>No jobs match your current search. Try broader keywords.</p>
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
 }
-
