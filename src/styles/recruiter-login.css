@@ -322,12 +322,18 @@
 
 .jobs-list-table-wrap {
   margin-top: 0.8rem;
+  display: block;
   overflow-x: auto;
+  overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.35rem;
+  scrollbar-gutter: stable both-edges;
+  scroll-padding-inline: 0.75rem;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x pinch-zoom;
 }
 
 .jobs-list-table {
@@ -679,7 +685,7 @@
   }
 
   .recruiter-login-card .ui-table {
-    min-width: 620px;
+    min-width: 580px;
   }
 
   .assigned-recruiter-item {
@@ -712,7 +718,7 @@
 
   .recruiter-login-card .ui-table,
   .jobs-list-table {
-    min-width: 560px;
+    min-width: 500px;
   }
 
   .recruiter-login-card input,

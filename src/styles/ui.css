@@ -65,12 +65,18 @@
 
 .ui-table-wrap {
   width: 100%;
+  display: block;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
   min-width: 0;
+  padding-bottom: 0.35rem;
+  scrollbar-gutter: stable both-edges;
+  scroll-padding-inline: 0.75rem;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x pinch-zoom;
 }
 
 .ui-table {
@@ -227,6 +233,10 @@ video {
     font-size: 0.86rem;
     padding: 0.45rem;
   }
+
+  .ui-table {
+    min-width: 640px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -239,6 +249,10 @@ video {
     white-space: nowrap;
     font-size: 0.78rem;
     padding: 0.35rem;
+  }
+
+  .ui-table {
+    min-width: 520px;
   }
 
   .ui-grid-auto {
