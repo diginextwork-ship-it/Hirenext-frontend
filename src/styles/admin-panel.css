@@ -2184,6 +2184,14 @@
 .admin-table-wrap {
   scrollbar-width: thin;
   scroll-padding-inline: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+  scrollbar-gutter: stable both-edges;
+  padding-bottom: 0.35rem;
 }
 
 .admin-table-wrap::-webkit-scrollbar {
@@ -2246,6 +2254,10 @@
   .admin-attendance-actions,
   .admin-actions-cell {
     gap: 0.4rem;
+  }
+
+  .admin-table-wrap {
+    scroll-padding-inline: 0.75rem;
   }
 
   .admin-attendance-actions button,
@@ -2324,6 +2336,11 @@
   .admin-table td {
     font-size: 0.78rem;
     padding: 0.48rem 0.5rem;
+  }
+
+  .admin-table-wrap {
+    padding-bottom: 0.25rem;
+    scroll-padding-inline: 0.5rem;
   }
 
   .admin-status-cell,
