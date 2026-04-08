@@ -1,29 +1,29 @@
 .contactus-page {
-  padding-top: clamp(1rem, 2vw, 1.5rem);
-  padding-bottom: clamp(2rem, 4vw, 3rem);
-  background:
-    radial-gradient(circle at top left, rgba(223, 83, 61, 0.18), transparent 26%),
-    linear-gradient(180deg, #e8edf6 0%, #dbe4ef 100%);
+  padding: 0;
+  background: #060c14;
 }
 
 .contactus-shell {
   position: relative;
+  width: min(1280px, calc(100% - 2.5rem));
+  margin: 0 auto;
+  min-height: 100%;
+  display: grid;
 }
 
 .contactus-back {
-  position: relative;
-  z-index: 3;
-  margin-bottom: 1rem;
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 4;
+  margin-bottom: 0;
 }
 
 .contactus-panel {
   position: relative;
-  min-height: min(72vh, 760px);
-  aspect-ratio: 16 / 9;
+  min-height: 100vh;
+  width: 100%;
   overflow: hidden;
-  border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 30px 70px rgba(10, 18, 30, 0.26);
   display: grid;
   align-items: stretch;
 }
@@ -38,8 +38,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 42%;
-  transform: scale(1.01);
+  object-position: center center;
+  transform: scale(1.02);
 }
 
 .contactus-overlay {
@@ -56,7 +56,7 @@
 }
 
 .contactus-intro {
-  padding: clamp(2rem, 5vw, 4rem);
+  padding: clamp(6rem, 10vw, 8rem) 0 0;
   max-width: 40rem;
   color: var(--white);
   align-self: start;
@@ -96,7 +96,7 @@
 
 .contactus-bottom {
   margin-top: auto;
-  padding: clamp(1rem, 3vw, 2rem);
+  padding: 0 0 clamp(1.25rem, 3vw, 2rem);
   display: grid;
   grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.2fr);
   gap: clamp(1rem, 2vw, 1.5rem);
@@ -230,18 +230,25 @@
 }
 
 @media (max-width: 640px) {
+  .contactus-shell {
+    width: min(1280px, calc(100% - 1rem));
+  }
+
+  .contactus-back {
+    top: 0.85rem;
+    left: 0.5rem;
+  }
+
   .contactus-page {
-    padding-top: 0.75rem;
+    padding-top: 0;
   }
 
   .contactus-panel {
-    min-height: auto;
-    aspect-ratio: auto;
-    border-radius: 1.5rem;
+    min-height: 100vh;
   }
 
   .contactus-intro {
-    padding: 1.25rem 1.1rem 3rem;
+    padding: 5.25rem 0 2.25rem;
   }
 
   .contactus-intro h1 {
@@ -250,7 +257,7 @@
   }
 
   .contactus-bottom {
-    padding: 0.9rem;
+    padding: 0 0 0.9rem;
   }
 
   .contactus-form-grid {

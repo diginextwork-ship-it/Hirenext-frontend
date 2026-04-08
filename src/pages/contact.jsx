@@ -31,17 +31,17 @@ export default function Contact({ setCurrentPage }) {
 
   return (
     <main className="contactus-page ui-page">
-      <section className="contactus-shell ui-shell">
-        <div className="ui-page-back contactus-back">
-          <PageBackButton setCurrentPage={setCurrentPage} />
-        </div>
+      <div className="ui-page-back contactus-back">
+        <PageBackButton setCurrentPage={setCurrentPage} />
+      </div>
 
-        <div className="contactus-panel">
-          <video className="contactus-video" autoPlay muted loop playsInline>
-            <source src={bgVideo} type="video/mp4" />
-          </video>
-          <div className="contactus-overlay" aria-hidden="true"></div>
+      <section className="contactus-panel">
+        <video className="contactus-video" autoPlay muted loop playsInline>
+          <source src={bgVideo} type="video/mp4" />
+        </video>
+        <div className="contactus-overlay" aria-hidden="true"></div>
 
+        <div className="contactus-shell">
           <div className="contactus-intro">
             <span className="contactus-eyebrow">Contact us</span>
             <h1>Let&apos;s build your next hiring move together.</h1>
