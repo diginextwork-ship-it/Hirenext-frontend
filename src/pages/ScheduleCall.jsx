@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
+import "../styles/buttons.css";
 import "../styles/schedule-call.css";
 import PageBackButton from "../components/PageBackButton";
 
