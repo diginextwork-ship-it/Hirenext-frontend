@@ -90,14 +90,6 @@ export default function Navbar({ setCurrentPage, currentPage }) {
            Blog
           </a>
 
-          <div className="navbar-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleNavClick("schedulecall")}
-            >
-              Schedule A Call Now
-            </button>
-          </div>
         </div>
       </div>
     </nav>

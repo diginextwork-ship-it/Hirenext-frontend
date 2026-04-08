@@ -1,110 +1,266 @@
 .contactus-page {
-  min-height: 75vh;
-  padding: 0;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  padding-top: clamp(1rem, 2vw, 1.5rem);
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+  background:
+    radial-gradient(circle at top left, rgba(223, 83, 61, 0.18), transparent 26%),
+    linear-gradient(180deg, #e8edf6 0%, #dbe4ef 100%);
 }
 
-.contactus-container {
-  max-width: 980px;
-  margin: 0 auto;
-}
-
-.contactus-header {
-  text-align: center;
-  margin-bottom: var(--spacing-2xl);
-}
-
-.contactus-header h1 {
-  margin-bottom: var(--spacing-sm);
-  color: var(--text-primary);
-  text-transform: lowercase;
-}
-
-.contactus-header p {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--text-secondary);
-}
-
-.contactus-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-xl);
-}
-
-.contact-card {
+.contactus-shell {
   position: relative;
-  display: block;
-  padding: var(--spacing-2xl);
-  border-radius: 1rem;
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  text-decoration: none;
-  color: inherit;
 }
 
-.contact-card:hover {
-  transform: translateY(-8px);
-  border-color: #d1d9e6;
-  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.14);
+.contactus-back {
+  position: relative;
+  z-index: 3;
+  margin-bottom: 1rem;
 }
 
-.contact-card:active {
-  transform: translateY(-2px) scale(0.985);
+.contactus-panel {
+  position: relative;
+  min-height: min(82vh, 880px);
+  overflow: hidden;
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 30px 70px rgba(10, 18, 30, 0.26);
+  display: grid;
+  align-items: stretch;
 }
 
-.contact-card-badge {
-  display: inline-block;
-  margin-bottom: var(--spacing-md);
-  padding: 0.35rem 0.75rem;
+.contactus-video,
+.contactus-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.contactus-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.03);
+}
+
+.contactus-overlay {
+  background:
+    linear-gradient(180deg, rgba(6, 12, 22, 0.18), rgba(6, 12, 22, 0.62)),
+    linear-gradient(90deg, rgba(6, 12, 22, 0.78) 0%, rgba(6, 12, 22, 0.2) 48%, rgba(6, 12, 22, 0.7) 100%);
+  z-index: 1;
+}
+
+.contactus-intro,
+.contactus-bottom {
+  position: relative;
+  z-index: 2;
+}
+
+.contactus-intro {
+  padding: clamp(2rem, 5vw, 4rem);
+  max-width: 40rem;
+  color: var(--white);
+  align-self: start;
+}
+
+.contactus-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
-  background: rgba(231, 76, 60, 0.12);
-  color: var(--primary-red);
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.contact-card h2 {
-  margin-bottom: var(--spacing-sm);
-  font-size: clamp(1.3rem, 3vw, 1.8rem);
-  color: var(--text-primary);
+.contactus-intro h1 {
+  margin-bottom: 1rem;
+  max-width: 12ch;
+  font-size: clamp(2.5rem, 6vw, 4.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  text-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
 }
 
-.contact-card p {
-  margin-bottom: var(--spacing-xl);
-  color: var(--text-secondary);
+.contactus-intro p {
+  max-width: 30rem;
+  margin-bottom: 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: clamp(1rem, 2vw, 1.14rem);
 }
 
-.contact-card-cta {
-  display: inline-block;
+.contactus-bottom {
+  margin-top: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.2fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: end;
+}
+
+.contactus-info,
+.contactus-form {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 18, 30, 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.18);
+}
+
+.contactus-info {
+  padding: clamp(1.2rem, 2.5vw, 1.8rem);
+  border-radius: 1.5rem;
+  color: var(--white);
+  align-self: end;
+}
+
+.contactus-info-label {
+  margin-bottom: 0.9rem;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.contactus-info-link {
+  display: block;
+  color: var(--white);
   font-weight: 700;
-  color: var(--primary-red);
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.5;
 }
 
-@media (max-width: 768px) {
-  .contactus-grid {
+.contactus-info-link + .contactus-info-link {
+  margin-top: 0.9rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.contactus-form {
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-radius: 1.75rem;
+}
+
+.contactus-form h2 {
+  margin-bottom: 1.2rem;
+  color: var(--white);
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+}
+
+.contactus-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.contactus-field {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.contactus-field span {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.contactus-field input,
+.contactus-field textarea {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  border-radius: 1rem;
+  padding: 0.95rem 1rem;
+}
+
+.contactus-field input::placeholder,
+.contactus-field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.54);
+}
+
+.contactus-field input:focus,
+.contactus-field textarea:focus {
+  border-color: rgba(223, 83, 61, 0.8);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 4px rgba(223, 83, 61, 0.16);
+}
+
+.contactus-field textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.contactus-submit {
+  min-width: 10rem;
+  min-height: 48px;
+  padding: 0.9rem 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-red), var(--red-deep));
+  color: var(--white);
+  font-weight: 800;
+  font-size: 0.95rem;
+  box-shadow: 0 18px 34px rgba(141, 34, 30, 0.3);
+}
+
+.contactus-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 38px rgba(141, 34, 30, 0.34);
+}
+
+@media (max-width: 900px) {
+  .contactus-bottom {
     grid-template-columns: 1fr;
   }
 
-  .contact-card {
-    padding: var(--spacing-xl);
+  .contactus-info {
+    order: 2;
+  }
+
+  .contactus-form {
+    order: 1;
   }
 }
 
-@media (max-width: 480px) {
-  .contactus-container {
-    width: 95%;
+@media (max-width: 640px) {
+  .contactus-page {
+    padding-top: 0.75rem;
   }
 
-  .contact-card {
-    padding: var(--spacing-lg);
+  .contactus-panel {
+    min-height: auto;
+    border-radius: 1.5rem;
   }
 
-  .contact-card h2 {
-    font-size: 1.2rem;
+  .contactus-intro {
+    padding: 1.25rem 1.1rem 3rem;
+  }
+
+  .contactus-intro h1 {
+    max-width: none;
+    font-size: 2.2rem;
+  }
+
+  .contactus-bottom {
+    padding: 0.9rem;
+  }
+
+  .contactus-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .contactus-form,
+  .contactus-info {
+    border-radius: 1.2rem;
+  }
+
+  .contactus-submit {
+    width: 100%;
   }
 }
