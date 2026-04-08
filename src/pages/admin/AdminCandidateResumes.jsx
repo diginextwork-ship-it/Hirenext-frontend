@@ -169,6 +169,18 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       )
     : displayedResumes;
 
+  const handleResumeOpen = (resId) => {
+    const token =
+      localStorage.getItem("adminToken") || localStorage.getItem("token");
+    if (!token || !resId) return;
+
+    window.open(
+      `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   return (
     <AdminLayout
       title="All Submitted Resumes"
@@ -298,10 +310,30 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     </td>
                     <td>{formatDateTime(resume.uploadedAt)}</td>
                     <td>
-                      {resume.resumeFilename || "N/A"}
-                      {resume.resumeType
-                        ? ` (${String(resume.resumeType).toUpperCase()})`
-                        : ""}
+                      {resume.resId ? (
+                        <div className="admin-resume-file-cell">
+                          <button
+                            type="button"
+                            className="admin-refresh-btn admin-resume-file-btn"
+                            onClick={() => handleResumeOpen(resume.resId)}
+                          >
+                            View Resume
+                          </button>
+                          <span className="admin-resume-file-name">
+                            {resume.resumeFilename || "N/A"}
+                            {resume.resumeType
+                              ? ` (${String(resume.resumeType).toUpperCase()})`
+                              : ""}
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {resume.resumeFilename || "N/A"}
+                          {resume.resumeType
+                            ? ` (${String(resume.resumeType).toUpperCase()})`
+                            : ""}
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

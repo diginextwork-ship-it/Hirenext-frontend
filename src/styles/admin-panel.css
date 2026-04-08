@@ -2077,6 +2077,24 @@
   white-space: nowrap;
 }
 
+.admin-resume-file-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.admin-resume-file-btn {
+  min-width: 108px;
+}
+
+.admin-resume-file-name {
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 .admin-candidate-resumes-table th:nth-child(11),
 .admin-candidate-resumes-table td:nth-child(11) {
   min-width: 180px;
