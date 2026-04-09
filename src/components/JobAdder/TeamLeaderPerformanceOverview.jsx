@@ -170,6 +170,17 @@ const getStatusRank = (status) => {
     : -1;
 };
 
+const normalizeLookupKey = (value) => String(value || "").trim().toLowerCase();
+
+const matchesRecruiterEntrySearch = (item, searchValue) => {
+  const normalizedSearch = normalizeLookupKey(searchValue);
+  if (!normalizedSearch) return true;
+
+  return [item?.recruiterName, item?.recruiterRid, item?.rid].some((value) =>
+    normalizeLookupKey(value).includes(normalizedSearch),
+  );
+};
+
 const dedupeItemsByResId = (items) => {
   const map = new Map();
 
@@ -202,6 +213,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
+  const [recruiterEntrySearch, setRecruiterEntrySearch] = useState("");
   const [actionModalItem, setActionModalItem] = useState(null);
   const [actionTarget, setActionTarget] = useState("");
   const [actionReason, setActionReason] = useState("");
@@ -279,49 +291,139 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     return map;
   }, [statusDrilldown]);
 
-  const selectedStatusItems = useMemo(() => {
-    const rawItems =
-      selectedStatusKey === "submitted"
-        ? Array.isArray(statusDrilldown.submitted)
-          ? statusDrilldown.submitted
-          : []
-        : Array.isArray(statusDrilldown[selectedStatusKey])
-          ? statusDrilldown[selectedStatusKey]
-          : [];
+  const statusItemsByStatus = useMemo(() => {
+    const buildItems = (rawItems, fallbackStatus) => {
+      const normalizedItems = rawItems.map((item) => {
+        const normalized = normalizeResumeData(item);
+        const resId = String(
+          item?.resId ??
+            item?.res_id ??
+            item?.resumeId ??
+            item?.resume_id ??
+            normalized?.resId ??
+            "",
+        ).trim();
+        const effectiveStatus = normalizeStatus(
+          latestStatusByResId.get(resId) ||
+            normalized?.workflowStatus ||
+            normalized?.workflow_status ||
+            normalized?.status ||
+            item?.workflowStatus ||
+            item?.workflow_status ||
+            item?.status ||
+            fallbackStatus,
+        );
 
-    const normalizedItems = rawItems.map((item) => {
-      const normalized = normalizeResumeData(item);
-      const resId = String(
-        item?.resId ??
-          item?.res_id ??
-          item?.resumeId ??
-          item?.resume_id ??
-          normalized?.resId ??
-          "",
-      ).trim();
-      const effectiveStatus = normalizeStatus(
-        latestStatusByResId.get(resId) ||
-          normalized?.workflowStatus ||
-          normalized?.workflow_status ||
-          normalized?.status ||
-          item?.workflowStatus ||
-          item?.workflow_status ||
-          item?.status ||
-          selectedStatusKey,
+        return {
+          ...normalized,
+          ...item,
+          resId,
+          status: effectiveStatus,
+        };
+      });
+
+      const dedupedItems = dedupeItemsByResId(normalizedItems);
+      if (fallbackStatus === "submitted") {
+        return dedupedItems;
+      }
+
+      return dedupedItems.filter(
+        (item) => normalizeStatus(item?.status) === normalizeStatus(fallbackStatus),
       );
+    };
 
-      return {
-        ...normalized,
-        ...item,
-        resId,
-        status: effectiveStatus,
-      };
-    });
+    return {
+      submitted: buildItems(
+        Array.isArray(statusDrilldown.submitted) ? statusDrilldown.submitted : [],
+        "submitted",
+      ),
+      verified: buildItems(
+        Array.isArray(statusDrilldown.verified) ? statusDrilldown.verified : [],
+        "verified",
+      ),
+      walk_in: buildItems(
+        Array.isArray(statusDrilldown.walk_in) ? statusDrilldown.walk_in : [],
+        "walk_in",
+      ),
+      shortlisted: buildItems(
+        Array.isArray(statusDrilldown.shortlisted) ? statusDrilldown.shortlisted : [],
+        "shortlisted",
+      ),
+      selected: buildItems(
+        Array.isArray(statusDrilldown.selected) ? statusDrilldown.selected : [],
+        "selected",
+      ),
+      rejected: buildItems(
+        Array.isArray(statusDrilldown.rejected) ? statusDrilldown.rejected : [],
+        "rejected",
+      ),
+      joined: buildItems(
+        Array.isArray(statusDrilldown.joined) ? statusDrilldown.joined : [],
+        "joined",
+      ),
+      dropout: buildItems(
+        Array.isArray(statusDrilldown.dropout) ? statusDrilldown.dropout : [],
+        "dropout",
+      ),
+      billed: buildItems(
+        Array.isArray(statusDrilldown.billed) ? statusDrilldown.billed : [],
+        "billed",
+      ),
+      left: buildItems(
+        Array.isArray(statusDrilldown.left) ? statusDrilldown.left : [],
+        "left",
+      ),
+    };
+  }, [latestStatusByResId, statusDrilldown]);
+  const selectedStatusItems = useMemo(
+    () => statusItemsByStatus[selectedStatusKey] || [],
+    [selectedStatusKey, statusItemsByStatus],
+  );
+  const filteredSelectedStatusItems = useMemo(
+    () =>
+      selectedStatusItems.filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ),
+    [recruiterEntrySearch, selectedStatusItems],
+  );
+  const visibleSummary = useMemo(() => {
+    if (!normalizeLookupKey(recruiterEntrySearch)) {
+      return summary;
+    }
 
-    const dedupedItems = dedupeItemsByResId(normalizedItems);
-
-    return dedupedItems;
-  }, [latestStatusByResId, selectedStatusKey, statusDrilldown]);
+    return {
+      totalSubmitted: (statusItemsByStatus.submitted || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalVerified: (statusItemsByStatus.verified || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalWalkIn: (statusItemsByStatus.walk_in || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalShortlisted: (statusItemsByStatus.shortlisted || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalSelected: (statusItemsByStatus.selected || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalRejected: (statusItemsByStatus.rejected || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalJoined: (statusItemsByStatus.joined || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalDropout: (statusItemsByStatus.dropout || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalBilled: (statusItemsByStatus.billed || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalLeft: (statusItemsByStatus.left || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+    };
+  }, [recruiterEntrySearch, statusItemsByStatus, summary]);
 
   const handleResumeOpen = (resId) => {
     const token = getAuthSession()?.token;
@@ -358,11 +460,11 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   const hasAnyRowActions = useMemo(
     () =>
-      selectedStatusItems.some((item) => {
+      filteredSelectedStatusItems.some((item) => {
         const rowActionState = getRowActionState(item);
         return rowActionState.availableActions.length > 0 || rowActionState.canRollback;
       }),
-    [getRowActionState, selectedStatusItems],
+    [filteredSelectedStatusItems, getRowActionState],
   );
 
   const openActionModal = (item, targetStatus) => {
@@ -523,7 +625,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           onClick={() => setSelectedStatusKey("submitted")}
         >
           <span className="perf-stat-label">Resumes Submitted</span>
-          <span className="perf-stat-value">{summary.totalSubmitted ?? 0}</span>
+          <span className="perf-stat-value">{visibleSummary.totalSubmitted ?? 0}</span>
         </button>
         {STATUS_CARDS.map((card) => (
           <button
@@ -534,13 +636,31 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           >
             <span className="perf-stat-label">{card.label}</span>
             <span className="perf-stat-value">
-              {summary[card.summaryKey] ?? 0}
+              {visibleSummary[card.summaryKey] ?? 0}
             </span>
           </button>
         ))}
       </div>
 
       <div className="perf-section">
+        <div className="perf-inline-search">
+          <input
+            type="text"
+            className="perf-search perf-search-wide"
+            placeholder="Search by recruiter name..."
+            value={recruiterEntrySearch}
+            onChange={(event) => setRecruiterEntrySearch(event.target.value)}
+          />
+          {normalizeLookupKey(recruiterEntrySearch) ? (
+            <button
+              type="button"
+              className="admin-back-btn"
+              onClick={() => setRecruiterEntrySearch("")}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
         <div
           style={{
             display: "flex",
@@ -556,8 +676,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
               : `${formatStatusLabel(selectedStatusKey)} Resume List`}
           </h3>
           <span className="admin-muted">
-            {selectedStatusItems.length} item
-            {selectedStatusItems.length === 1 ? "" : "s"}
+            {filteredSelectedStatusItems.length} item
+            {filteredSelectedStatusItems.length === 1 ? "" : "s"}
           </span>
         </div>
 
@@ -565,7 +685,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           <p className="admin-chart-empty" style={{ marginTop: 16 }}>
             Loading performance data...
           </p>
-        ) : selectedStatusItems.length > 0 ? (
+        ) : filteredSelectedStatusItems.length > 0 ? (
           <div className="admin-table-wrap" style={{ marginTop: 16 }}>
             <table className="admin-table admin-table-wide">
               <thead>
@@ -594,7 +714,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 </tr>
               </thead>
               <tbody>
-                {selectedStatusItems.map((item) => {
+                {filteredSelectedStatusItems.map((item) => {
                   const rowActionState = getRowActionState(item);
                   const rowHasActions =
                     rowActionState.availableActions.length > 0 ||
@@ -715,11 +835,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           </div>
         ) : (
           <p className="admin-chart-empty" style={{ marginTop: 16 }}>
-            No resumes found for{" "}
-            {selectedStatusKey === "submitted"
-              ? "Resumes Submitted"
-              : formatStatusLabel(selectedStatusKey)}
-            .
+            {normalizeLookupKey(recruiterEntrySearch)
+              ? `No resumes found for recruiter "${recruiterEntrySearch.trim()}" in ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`
+              : `No resumes found for ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`}
           </p>
         )}
       </div>

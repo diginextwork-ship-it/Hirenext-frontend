@@ -1027,6 +1027,20 @@
   border-color: #c62828;
 }
 
+.perf-inline-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 1rem 0 0.35rem;
+  flex-wrap: wrap;
+}
+
+.perf-search-wide {
+  flex: 1 1 320px;
+  min-width: min(100%, 320px);
+  max-width: 520px;
+}
+
 .perf-sortable {
   cursor: pointer;
   user-select: none;
@@ -1881,6 +1895,20 @@
 
 .perf-search:focus {
   border-color: #c62828;
+}
+
+.perf-inline-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 1rem 0 0.35rem;
+  flex-wrap: wrap;
+}
+
+.perf-search-wide {
+  flex: 1 1 320px;
+  min-width: min(100%, 320px);
+  max-width: 520px;
 }
 
 .perf-sortable {

@@ -329,6 +329,18 @@ function normalizeLookupKey(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function matchesRecruiterEntrySearch(item, searchValue) {
+  const normalizedSearch = normalizeLookupKey(searchValue);
+  if (!normalizedSearch) return true;
+
+  return [
+    item?.recruiterName,
+    item?.recruiterRid,
+    item?.rid,
+    item?.recruiter?.name,
+  ].some((value) => normalizeLookupKey(value).includes(normalizedSearch));
+}
+
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
@@ -433,6 +445,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
   const [selectedRecruiterRid, setSelectedRecruiterRid] = useState("");
   const [selectedTeamLeaderRid, setSelectedTeamLeaderRid] = useState("");
+  const [recruiterEntrySearch, setRecruiterEntrySearch] = useState("");
 
   // Admin status action modal state
   const [actionModalItem, setActionModalItem] = useState(null);
@@ -793,61 +806,110 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     return map;
   }, [statusDrilldown, statusOverrides]);
+  const statusItemsByStatus = useMemo(() => {
+    const buildItems = (rawItems, fallbackStatus) => {
+      const normalizedItems = rawItems.map((item) => {
+        const normalized = normalizeResumeData(item);
+        const teamLeaderName =
+          item?.teamLeaderName ||
+          item?.team_leader_name ||
+          normalized?.teamLeaderName;
+        const resId =
+          item?.resId ??
+          item?.res_id ??
+          item?.resumeId ??
+          item?.resume_id ??
+          normalized?.resId;
+        const latestResolved = resId
+          ? latestStatusByResId.get(String(resId))
+          : null;
+        const sourceStatus = normalizeStatus(
+          normalized?.workflowStatus ||
+            normalized?.workflow_status ||
+            normalized?.status ||
+            item?.workflowStatus ||
+            item?.workflow_status ||
+            item?.status ||
+            fallbackStatus,
+        );
+        const effectiveStatus = normalizeStatus(
+          latestResolved?.status || sourceStatus || fallbackStatus,
+        );
+
+        return {
+          ...normalized,
+          teamLeaderName,
+          resId,
+          status: effectiveStatus,
+        };
+      });
+
+      const dedupedItems = dedupeItemsByResId(normalizedItems);
+      if (fallbackStatus === "submitted") {
+        return dedupedItems;
+      }
+
+      return dedupedItems.filter(
+        (item) => normalizeStatus(item?.status) === normalizeStatus(fallbackStatus),
+      );
+    };
+
+    const submittedRawItems =
+      performanceSubmittedItems.length > 0 ? performanceSubmittedItems : submittedResumes;
+
+    return {
+      submitted: buildItems(submittedRawItems, "submitted"),
+      verified: buildItems(
+        Array.isArray(statusDrilldown?.verified) ? statusDrilldown.verified : [],
+        "verified",
+      ),
+      walk_in: buildItems(
+        Array.isArray(statusDrilldown?.walk_in) ? statusDrilldown.walk_in : [],
+        "walk_in",
+      ),
+      shortlisted: buildItems(
+        Array.isArray(statusDrilldown?.shortlisted)
+          ? statusDrilldown.shortlisted
+          : [],
+        "shortlisted",
+      ),
+      selected: buildItems(
+        Array.isArray(statusDrilldown?.selected) ? statusDrilldown.selected : [],
+        "selected",
+      ),
+      rejected: buildItems(
+        Array.isArray(statusDrilldown?.rejected) ? statusDrilldown.rejected : [],
+        "rejected",
+      ),
+      joined: buildItems(
+        Array.isArray(statusDrilldown?.joined) ? statusDrilldown.joined : [],
+        "joined",
+      ),
+      dropout: buildItems(
+        Array.isArray(statusDrilldown?.dropout) ? statusDrilldown.dropout : [],
+        "dropout",
+      ),
+      billed: buildItems(
+        Array.isArray(statusDrilldown?.billed) ? statusDrilldown.billed : [],
+        "billed",
+      ),
+      left: buildItems(
+        Array.isArray(statusDrilldown?.left) ? statusDrilldown.left : [],
+        "left",
+      ),
+    };
+  }, [
+    latestStatusByResId,
+    performanceSubmittedItems,
+    statusDrilldown,
+    submittedResumes,
+  ]);
   const drilldownKey = selectedStatusKey;
   const selectedStatusItems = useMemo(() => {
-    const rawItems =
-      selectedStatusKey === "submitted"
-        ? performanceSubmittedItems.length > 0
-          ? performanceSubmittedItems
-          : submittedResumes
-        : statusDrilldown?.[drilldownKey] && Array.isArray(statusDrilldown[drilldownKey])
-          ? statusDrilldown[drilldownKey]
-          : [];
-
-    // Always normalize items so company/city are available for all statuses
-    const normalizedItems = rawItems.map((item) => {
-      const normalized = normalizeResumeData(item);
-
-      // Team leader naming differs between API paths (submitted list vs drilldowns).
-      const teamLeaderName =
-        item?.teamLeaderName ||
-        item?.team_leader_name ||
-        normalized?.teamLeaderName;
-
-      // Some payloads may send the resume id as `res_id` / `resumeId`.
-      const resId =
-        item?.resId ??
-        item?.res_id ??
-        item?.resumeId ??
-        item?.resume_id ??
-        normalized?.resId;
-
-      const latestResolved = resId
-        ? latestStatusByResId.get(String(resId))
-        : null;
-      const sourceStatus = normalizeStatus(
-        normalized?.workflowStatus ||
-          normalized?.workflow_status ||
-          normalized?.status ||
-          item?.workflowStatus ||
-          item?.workflow_status ||
-          item?.status ||
-          selectedStatusKey,
-      );
-      const effectiveStatus = normalizeStatus(
-        latestResolved?.status || sourceStatus || selectedStatusKey,
-      );
-
-      return {
-        ...normalized,
-        teamLeaderName,
-        resId,
-        status: effectiveStatus,
-      };
-    });
+    const items = statusItemsByStatus[drilldownKey] || [];
 
     if (PERF_DEBUG) {
-      const sample = normalizedItems.slice(0, 8).map((it) => ({
+      const sample = items.slice(0, 8).map((it) => ({
         resId: it.resId,
         rawTeamLeader: it.teamLeaderName ?? null,
         companyName: it.companyName ?? it.company_name ?? null,
@@ -856,7 +918,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       }));
 
       const counts = {};
-      for (const it of normalizedItems) {
+      for (const it of items) {
         const k = it.resId;
         if (!k) continue;
         counts[k] = (counts[k] || 0) + 1;
@@ -868,33 +930,59 @@ export default function AdminPerformance({ setCurrentPage }) {
 
       console.debug("[AdminPerformance] drilldown sample", {
         selectedStatusKey,
-        rawCount: rawItems.length,
-        filteredCount: rawItems.length,
-        normalizedCount: normalizedItems.length,
+        itemCount: items.length,
         dupResIds,
         sample,
       });
     }
 
-    const dedupedItems = dedupeItemsByResId(normalizedItems);
-
-    if (selectedStatusKey === "submitted") {
-      return dedupedItems;
+    return items;
+  }, [PERF_DEBUG, drilldownKey, selectedStatusKey, statusItemsByStatus]);
+  const filteredSelectedStatusItems = useMemo(
+    () =>
+      selectedStatusItems.filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ),
+    [recruiterEntrySearch, selectedStatusItems],
+  );
+  const visibleSummary = useMemo(() => {
+    if (!normalizeLookupKey(recruiterEntrySearch)) {
+      return summary;
     }
 
-    return dedupedItems.filter(
-      (item) => normalizeStatus(item?.status) === normalizeStatus(selectedStatusKey),
-    );
-  }, [
-    data,
-    drilldownKey,
-    latestStatusByResId,
-    performanceSubmittedItems,
-    selectedStatusKey,
-    statusDrilldown,
-    submittedResumes,
-    PERF_DEBUG,
-  ]);
+    return {
+      totalSubmitted: (statusItemsByStatus.submitted || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalVerified: (statusItemsByStatus.verified || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalWalkIn: (statusItemsByStatus.walk_in || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalShortlisted: (statusItemsByStatus.shortlisted || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalSelected: (statusItemsByStatus.selected || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalRejected: (statusItemsByStatus.rejected || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalJoined: (statusItemsByStatus.joined || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalDropout: (statusItemsByStatus.dropout || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalBilled: (statusItemsByStatus.billed || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+      totalLeft: (statusItemsByStatus.left || []).filter((item) =>
+        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+      ).length,
+    };
+  }, [recruiterEntrySearch, statusItemsByStatus, summary]);
 
   const handleSubmittedCardClick = async () => {
     setSelectedStatusKey("submitted");
@@ -913,6 +1001,16 @@ export default function AdminPerformance({ setCurrentPage }) {
     selectedStatusKey,
     performanceSubmittedItems.length,
     fetchSubmittedResumes,
+  ]);
+  useEffect(() => {
+    if (!normalizeLookupKey(recruiterEntrySearch)) return;
+    if (performanceSubmittedItems.length > 0 || submittedResumes.length > 0) return;
+    fetchSubmittedResumes();
+  }, [
+    fetchSubmittedResumes,
+    performanceSubmittedItems.length,
+    recruiterEntrySearch,
+    submittedResumes.length,
   ]);
 
   const handleResumeOpen = (resId) => {
@@ -1168,11 +1266,11 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const hasAnyRowActions = useMemo(
     () =>
-      selectedStatusItems.some((item) => {
+      filteredSelectedStatusItems.some((item) => {
         const rowActionState = getRowActionState(item);
         return rowActionState.availableActions.length > 0 || rowActionState.canRollback;
       }),
-    [getRowActionState, selectedStatusItems],
+    [filteredSelectedStatusItems, getRowActionState],
   );
 
   const handleAdminRollback = async (item) => {
@@ -1409,7 +1507,7 @@ export default function AdminPerformance({ setCurrentPage }) {
             >
               <span className="perf-stat-label">Resumes Submitted</span>
               <span className="perf-stat-value">
-                {summary.totalSubmitted ?? 0}
+                {visibleSummary.totalSubmitted ?? 0}
               </span>
             </button>
             {STATUS_CARDS.map((card) => (
@@ -1421,13 +1519,31 @@ export default function AdminPerformance({ setCurrentPage }) {
               >
                 <span className="perf-stat-label">{card.label}</span>
                 <span className="perf-stat-value">
-                  {summary[card.summaryKey] ?? 0}
+                  {visibleSummary[card.summaryKey] ?? 0}
                 </span>
               </button>
             ))}
           </div>
 
           <div className="perf-section">
+            <div className="perf-inline-search">
+              <input
+                type="text"
+                className="perf-search perf-search-wide"
+                placeholder="Search by recruiter name..."
+                value={recruiterEntrySearch}
+                onChange={(e) => setRecruiterEntrySearch(e.target.value)}
+              />
+              {normalizeLookupKey(recruiterEntrySearch) ? (
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  onClick={() => setRecruiterEntrySearch("")}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
             <div
               style={{
                 display: "flex",
@@ -1443,11 +1559,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                   : `${formatStatusLabel(selectedStatusKey)} Resume List`}
               </h3>
               <span className="admin-muted">
-                {selectedStatusItems.length} item
-                {selectedStatusItems.length === 1 ? "" : "s"}
+                {filteredSelectedStatusItems.length} item
+                {filteredSelectedStatusItems.length === 1 ? "" : "s"}
               </span>
             </div>
-            {selectedStatusItems.length > 0 ? (
+            {filteredSelectedStatusItems.length > 0 ? (
               <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
                 <table className="admin-table admin-table-wide">
                   <thead>
@@ -1481,7 +1597,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedStatusItems.map((item) => {
+                    {filteredSelectedStatusItems.map((item) => {
                       const rowActionState = getRowActionState(item);
                       const rowHasActions =
                         rowActionState.availableActions.length > 0 ||
@@ -1628,11 +1744,9 @@ export default function AdminPerformance({ setCurrentPage }) {
               </div>
             ) : (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
-                No resumes found for{" "}
-                {selectedStatusKey === "submitted"
-                  ? "Resumes Submitted"
-                  : formatStatusLabel(selectedStatusKey)}
-                .
+                {normalizeLookupKey(recruiterEntrySearch)
+                  ? `No resumes found for recruiter "${recruiterEntrySearch.trim()}" in ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`
+                  : `No resumes found for ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`}
               </p>
             )}
           </div>
