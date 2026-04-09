@@ -619,7 +619,6 @@ export default function RecruiterLogin() {
                         <th>Job ID</th>
                         <th>Job</th>
                         <th>ATS Score</th>
-                        <th>ATS Match</th>
                         <th>Resume</th>
                         <th>Applied At</th>
                       </tr>
@@ -643,11 +642,6 @@ export default function RecruiterLogin() {
                             {item.atsScore === null
                               ? "N/A"
                               : `${item.atsScore}%`}
-                          </td>
-                          <td>
-                            {item.atsMatchPercentage === null
-                              ? "N/A"
-                              : `${item.atsMatchPercentage}%`}
                           </td>
                           <td>{item.resumeFilename || "N/A"}</td>
                           <td>{formatDateTime(item.createdAt)}</td>
