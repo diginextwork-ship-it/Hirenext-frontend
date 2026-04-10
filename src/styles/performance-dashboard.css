@@ -991,3 +991,110 @@
     width: 100%;
   }
 }
+
+.recruiter-task-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.recruiter-task-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recruiter-task-list-item {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 14px;
+  padding: 0.95rem;
+  text-align: left;
+  display: grid;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.recruiter-task-list-item:hover,
+.recruiter-task-list-item.is-active {
+  border-color: #c62828;
+  box-shadow: 0 12px 24px rgba(198, 40, 40, 0.07);
+  transform: translateY(-1px);
+}
+
+.recruiter-task-list-item p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.recruiter-task-list-head,
+.recruiter-task-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.recruiter-task-detail {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff, #fff9f8);
+}
+
+.recruiter-task-detail h3,
+.recruiter-task-detail h4 {
+  margin-top: 0;
+}
+
+.recruiter-task-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.recruiter-task-members {
+  margin-top: 1rem;
+}
+
+.recruiter-task-member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.recruiter-task-member-list li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.recruiter-task-member-list span {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.recruiter-task-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .recruiter-task-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .recruiter-task-actions button {
+    width: 100%;
+  }
+}

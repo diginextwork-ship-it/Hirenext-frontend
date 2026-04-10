@@ -214,7 +214,8 @@
 }
 
 .admin-form input,
-.admin-form select {
+.admin-form select,
+.admin-form textarea {
   width: 100%;
   padding: 0.85rem 1rem;
   border: 2px solid var(--border-color);
@@ -222,10 +223,12 @@
   font-size: 0.95rem;
   color: var(--text-primary);
   background: #fff;
+  font-family: inherit;
 }
 
 .admin-form input:focus,
-.admin-form select:focus {
+.admin-form select:focus,
+.admin-form textarea:focus {
   outline: none;
   border-color: var(--primary-red);
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
@@ -2389,5 +2392,136 @@
 
   .admin-page-actions > * {
     width: 100%;
+  }
+}
+
+.task-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.task-admin-list {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.task-admin-list-item {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: left;
+  display: grid;
+  gap: 0.55rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.task-admin-list-item:hover,
+.task-admin-list-item.is-active {
+  border-color: #c62828;
+  box-shadow: 0 12px 24px rgba(198, 40, 40, 0.07);
+  transform: translateY(-1px);
+}
+
+.task-admin-list-item p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.task-admin-list-head,
+.task-detail-head,
+.task-assign-box-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.task-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.task-admin-summary-row {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.task-meta-stack {
+  display: grid;
+  gap: 0.35rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.task-assign-box {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+  margin-bottom: 1rem;
+}
+
+.task-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.task-status-pill.is-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.task-status-pill.is-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.task-status-pill.is-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.task-status-pill.is-timed_out {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.task-create-modal {
+  max-width: 520px;
+}
+
+@media (max-width: 960px) {
+  .task-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-meta-stack {
+    text-align: left;
   }
 }

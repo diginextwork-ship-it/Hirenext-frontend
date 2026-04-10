@@ -12,6 +12,7 @@ import JobAccessControlModal from "../components/JobAdder/JobAccessControlModal"
 import RecruiterMultiSelect from "../components/JobAdder/RecruiterMultiSelect";
 import RecruiterJobsBoard from "../components/Recruiter/RecruiterJobsBoard";
 import RecruiterDashboard from "../components/Recruiter/RecruiterDashboard";
+import RecruiterTasksPanel from "../components/Recruiter/RecruiterTasksPanel";
 import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
@@ -141,6 +142,7 @@ export default function RecruiterLogin() {
     isTeamLeader ||
     Boolean(recruiter?.addjob);
   const canManageJobAccess = isTeamLeader;
+  const canViewTasks = normalizedRole === "recruiter";
   const canUploadResumes =
     normalizedRole === "recruiter" || isTeamLeader;
   const shouldCollapseApplications =
@@ -566,6 +568,10 @@ export default function RecruiterLogin() {
                 key={recruiter.rid}
                 recruiterId={recruiter.rid}
               />
+            ) : null}
+
+            {canViewTasks ? (
+              <RecruiterTasksPanel recruiterId={recruiter.rid} />
             ) : null}
 
             {canManageJobAccess ? <TeamLeaderDashboard /> : null}

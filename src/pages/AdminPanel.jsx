@@ -46,6 +46,13 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       stat: "Present, absent, half day",
       page: "adminattendance",
     },
+    {
+      title: "Tasks and Assignments",
+      description:
+        "Create recruiter tasks, assign work, and monitor completed, rejected, or timed out statuses.",
+      stat: "Daily task tracking",
+      page: "admintasks",
+    },
   ];
 
   return (
