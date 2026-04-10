@@ -87,7 +87,7 @@ export default function ReimbursementButton({ visible = true }) {
         className="btn-reimb"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        Apply for rembruisement
+        Apply for reimbursement
       </button>
 
       {isOpen ? (

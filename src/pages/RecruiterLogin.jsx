@@ -102,6 +102,7 @@ export default function RecruiterLogin() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [recruiter, setRecruiter] = useState(null);
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+  const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [applications, setApplications] = useState([]);
   const [showAllApplications, setShowAllApplications] = useState(false);
   const [jobs, setJobs] = useState([]);
@@ -500,6 +501,7 @@ export default function RecruiterLogin() {
   const handleLogout = () => {
     clearAuthSession();
     setRecruiter(null);
+    setShowTasksPanel(false);
     setApplications([]);
     setJobs([]);
     setUploadedResumes([]);
@@ -559,9 +561,22 @@ export default function RecruiterLogin() {
               </div>
             </div>
 
-            <ReimbursementButton
-              visible={canUploadResumes || canManageJobAccess}
-            />
+            <div className="recruiter-dashboard-quick-actions">
+              <ReimbursementButton
+                visible={canUploadResumes || canManageJobAccess}
+              />
+              {canViewTasks ? (
+                <button
+                  type="button"
+                  className={`click-here-btn recruiter-tasks-toggle ${
+                    showTasksPanel ? "is-active" : ""
+                  }`}
+                  onClick={() => setShowTasksPanel((prev) => !prev)}
+                >
+                  {showTasksPanel ? "Hide My Tasks" : "My Tasks"}
+                </button>
+              ) : null}
+            </div>
 
             {canUploadResumes && !canManageJobAccess ? (
               <RecruiterDashboard
@@ -570,7 +585,7 @@ export default function RecruiterLogin() {
               />
             ) : null}
 
-            {canViewTasks ? (
+            {canViewTasks && showTasksPanel ? (
               <RecruiterTasksPanel recruiterId={recruiter.rid} />
             ) : null}
 

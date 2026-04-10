@@ -59,6 +59,29 @@ export default function RecruiterTasksPanel({ recruiterId }) {
     [tasks, selectedTaskId],
   );
 
+  const summary = useMemo(
+    () =>
+      tasks.reduce(
+        (accumulator, task) => ({
+          total: accumulator.total + 1,
+          pending: accumulator.pending + (task.status === "pending" ? 1 : 0),
+          completed:
+            accumulator.completed + (task.status === "completed" ? 1 : 0),
+          rejected: accumulator.rejected + (task.status === "rejected" ? 1 : 0),
+          timedOut:
+            accumulator.timedOut + (task.status === "timed_out" ? 1 : 0),
+        }),
+        {
+          total: 0,
+          pending: 0,
+          completed: 0,
+          rejected: 0,
+          timedOut: 0,
+        },
+      ),
+    [tasks],
+  );
+
   const handleStatusUpdate = async (status) => {
     if (!selectedTask?.assignmentId) return;
     setBusyAction(status);
@@ -105,8 +128,27 @@ export default function RecruiterTasksPanel({ recruiterId }) {
       ) : tasks.length === 0 ? (
         <p className="chart-empty">No tasks have been assigned yet.</p>
       ) : (
-        <div className="recruiter-task-layout">
-          <div className="recruiter-task-list">
+        <>
+          <div className="recruiter-task-summary-grid">
+            <article className="recruiter-task-summary-card">
+              <span>Total</span>
+              <strong>{summary.total}</strong>
+            </article>
+            <article className="recruiter-task-summary-card">
+              <span>Pending</span>
+              <strong>{summary.pending}</strong>
+            </article>
+            <article className="recruiter-task-summary-card">
+              <span>Completed</span>
+              <strong>{summary.completed}</strong>
+            </article>
+            <article className="recruiter-task-summary-card">
+              <span>Timed out</span>
+              <strong>{summary.timedOut}</strong>
+            </article>
+          </div>
+          <div className="recruiter-task-layout">
+            <div className="recruiter-task-list">
             {tasks.map((task) => (
               <button
                 key={`${task.id}-${task.assignmentId}`}
@@ -117,7 +159,10 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                 onClick={() => setSelectedTaskId(task.id)}
               >
                 <div className="recruiter-task-list-head">
-                  <strong>{task.heading}</strong>
+                  <div className="recruiter-task-title">
+                    <strong>{task.heading}</strong>
+                    <span>Assigned {formatDateTime(task.assignedAt)}</span>
+                  </div>
                   <span className={`task-status-pill is-${task.status}`}>
                     {STATUS_LABELS[task.status] || task.status}
                   </span>
@@ -127,13 +172,16 @@ export default function RecruiterTasksPanel({ recruiterId }) {
             ))}
           </div>
 
-          <div className="recruiter-task-detail">
+            <div className="recruiter-task-detail">
             {!selectedTask ? (
               <p className="chart-empty">Select a task to see the details.</p>
             ) : (
               <>
-                <div className="recruiter-task-meta">
-                  <h3>{selectedTask.heading}</h3>
+                <div className="recruiter-task-hero">
+                  <div className="recruiter-task-heading">
+                    <p className="task-section-kicker">Task details</p>
+                    <h3>{selectedTask.heading}</h3>
+                  </div>
                   <span className={`task-status-pill is-${selectedTask.status}`}>
                     {STATUS_LABELS[selectedTask.status] || selectedTask.status}
                   </span>
@@ -191,8 +239,9 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                 ) : null}
               </>
             )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </section>
   );

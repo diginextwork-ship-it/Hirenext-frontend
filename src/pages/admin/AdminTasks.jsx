@@ -49,6 +49,7 @@ export default function AdminTasks({ setCurrentPage }) {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [taskFilter, setTaskFilter] = useState("");
 
   const loadData = async ({ silent = false } = {}) => {
     if (!silent) setIsLoading(true);
@@ -88,6 +89,42 @@ export default function AdminTasks({ setCurrentPage }) {
     () => tasks.find((task) => task.id === selectedTaskId) || null,
     [tasks, selectedTaskId],
   );
+
+  const summary = useMemo(
+    () =>
+      tasks.reduce(
+        (accumulator, task) => ({
+          totalTasks: accumulator.totalTasks + 1,
+          totalAssignments:
+            accumulator.totalAssignments + (task.totalAssignments || 0),
+          pending: accumulator.pending + (task.pendingCount || 0),
+          completed: accumulator.completed + (task.completedCount || 0),
+          rejected: accumulator.rejected + (task.rejectedCount || 0),
+          timedOut: accumulator.timedOut + (task.timedOutCount || 0),
+        }),
+        {
+          totalTasks: 0,
+          totalAssignments: 0,
+          pending: 0,
+          completed: 0,
+          rejected: 0,
+          timedOut: 0,
+        },
+      ),
+    [tasks],
+  );
+
+  const filteredTasks = useMemo(() => {
+    const normalizedFilter = taskFilter.trim().toLowerCase();
+    if (!normalizedFilter) return tasks;
+    return tasks.filter((task) =>
+      [task.heading, task.description].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(normalizedFilter),
+      ),
+    );
+  }, [taskFilter, tasks]);
 
   const filteredRecruiters = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -200,9 +237,38 @@ export default function AdminTasks({ setCurrentPage }) {
 
       <div className="task-admin-grid">
         <section className="admin-dashboard-card admin-card-large task-list-card">
-          <div className="ui-row-between ui-row-wrap">
-            <h2 style={{ margin: 0 }}>Created tasks</h2>
+          <div className="task-section-head">
+            <div>
+              <p className="task-section-kicker">Overview</p>
+              <h2 style={{ margin: 0 }}>Created tasks</h2>
+            </div>
             <span className="admin-muted">{tasks.length} total</span>
+          </div>
+          <div className="task-summary-grid">
+            <article className="task-summary-card">
+              <span>Total tasks</span>
+              <strong>{summary.totalTasks}</strong>
+            </article>
+            <article className="task-summary-card">
+              <span>Assignments</span>
+              <strong>{summary.totalAssignments}</strong>
+            </article>
+            <article className="task-summary-card">
+              <span>Pending</span>
+              <strong>{summary.pending}</strong>
+            </article>
+            <article className="task-summary-card">
+              <span>Timed out</span>
+              <strong>{summary.timedOut}</strong>
+            </article>
+          </div>
+          <div className="task-search-row">
+            <input
+              type="text"
+              value={taskFilter}
+              onChange={(event) => setTaskFilter(event.target.value)}
+              placeholder="Search task heading or description"
+            />
           </div>
 
           {isLoading ? (
@@ -211,9 +277,13 @@ export default function AdminTasks({ setCurrentPage }) {
             <p className="admin-chart-empty">
               No tasks created yet. Use Create task to assign the first one.
             </p>
+          ) : filteredTasks.length === 0 ? (
+            <p className="admin-chart-empty">
+              No tasks match the current search.
+            </p>
           ) : (
             <div className="task-admin-list">
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <button
                   key={task.id}
                   type="button"
@@ -223,7 +293,12 @@ export default function AdminTasks({ setCurrentPage }) {
                   onClick={() => setSelectedTaskId(task.id)}
                 >
                   <div className="task-admin-list-head">
-                    <strong>{task.heading}</strong>
+                    <div className="task-title-stack">
+                      <strong>{task.heading}</strong>
+                      <span className="admin-muted">
+                        Updated {formatDateTime(task.updatedAt)}
+                      </span>
+                    </div>
                     <span className="task-count-pill">
                       {task.totalAssignments || 0} assigned
                     </span>
@@ -248,8 +323,9 @@ export default function AdminTasks({ setCurrentPage }) {
             </p>
           ) : (
             <>
-              <div className="task-detail-head">
+              <div className="task-detail-hero">
                 <div>
+                  <p className="task-section-kicker">Task detail</p>
                   <h2 style={{ margin: 0 }}>{selectedTask.heading}</h2>
                   <p className="admin-page-subtitle">
                     {selectedTask.description || "No description added."}
@@ -262,37 +338,63 @@ export default function AdminTasks({ setCurrentPage }) {
                   </span>
                 </div>
               </div>
+              <div className="task-summary-grid task-summary-grid-detail">
+                <article className="task-summary-card">
+                  <span>Assigned</span>
+                  <strong>{selectedTask.totalAssignments || 0}</strong>
+                </article>
+                <article className="task-summary-card">
+                  <span>Completed</span>
+                  <strong>{selectedTask.completedCount || 0}</strong>
+                </article>
+                <article className="task-summary-card">
+                  <span>Rejected</span>
+                  <strong>{selectedTask.rejectedCount || 0}</strong>
+                </article>
+                <article className="task-summary-card">
+                  <span>Pending</span>
+                  <strong>{selectedTask.pendingCount || 0}</strong>
+                </article>
+              </div>
 
               <div className="task-assign-box">
                 <div className="task-assign-box-head">
-                  <h3 style={{ margin: 0 }}>Assign this task to another recruiter</h3>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Assign this task to another recruiter</h3>
+                    <p className="admin-muted" style={{ margin: "0.35rem 0 0" }}>
+                      Use the searchable picker below to add another recruiter to
+                      this same task heading.
+                    </p>
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  value={assignSearchTerm}
-                  onChange={(event) => setAssignSearchTerm(event.target.value)}
-                  placeholder="Search recruiter by name, email, or RID"
-                />
-                <select
-                  value={assignRecruiterRid}
-                  onChange={(event) => setAssignRecruiterRid(event.target.value)}
-                >
-                  <option value="">Select recruiter</option>
-                  {filteredAssignRecruiters.map((recruiter) => (
-                    <option key={recruiter.rid} value={recruiter.rid}>
-                      {recruiter.name || recruiter.rid}
-                      {recruiter.email ? ` - ${recruiter.email}` : ""}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="admin-create-btn"
-                  onClick={handleAssignRecruiter}
-                  disabled={isAssigning || !assignRecruiterRid}
-                >
-                  {isAssigning ? "Assigning..." : "Assign recruiter"}
-                </button>
+                <div className="task-assign-form-grid">
+                  <input
+                    type="text"
+                    value={assignSearchTerm}
+                    onChange={(event) => setAssignSearchTerm(event.target.value)}
+                    placeholder="Search recruiter by name, email, or RID"
+                  />
+                  <select
+                    value={assignRecruiterRid}
+                    onChange={(event) => setAssignRecruiterRid(event.target.value)}
+                  >
+                    <option value="">Select recruiter</option>
+                    {filteredAssignRecruiters.map((recruiter) => (
+                      <option key={recruiter.rid} value={recruiter.rid}>
+                        {recruiter.name || recruiter.rid}
+                        {recruiter.email ? ` - ${recruiter.email}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="admin-create-btn"
+                    onClick={handleAssignRecruiter}
+                    disabled={isAssigning || !assignRecruiterRid}
+                  >
+                    {isAssigning ? "Assigning..." : "Assign recruiter"}
+                  </button>
+                </div>
               </div>
 
               <div className="admin-table-wrap">
