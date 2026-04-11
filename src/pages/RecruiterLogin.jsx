@@ -143,7 +143,8 @@ export default function RecruiterLogin() {
     isTeamLeader ||
     Boolean(recruiter?.addjob);
   const canManageJobAccess = isTeamLeader;
-  const canViewTasks = normalizedRole === "recruiter";
+  const canViewTasks =
+    normalizedRole === "recruiter" || isTeamLeader;
   const canUploadResumes =
     normalizedRole === "recruiter" || isTeamLeader;
   const shouldCollapseApplications =

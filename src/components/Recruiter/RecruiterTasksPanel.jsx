@@ -199,7 +199,7 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                 </div>
 
                 <div className="recruiter-task-members">
-                  <h4>Other recruiters on this task</h4>
+                  <h4>Other assignees on this task</h4>
                   <ul className="recruiter-task-member-list">
                     {(selectedTask.recruiters || []).map((member) => (
                       <li key={`${selectedTask.id}-${member.recruiterRid}`}>

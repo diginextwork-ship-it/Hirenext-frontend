@@ -63,10 +63,15 @@ export default function AdminTasks({ setCurrentPage }) {
       setRecruiters(
         Array.isArray(recruitersResult?.recruiters)
           ? recruitersResult.recruiters.filter(
-              (item) =>
-                String(item.role || "")
+              (item) => {
+                const normalizedRole = String(item.role || "")
                   .trim()
-                  .toLowerCase() === "recruiter",
+                  .toLowerCase();
+                return (
+                  normalizedRole === "recruiter" ||
+                  normalizedRole === "team leader"
+                );
+              },
             )
           : [],
       );
@@ -191,7 +196,7 @@ export default function AdminTasks({ setCurrentPage }) {
       await loadData({ silent: true });
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message || "Failed to assign recruiter.");
+      setMessage(error.message || "Failed to assign team member.");
     } finally {
       setIsAssigning(false);
     }
@@ -200,7 +205,7 @@ export default function AdminTasks({ setCurrentPage }) {
   return (
     <AdminLayout
       title="Tasks and assignments"
-      subtitle="Create task headings, assign them to recruiters, and track completed, rejected, timed out, or pending updates."
+      subtitle="Create task headings, assign them to recruiters or team leaders, and track completed, rejected, timed out, or pending updates."
       setCurrentPage={setCurrentPage}
       actions={
         <>
@@ -319,7 +324,7 @@ export default function AdminTasks({ setCurrentPage }) {
         <section className="admin-dashboard-card admin-card-large task-detail-card">
           {!selectedTask ? (
             <p className="admin-chart-empty">
-              Select a task heading to view assigned recruiters and statuses.
+              Select a task heading to view assigned team members and statuses.
             </p>
           ) : (
             <>
@@ -360,10 +365,12 @@ export default function AdminTasks({ setCurrentPage }) {
               <div className="task-assign-box">
                 <div className="task-assign-box-head">
                   <div>
-                    <h3 style={{ margin: 0 }}>Assign this task to another recruiter</h3>
+                    <h3 style={{ margin: 0 }}>
+                      Assign this task to another team member
+                    </h3>
                     <p className="admin-muted" style={{ margin: "0.35rem 0 0" }}>
-                      Use the searchable picker below to add another recruiter to
-                      this same task heading.
+                      Use the searchable picker below to add another recruiter or
+                      team leader to this same task heading.
                     </p>
                   </div>
                 </div>
@@ -372,16 +379,17 @@ export default function AdminTasks({ setCurrentPage }) {
                     type="text"
                     value={assignSearchTerm}
                     onChange={(event) => setAssignSearchTerm(event.target.value)}
-                    placeholder="Search recruiter by name, email, or RID"
+                    placeholder="Search recruiter or team leader by name, email, or RID"
                   />
                   <select
                     value={assignRecruiterRid}
                     onChange={(event) => setAssignRecruiterRid(event.target.value)}
                   >
-                    <option value="">Select recruiter</option>
+                    <option value="">Select team member</option>
                     {filteredAssignRecruiters.map((recruiter) => (
                       <option key={recruiter.rid} value={recruiter.rid}>
                         {recruiter.name || recruiter.rid}
+                        {recruiter.role ? ` (${recruiter.role})` : ""}
                         {recruiter.email ? ` - ${recruiter.email}` : ""}
                       </option>
                     ))}
@@ -392,7 +400,7 @@ export default function AdminTasks({ setCurrentPage }) {
                     onClick={handleAssignRecruiter}
                     disabled={isAssigning || !assignRecruiterRid}
                   >
-                    {isAssigning ? "Assigning..." : "Assign recruiter"}
+                    {isAssigning ? "Assigning..." : "Assign task"}
                   </button>
                 </div>
               </div>
@@ -401,7 +409,8 @@ export default function AdminTasks({ setCurrentPage }) {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Recruiter</th>
+                      <th>Assignee</th>
+                      <th>Role</th>
                       <th>RID</th>
                       <th>Assigned day</th>
                       <th>Status</th>
@@ -422,6 +431,7 @@ export default function AdminTasks({ setCurrentPage }) {
                             </span>
                           </div>
                         </td>
+                        <td>{assignment.recruiterRole || "Recruiter"}</td>
                         <td>{assignment.recruiterRid}</td>
                         <td>{formatDateOnly(assignment.assignmentDate)}</td>
                         <td>
@@ -482,16 +492,16 @@ export default function AdminTasks({ setCurrentPage }) {
                 placeholder="Add a short description if needed"
               />
 
-              <label htmlFor="taskRecruiterSearch">Search recruiter</label>
+              <label htmlFor="taskRecruiterSearch">Search team member</label>
               <input
                 id="taskRecruiterSearch"
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by name, email, or RID"
+                placeholder="Search recruiter or team leader by name, email, or RID"
               />
 
-              <label htmlFor="taskRecruiter">Assign to recruiter</label>
+              <label htmlFor="taskRecruiter">Assign to team member</label>
               <select
                 id="taskRecruiter"
                 value={formData.recruiterRid}
@@ -503,10 +513,11 @@ export default function AdminTasks({ setCurrentPage }) {
                 }
                 required
               >
-                <option value="">Select recruiter</option>
+                <option value="">Select team member</option>
                 {filteredRecruiters.map((recruiter) => (
                   <option key={recruiter.rid} value={recruiter.rid}>
                     {recruiter.name || recruiter.rid}
+                    {recruiter.role ? ` (${recruiter.role})` : ""}
                     {recruiter.email ? ` - ${recruiter.email}` : ""}
                   </option>
                 ))}
@@ -526,7 +537,7 @@ export default function AdminTasks({ setCurrentPage }) {
                   className="admin-create-btn"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Assigning..." : "Assign task"}
+                  {isSubmitting ? "Assigning..." : "Create and assign"}
                 </button>
               </div>
             </form>
