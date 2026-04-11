@@ -273,7 +273,6 @@ export default function RecruiterLogin() {
   };
 
   const handlePasswordChanged = () => {
-    // Update the recruiter state to mark password as changed
     setRecruiter((prevRecruiter) => ({
       ...prevRecruiter,
       passwordChanged: true,
@@ -1064,8 +1063,31 @@ export default function RecruiterLogin() {
                 ) : null}
               </form>
             ) : null}
+
+            <footer className="dashboard-account-footer">
+              <div className="dashboard-account-footer-copy">
+                <h2>Account Settings</h2>
+                <p>Need to update your account password? You can change it here.</p>
+              </div>
+              <button
+                type="button"
+                className="click-here-btn dashboard-password-btn"
+                onClick={() => setShowPasswordChangeModal(true)}
+              >
+                Change Password
+              </button>
+            </footer>
           </div>
         </section>
+
+        <PasswordChangeModal
+          isOpen={showPasswordChangeModal}
+          onClose={() => setShowPasswordChangeModal(false)}
+          onPasswordChanged={handlePasswordChanged}
+          recruiterName={recruiter.name}
+          recruiterId={recruiter.rid}
+          isFirstLogin={recruiter?.passwordChanged === false}
+        />
       </main>
     );
   }
@@ -1177,15 +1199,6 @@ export default function RecruiterLogin() {
         </div>
       </section>
 
-      {recruiter && (
-        <PasswordChangeModal
-          isOpen={showPasswordChangeModal}
-          onClose={() => setShowPasswordChangeModal(false)}
-          onPasswordChanged={handlePasswordChanged}
-          recruiterName={recruiter.name}
-          recruiterId={recruiter.rid}
-        />
-      )}
     </main>
   );
 }

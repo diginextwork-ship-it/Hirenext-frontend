@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles/password-change-modal.css";
 import { API_BASE_URL } from "../config/api";
 import { getAuthSession } from "../auth/session";
+import { useNotification } from "../context/NotificationContext";
 
 export default function PasswordChangeModal({
   isOpen,
@@ -9,6 +10,7 @@ export default function PasswordChangeModal({
   recruiterName,
   recruiterId,
   onPasswordChanged,
+  isFirstLogin = false,
 }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,6 +19,7 @@ export default function PasswordChangeModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
+  const { addNotification } = useNotification();
 
   const validatePasswords = () => {
     if (!newPassword) {
@@ -75,22 +78,17 @@ export default function PasswordChangeModal({
         throw new Error(data?.message || "Failed to change password");
       }
 
-      setMessageType("success");
-      setMessage("Password changed successfully!");
-
-      // Clear form after success
       setNewPassword("");
       setConfirmPassword("");
+      setMessage("");
+      setMessageType("");
+      addNotification("Password changed successfully", "success", 4000);
 
-      // Notify parent component that password was changed
       if (onPasswordChanged) {
         onPasswordChanged();
       }
 
-      // Close modal after 2 seconds
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      onClose();
     } catch (error) {
       setMessageType("error");
       setMessage(
@@ -109,23 +107,23 @@ export default function PasswordChangeModal({
     <div className="password-change-modal-overlay">
       <div className="password-change-modal">
         <div className="password-change-modal-header">
-          <h2>Change Your Password</h2>
+          <h2>Change Password</h2>
           <p className="password-change-modal-subtitle">
-            Hello <strong>{recruiterName}</strong>, please create a new password
-            for your account.
+            Hello <strong>{recruiterName}</strong>, enter and confirm a new
+            password for your account.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="password-change-form">
           <div className="password-field-group">
-            <label htmlFor="new-password">New Password</label>
+            <label htmlFor="new-password">Enter Password</label>
             <div className="password-input-wrapper">
               <input
                 id="new-password"
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (minimum 6 characters)"
+                placeholder="Enter password"
                 disabled={isSubmitting}
                 required
               />
@@ -134,22 +132,67 @@ export default function PasswordChangeModal({
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isSubmitting}
-                tabIndex="-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      d="M3 3l18 18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9.88 5.08A10.9 10.9 0 0 1 12 4.9c5.25 0 8.85 3.97 10 7.1a12.64 12.64 0 0 1-3.12 4.49M6.6 6.6A13.4 13.4 0 0 0 2 12c1.15 3.13 4.75 7.1 10 7.1 1.87 0 3.5-.5 4.94-1.27"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      d="M2 12s3.6-7.1 10-7.1S22 12 22 12s-3.6 7.1-10 7.1S2 12 2 12z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
 
           <div className="password-field-group">
-            <label htmlFor="confirm-password">Confirm Password</label>
+            <label htmlFor="confirm-password">Re-enter Password</label>
             <div className="password-input-wrapper">
               <input
                 id="confirm-password"
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
+                placeholder="Re-enter password"
                 disabled={isSubmitting}
                 required
               />
@@ -158,9 +201,56 @@ export default function PasswordChangeModal({
                 className="password-toggle-btn"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={isSubmitting}
-                tabIndex="-1"
+                aria-label={
+                  showConfirmPassword ? "Hide password" : "Show password"
+                }
               >
-                {showConfirmPassword ? "Hide" : "Show"}
+                {showConfirmPassword ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      d="M3 3l18 18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9.88 5.08A10.9 10.9 0 0 1 12 4.9c5.25 0 8.85 3.97 10 7.1a12.64 12.64 0 0 1-3.12 4.49M6.6 6.6A13.4 13.4 0 0 0 2 12c1.15 3.13 4.75 7.1 10 7.1 1.87 0 3.5-.5 4.94-1.27"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      d="M2 12s3.6-7.1 10-7.1S22 12 22 12s-3.6 7.1-10 7.1S2 12 2 12z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -176,13 +266,14 @@ export default function PasswordChangeModal({
             className="password-change-submit-btn"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Changing Password..." : "Change Password"}
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
         </form>
 
         <p className="password-change-modal-note">
-          This is required on your first login. Please make sure to remember
-          your new password.
+          {isFirstLogin
+            ? "This is required on your first login. Please remember your new password."
+            : "Choose a password you can remember and keep your account secure."}
         </p>
       </div>
     </div>

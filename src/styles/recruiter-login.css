@@ -78,6 +78,32 @@
   background: #0f172a;
 }
 
+.dashboard-account-footer {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, #f8fafc, #eef6ff);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-account-footer-copy h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.dashboard-account-footer-copy p {
+  margin: 0;
+}
+
+.dashboard-password-btn {
+  min-height: 44px;
+}
+
 .recruiter-dashboard-logo {
   width: clamp(120px, 14vw, 180px);
   height: auto;
@@ -663,6 +689,10 @@
 
   .recruiter-dashboard-quick-actions {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-account-footer {
     align-items: stretch;
   }
 
