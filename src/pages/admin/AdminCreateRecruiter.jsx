@@ -10,18 +10,31 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
   const passwordRef = useRef(null);
   const roleRef = useRef(null);
   const salaryRef = useRef(null);
+  const incrementAmountRef = useRef(null);
+  const incrementDateRef = useRef(null);
   const submitRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [monthlySalary, setMonthlySalary] = useState("");
+  const [incrementAmount, setIncrementAmount] = useState("");
+  const [incrementStartDate, setIncrementStartDate] = useState("");
   const [role, setRole] = useState("recruiter");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  const focusSequence = [nameRef, emailRef, passwordRef, roleRef, salaryRef, submitRef];
+  const focusSequence = [
+    nameRef,
+    emailRef,
+    passwordRef,
+    roleRef,
+    salaryRef,
+    incrementAmountRef,
+    incrementDateRef,
+    submitRef,
+  ];
 
   const handleAdvanceOnEnter = (event, currentRef) => {
     if (event.key !== "Enter") return;
@@ -48,7 +61,15 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
         headers: getAdminHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify({ name, email, password, role, monthlySalary }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          monthlySalary,
+          incrementAmount,
+          incrementStartDate,
+        }),
       });
 
       const data = await readJsonResponse(response, `Check API base URL: ${API_BASE_URL}`);
@@ -63,6 +84,8 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
       setEmail("");
       setPassword("");
       setMonthlySalary("");
+      setIncrementAmount("");
+      setIncrementStartDate("");
       setRole("recruiter");
     } catch (error) {
       if (error instanceof TypeError) {
@@ -193,11 +216,36 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
           <input
             ref={salaryRef}
             id="newRecruiterSalary"
-            type="text"
+            type="number"
             value={monthlySalary}
             onChange={(e) => setMonthlySalary(e.target.value)}
             onKeyDown={(event) => handleAdvanceOnEnter(event, salaryRef)}
             placeholder="e.g. 30000"
+            min="0"
+            step="0.01"
+          />
+
+          <label htmlFor="newRecruiterIncrementAmount">Increment Amount</label>
+          <input
+            ref={incrementAmountRef}
+            id="newRecruiterIncrementAmount"
+            type="number"
+            value={incrementAmount}
+            onChange={(e) => setIncrementAmount(e.target.value)}
+            onKeyDown={(event) => handleAdvanceOnEnter(event, incrementAmountRef)}
+            placeholder="e.g. 2000"
+            min="0"
+            step="0.01"
+          />
+
+          <label htmlFor="newRecruiterIncrementDate">Increment Start Date</label>
+          <input
+            ref={incrementDateRef}
+            id="newRecruiterIncrementDate"
+            type="date"
+            value={incrementStartDate}
+            onChange={(e) => setIncrementStartDate(e.target.value)}
+            onKeyDown={(event) => handleAdvanceOnEnter(event, incrementDateRef)}
           />
 
           <button
