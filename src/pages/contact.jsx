@@ -1,7 +1,9 @@
 import { useState } from "react";
+import emailjs from "@emailjs/browser";
 import PageBackButton from "../components/PageBackButton";
 import { useNotification } from "../context/NotificationContext";
 import bgVideo from "../assets/video/bg_video.mp4";
+import { getEmailJsConfig, isEmailJsConfigured } from "../utils/emailjs";
 import "../styles/contactus.css";
 
 const INITIAL_FORM = {
@@ -13,20 +15,54 @@ const INITIAL_FORM = {
 
 export default function Contact({ setCurrentPage }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { addNotification } = useNotification();
+  const { serviceId, publicKey, contactTemplateId } = getEmailJsConfig();
 
   const handleChange = ({ target }) => {
     const { name, value } = target;
     setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    addNotification(
-      "Thanks for reaching out. Our team will get back to you shortly.",
-      "success",
-    );
-    setFormData(INITIAL_FORM);
+
+    if (!isEmailJsConfigured(contactTemplateId)) {
+      addNotification(
+        "Email service is not configured. Please add the EmailJS environment variables first.",
+        "error",
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await emailjs.send(serviceId, contactTemplateId, {
+        form_type: "Contact Us",
+        to_email: "Hirenextindia@gmail.com",
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        message: formData.message,
+      }, {
+        publicKey,
+      });
+
+      addNotification(
+        "Thanks for reaching out. Your message has been emailed successfully.",
+        "success",
+      );
+      setFormData(INITIAL_FORM);
+    } catch (error) {
+      addNotification(
+        error?.text || error?.message || "Failed to send your message. Please try again.",
+        "error",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -120,8 +156,8 @@ export default function Contact({ setCurrentPage }) {
                 />
               </label>
 
-              <button type="submit" className="contactus-submit">
-                Submit
+              <button type="submit" className="contactus-submit" disabled={isSubmitting}>
+                {isSubmitting ? "Sending..." : "Submit"}
               </button>
             </form>
           </div>

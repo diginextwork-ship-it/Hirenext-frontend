@@ -1,0 +1,1 @@
+const a={serviceId:"service_qfcc2d8",publicKey:"G85rMOFQ4zg4GCzqF",defaultTemplateId:"template_awxpjg8",jobApplicationTemplateId:"template_awxpjg8",contactTemplateId:"template_awxpjg8"},t=()=>a,i=e=>!!e;export{t as g,i};
