@@ -341,6 +341,25 @@ function matchesRecruiterEntrySearch(item, searchValue) {
   ].some((value) => normalizeLookupKey(value).includes(normalizedSearch));
 }
 
+function matchesPersonStatusItem(item, person, roleLabel) {
+  if (!person) return false;
+
+  const normalizedRole = normalizeLookupKey(roleLabel);
+  if (normalizedRole === "recruiter") {
+    return (
+      normalizeLookupKey(item?.recruiterRid) === normalizeLookupKey(person?.rid) ||
+      normalizeLookupKey(item?.rid) === normalizeLookupKey(person?.rid) ||
+      normalizeLookupKey(item?.recruiterName) === normalizeLookupKey(person?.name)
+    );
+  }
+
+  if (normalizedRole === "team leader") {
+    return normalizeLookupKey(item?.teamLeaderName) === normalizeLookupKey(person?.name);
+  }
+
+  return false;
+}
+
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
@@ -984,6 +1003,20 @@ export default function AdminPerformance({ setCurrentPage }) {
     };
   }, [recruiterEntrySearch, statusItemsByStatus, summary]);
 
+  const selectedRecruiterStatusItems = useMemo(() => {
+    const items = statusItemsByStatus[selectedStatusKey] || [];
+    return items.filter((item) =>
+      matchesPersonStatusItem(item, selectedRecruiter, "Recruiter"),
+    );
+  }, [selectedRecruiter, selectedStatusKey, statusItemsByStatus]);
+
+  const selectedTeamLeaderStatusItems = useMemo(() => {
+    const items = statusItemsByStatus[selectedStatusKey] || [];
+    return items.filter((item) =>
+      matchesPersonStatusItem(item, selectedTeamLeader, "Team Leader"),
+    );
+  }, [selectedStatusKey, selectedTeamLeader, statusItemsByStatus]);
+
   const handleSubmittedCardClick = async () => {
     setSelectedStatusKey("submitted");
     if (performanceSubmittedItems.length > 0) {
@@ -1373,7 +1406,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const renderPersonMetrics = (person, metrics, roleLabel) => {
+  const renderPersonMetrics = (person, metrics, roleLabel, personStatusItems) => {
     if (!person || !metrics) return null;
 
     return (
@@ -1392,14 +1425,233 @@ export default function AdminPerformance({ setCurrentPage }) {
 
         <div className="perf-summary-grid" style={{ marginBottom: 0 }}>
           {PERSON_METRIC_CARDS.map((card) => (
-            <div
+            <button
               key={`${roleLabel}-${person.rid}-${card.key}`}
-              className={`perf-stat-card perf-stat-card-${card.tone}`}
+              type="button"
+              className={`perf-stat-card ${
+                card.key === "points"
+                  ? `perf-stat-card-${card.tone}`
+                  : `perf-stat-card-button perf-stat-card-${card.tone}${
+                      selectedStatusKey === card.key ? " perf-stat-card-active" : ""
+                    }`
+              }`}
+              onClick={
+                card.key === "points"
+                  ? undefined
+                  : card.key === "submitted"
+                    ? handleSubmittedCardClick
+                    : () => setSelectedStatusKey(card.key)
+              }
+              disabled={card.key === "points"}
             >
               <span className="perf-stat-label">{card.label}</span>
               <span className="perf-stat-value">{metrics[card.key] ?? 0}</span>
-            </div>
+            </button>
           ))}
+        </div>
+
+        <div className="perf-section" style={{ marginTop: "24px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
+              {selectedStatusKey === "submitted"
+                ? "Submitted Resume List"
+                : `${formatStatusLabel(selectedStatusKey)} Resume List`}
+            </h3>
+            <span className="admin-muted">
+              {personStatusItems.length} item
+              {personStatusItems.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {personStatusItems.length > 0 ? (
+            <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+              <table className="admin-table admin-table-wide">
+                <thead>
+                  <tr>
+                    <th>Candidate</th>
+                    <th>Recruiter</th>
+                    <th>Team Leader</th>
+                    <th>Contact Number</th>
+                    <th>Job ID</th>
+                    <th>Company Name</th>
+                    <th>City</th>
+                    <th>Resume File</th>
+                    <th>Status</th>
+                    {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
+                    {[
+                      "dropout",
+                      "selected",
+                      "joined",
+                      "billed",
+                      "left",
+                    ].includes(selectedStatusKey) && (
+                      <th>
+                        {selectedStatusKey === "dropout"
+                          ? "Dropout Reason"
+                          : selectedStatusKey === "selected"
+                            ? "Joining Date"
+                            : "Joining Info"}
+                      </th>
+                    )}
+                    {hasAnyRowActions && <th>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {personStatusItems.map((item) => {
+                    const rowActionState = getRowActionState(item);
+                    const rowHasActions =
+                      rowActionState.availableActions.length > 0 ||
+                      rowActionState.canRollback;
+                    return (
+                      <tr key={`${roleLabel}-${selectedStatusKey}-${item.resId}`}>
+                        <td>
+                          <strong>{getCandidateDisplayName(item)}</strong>
+                        </td>
+                        <td>
+                          <strong>{item.recruiterName || "N/A"}</strong>
+                          <div className="admin-muted">
+                            {item.recruiterRid || "N/A"}
+                          </div>
+                        </td>
+                        <td>{item.teamLeaderName || "N/A"}</td>
+                        <td>
+                          {item.candidatePhone || item.phone ? (
+                            <a href={`tel:${item.candidatePhone || item.phone}`}>
+                              {item.candidatePhone || item.phone}
+                            </a>
+                          ) : (
+                            "N/A"
+                          )}
+                        </td>
+                        <td>{item.jobJid ?? "N/A"}</td>
+                        <td>
+                          {item.companyName ||
+                            item.company_name ||
+                            item.job?.companyName ||
+                            "N/A"}
+                        </td>
+                        <td>{item.city || item.job?.city || "N/A"}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="admin-refresh-btn"
+                            onClick={() => handleResumeOpen(item.resId)}
+                          >
+                            {item.resumeFilename || item.resId || "View resume"}
+                          </button>
+                        </td>
+                        <td>{formatStatusLabel(item.status)}</td>
+                        {selectedStatusKey === "walk_in" && (
+                          <td>{item.walkInReason || formatDate(item.walkInDate)}</td>
+                        )}
+                        {[
+                          "dropout",
+                          "selected",
+                          "joined",
+                          "billed",
+                          "left",
+                        ].includes(selectedStatusKey) && (
+                          <td>
+                            {selectedStatusKey === "dropout" ? (
+                              item.dropoutReason || item.reason || "Not set"
+                            ) : selectedStatusKey === "selected" ? (
+                              formatDate(item.joiningDate)
+                            ) : item.joiningDate ||
+                              item.joiningNote ||
+                              item.joinedReason ? (
+                              <>
+                                {item.joiningDate ? (
+                                  <div>
+                                    <strong>Date:</strong>{" "}
+                                    {formatDate(item.joiningDate)}
+                                  </div>
+                                ) : null}
+                                {item.joiningNote || item.joinedReason ? (
+                                  <div>
+                                    <strong>Note:</strong>{" "}
+                                    {item.joiningNote || item.joinedReason}
+                                  </div>
+                                ) : null}
+                              </>
+                            ) : (
+                              "Not set"
+                            )}
+                          </td>
+                        )}
+                        {hasAnyRowActions && (
+                          <td>
+                            {rowHasActions ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "6px",
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                {rowActionState.availableActions.map((action) => (
+                                  <button
+                                    key={action.value}
+                                    type="button"
+                                    className="admin-refresh-btn"
+                                    style={{
+                                      backgroundColor: action.color,
+                                      color: "#fff",
+                                      border: "none",
+                                    }}
+                                    onClick={() =>
+                                      openActionModal(item, action.value)
+                                    }
+                                  >
+                                    {action.label}
+                                  </button>
+                                ))}
+                                {rowActionState.canRollback && (
+                                  <button
+                                    type="button"
+                                    className="admin-refresh-btn"
+                                    style={{
+                                      backgroundColor: "#111827",
+                                      color: "#fff",
+                                      border: "none",
+                                    }}
+                                    onClick={() => handleAdminRollback(item)}
+                                  >
+                                    Rollback
+                                  </button>
+                                )}
+                              </div>
+                            ) : null}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : selectedStatusKey === "submitted" && submittedLoading ? (
+            <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
+              Loading submitted resumes...
+            </p>
+          ) : selectedStatusKey === "submitted" && submittedError ? (
+            <div
+              className="admin-alert admin-alert-error"
+              style={{ marginTop: "16px" }}
+            >
+              {submittedError}
+            </div>
+          ) : (
+            <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
+              No resumes found for {formatStatusLabel(selectedStatusKey)}.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -1866,6 +2118,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 selectedTeamLeader,
                 selectedTeamLeaderMetrics,
                 "Team Leader",
+                selectedTeamLeaderStatusItems,
               )}
             </>
           ) : filteredTLs.length > 0 ? (
@@ -1928,7 +2181,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                   Back to Recruiters
                 </button>
               </div>
-              {renderPersonMetrics(selectedRecruiter, selectedRecruiter, "Recruiter")}
+              {renderPersonMetrics(
+                selectedRecruiter,
+                selectedRecruiter,
+                "Recruiter",
+                selectedRecruiterStatusItems,
+              )}
             </>
           ) : filteredRecruiters.length > 0 ? (
             <div className="admin-table-wrap">
