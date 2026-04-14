@@ -1496,6 +1496,217 @@
   color: #b91c1c;
 }
 
+.admin-salary-history-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-salary-history-search {
+  display: grid;
+  gap: 0.45rem;
+  min-width: min(100%, 360px);
+}
+
+.admin-salary-history-search label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-salary-history-search input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 0.8rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: #fff;
+  font-family: inherit;
+}
+
+.admin-salary-history-search input:focus {
+  outline: none;
+  border-color: var(--primary-red);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
+}
+
+.admin-salary-history-header,
+.admin-salary-history-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1.4fr) minmax(140px, 0.8fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-salary-history-header {
+  padding: 0 0 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.admin-salary-history-list {
+  display: grid;
+}
+
+.admin-salary-history-row {
+  padding: 1rem 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-salary-history-row-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.admin-salary-history-row-btn:hover {
+  background: #fff7f2;
+}
+
+.admin-salary-history-row-btn:focus-visible {
+  outline: 2px solid #c62828;
+  outline-offset: 3px;
+  border-radius: 0.8rem;
+}
+
+.admin-salary-history-row:last-child {
+  border-bottom: none;
+}
+
+.admin-salary-history-name {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-salary-history-name strong {
+  color: #0f172a;
+}
+
+.admin-salary-history-name span {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.admin-salary-history-email {
+  color: #334155;
+  word-break: break-word;
+}
+
+.admin-salary-history-amount {
+  font-weight: 800;
+  color: #166534;
+}
+
+.admin-salary-modal-card {
+  width: min(100%, 760px);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+}
+
+.admin-salary-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-salary-modal-head h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.admin-salary-modal-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #c2410c;
+}
+
+.admin-salary-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-salary-summary-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+}
+
+.admin-salary-summary-card strong {
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.admin-salary-form {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #fcfcfd;
+}
+
+.admin-salary-history-panel {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.admin-salary-history-panel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-salary-history-panel-head h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.admin-salary-modification-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-salary-modification-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.admin-salary-modification-meta {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: end;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
 @media (max-width: 900px) {
   .admin-hero {
     flex-direction: column;
@@ -1509,6 +1720,37 @@
 
   .admin-attendance-toolbar {
     align-items: stretch;
+  }
+
+  .admin-salary-history-toolbar {
+    align-items: stretch;
+  }
+
+  .admin-salary-history-search {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .admin-salary-history-header {
+    display: none;
+  }
+
+  .admin-salary-history-row {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .admin-salary-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-salary-modification-item {
+    flex-direction: column;
+  }
+
+  .admin-salary-modification-meta {
+    justify-items: start;
+    text-align: left;
   }
 }
 

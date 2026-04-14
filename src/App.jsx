@@ -38,6 +38,9 @@ const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminAttendance = lazy(() => import("./pages/admin/AdminAttendance"));
 const AdminBilling = lazy(() => import("./pages/admin/AdminBilling"));
 const AdminTasks = lazy(() => import("./pages/admin/AdminTasks"));
+const AdminSalaryHistory = lazy(
+  () => import("./pages/admin/AdminSalaryHistory"),
+);
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 const ScheduleCall = lazy(() => import("./pages/ScheduleCall"));
 
@@ -61,6 +64,7 @@ const PAGE_TO_PATH = {
   adminattendance: "/admin-panel/attendance",
   adminbilling: "/admin-panel/billing",
   admintasks: "/admin-panel/tasks",
+  adminsalaryhistory: "/admin-panel/salary-history",
 };
 
 const ADMIN_ONLY_PAGES = new Set([
@@ -74,6 +78,7 @@ const ADMIN_ONLY_PAGES = new Set([
   "adminattendance",
   "adminbilling",
   "admintasks",
+  "adminsalaryhistory",
 ]);
 
 const normalizePath = (pathname) => {
@@ -135,6 +140,8 @@ const getRouteFromPath = (pathname) => {
     return { page: "adminbilling", params: {} };
   if (normalizedPath === "/admin-panel/tasks")
     return { page: "admintasks", params: {} };
+  if (normalizedPath === "/admin-panel/salary-history")
+    return { page: "adminsalaryhistory", params: {} };
   return { page: "notfound", params: {} };
 };
 
@@ -295,6 +302,8 @@ export default function App() {
         return <AdminBilling setCurrentPage={setCurrentPage} />;
       case "admintasks":
         return <AdminTasks setCurrentPage={setCurrentPage} />;
+      case "adminsalaryhistory":
+        return <AdminSalaryHistory setCurrentPage={setCurrentPage} />;
       case "notfound":
         return (
           <ErrorPage

@@ -53,6 +53,13 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       stat: "Daily task tracking",
       page: "admintasks",
     },
+    {
+      title: "Salary History",
+      description:
+        "View recruiters and team leaders with their current salary amount.",
+      stat: "Search by name",
+      page: "adminsalaryhistory",
+    },
   ];
 
   return (

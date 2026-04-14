@@ -70,4 +70,22 @@ export const adminDeleteCandidate = async (resId) =>
     "Failed to delete candidate.",
   );
 
+export const fetchAdminSalaryHistoryDetail = async (rid) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/salary-history`,
+    {},
+    "Failed to fetch salary history detail.",
+  );
+
+export const updateAdminSalaryHistory = async (rid, payload) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/salary-history`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    "Failed to update salary history.",
+  );
+
 
