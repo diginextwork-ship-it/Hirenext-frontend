@@ -380,6 +380,8 @@ function getStatusRank(status) {
     : -1;
 }
 
+const TERMINAL_EXCLUSIVE_STATUSES = new Set(["rejected", "left"]);
+
 function dedupeItemsByResId(items) {
   // Dedupe by `resId`, but merge fields from duplicates so we don't lose
   // partial job/company/city/team-leader info that arrives on some entries.
@@ -865,10 +867,20 @@ export default function AdminPerformance({ setCurrentPage }) {
 
       const dedupedItems = dedupeItemsByResId(normalizedItems);
       if (fallbackStatus === "submitted") {
-        return dedupedItems;
+        return dedupedItems.filter((item) => {
+          const effectiveStatus = normalizeStatus(item?.status);
+          return !TERMINAL_EXCLUSIVE_STATUSES.has(effectiveStatus);
+        });
       }
 
-      return dedupedItems;
+      return dedupedItems.filter((item) => {
+        const effectiveStatus = normalizeStatus(item?.status);
+        if (!TERMINAL_EXCLUSIVE_STATUSES.has(effectiveStatus)) {
+          return true;
+        }
+
+        return effectiveStatus === normalizeStatus(fallbackStatus);
+      });
     };
 
     const submittedRawItems =
