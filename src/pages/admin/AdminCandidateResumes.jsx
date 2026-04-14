@@ -52,6 +52,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTERS.ALL);
   const [phoneSearch, setPhoneSearch] = useState("");
+  const [citySearch, setCitySearch] = useState("");
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -169,6 +170,15 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       )
     : displayedResumes;
 
+  const cityFilteredResumes = citySearch.trim()
+    ? filteredResumes.filter((resume) =>
+        String(resume.city || resume.job?.city || "")
+          .trim()
+          .toLowerCase()
+          .includes(citySearch.trim().toLowerCase()),
+      )
+    : filteredResumes;
+
   const handleResumeOpen = (resId) => {
     const token =
       localStorage.getItem("adminToken") || localStorage.getItem("token");
@@ -248,11 +258,23 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
             onChange={(event) => setPhoneSearch(event.target.value)}
           />
         </label>
-        {phoneSearch.trim() ? (
+        <label className="admin-candidate-resumes-search">
+          <span>Search by city</span>
+          <input
+            type="text"
+            placeholder="Enter city"
+            value={citySearch}
+            onChange={(event) => setCitySearch(event.target.value)}
+          />
+        </label>
+        {phoneSearch.trim() || citySearch.trim() ? (
           <button
             type="button"
             className="admin-back-btn admin-candidate-resumes-clear"
-            onClick={() => setPhoneSearch("")}
+            onClick={() => {
+              setPhoneSearch("");
+              setCitySearch("");
+            }}
           >
             Clear
           </button>
@@ -260,12 +282,12 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       </div>
 
       <div className="admin-dashboard-card admin-card-large">
-        {filteredResumes.length === 0 ? (
+        {cityFilteredResumes.length === 0 ? (
           <p className="admin-chart-empty">
             {isLoading
               ? "Loading resumes..."
-              : phoneSearch.trim()
-                ? "No resumes found for this phone number."
+              : phoneSearch.trim() || citySearch.trim()
+                ? "No resumes found for the current search."
                 : "No resumes found for this filter."}
           </p>
         ) : (
@@ -284,7 +306,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredResumes.map((resume) => (
+                {cityFilteredResumes.map((resume) => (
                   <tr key={`${resume._source}-${resume.resId}`}>
                     <td>
                       {resume._source === "recruiter"
