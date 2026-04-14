@@ -868,9 +868,7 @@ export default function AdminPerformance({ setCurrentPage }) {
         return dedupedItems;
       }
 
-      return dedupedItems.filter(
-        (item) => normalizeStatus(item?.status) === normalizeStatus(fallbackStatus),
-      );
+      return dedupedItems;
     };
 
     const submittedRawItems =
