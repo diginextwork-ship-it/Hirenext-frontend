@@ -276,6 +276,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                   <th>Recruiter Name</th>
                   <th>Candidate Name</th>
                   <th>Job Company Name</th>
+                  <th>City</th>
                   <th>ATS Score</th>
                   <th>Latest Status</th>
                   <th>Submitted At</th>
@@ -296,6 +297,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         "Name not found"}
                     </td>
                     <td>{resume.job?.companyName || "N/A"}</td>
+                    <td>{resume.city || resume.job?.city || "N/A"}</td>
                     <td>
                       <span className="admin-stat-pill">
                         {formatPercent(resume.atsScore)}
