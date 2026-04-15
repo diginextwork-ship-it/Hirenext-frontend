@@ -31,6 +31,7 @@ export default function AdminRevenue({ setCurrentPage }) {
   const [recruiters, setRecruiters] = useState([]);
   const [reimbursements, setReimbursements] = useState([]);
   const [summary, setSummary] = useState({ totalIntake: 0, totalExpense: 0, netProfit: 0 });
+  const [entryTypeFilter, setEntryTypeFilter] = useState("all");
   const [searchFilters, setSearchFilters] = useState({
     fromDate: "",
     toDate: "",
@@ -132,13 +133,34 @@ export default function AdminRevenue({ setCurrentPage }) {
     const reasonQuery = searchFilters.reason.trim().toLowerCase();
     const itemReason = String(item.reason || "").toLowerCase();
     const itemDate = item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : "";
+    const itemEntryType = String(item.entryType || "").trim().toLowerCase();
 
     const matchesFromDate = fromDateQuery ? itemDate >= fromDateQuery : true;
     const matchesToDate = toDateQuery ? itemDate <= toDateQuery : true;
     const matchesReason = reasonQuery ? itemReason.includes(reasonQuery) : true;
+    const matchesType = entryTypeFilter === "all" ? true : itemEntryType === entryTypeFilter;
 
-    return matchesFromDate && matchesToDate && matchesReason;
+    return matchesFromDate && matchesToDate && matchesReason && matchesType;
   });
+
+  const handleEntryTypeCardClick = (nextType) => {
+    setEntryTypeFilter((prev) => (prev === nextType ? "all" : nextType));
+  };
+
+  const getSummaryCardStyle = (cardType) => {
+    const isActive = entryTypeFilter === cardType;
+    return {
+      appearance: "none",
+      width: "100%",
+      textAlign: "left",
+      font: "inherit",
+      color: "inherit",
+      background: "#fff",
+      cursor: "pointer",
+      border: isActive ? "2px solid #0f172a" : undefined,
+      boxShadow: isActive ? "0 0 0 1px rgba(15, 23, 42, 0.04)" : undefined,
+    };
+  };
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -290,14 +312,26 @@ export default function AdminRevenue({ setCurrentPage }) {
       {statusMessage ? <div className="admin-alert">{statusMessage}</div> : null}
 
       <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <div className="admin-dashboard-card">
+        <button
+          type="button"
+          className="admin-dashboard-card"
+          style={getSummaryCardStyle("intake")}
+          onClick={() => handleEntryTypeCardClick("intake")}
+          aria-pressed={entryTypeFilter === "intake"}
+        >
           <div className="admin-muted">Total Intake</div>
           <h3 style={{ margin: "8px 0 0", color: "#166534" }}>{toCurrency(summary.totalIntake)}</h3>
-        </div>
-        <div className="admin-dashboard-card">
+        </button>
+        <button
+          type="button"
+          className="admin-dashboard-card"
+          style={getSummaryCardStyle("expense")}
+          onClick={() => handleEntryTypeCardClick("expense")}
+          aria-pressed={entryTypeFilter === "expense"}
+        >
           <div className="admin-muted">Total Expense</div>
           <h3 style={{ margin: "8px 0 0", color: "#b91c1c" }}>{toCurrency(summary.totalExpense)}</h3>
-        </div>
+        </button>
         <div className="admin-dashboard-card">
           <div className="admin-muted">Net Profit</div>
           <h3 style={{ margin: "8px 0 0", color: summary.netProfit >= 0 ? "#1d4ed8" : "#b91c1c" }}>
@@ -465,6 +499,24 @@ export default function AdminRevenue({ setCurrentPage }) {
 
       <div className="admin-dashboard-card admin-card-large">
         <h2 style={{ marginTop: 0 }}>Revenue entries</h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "16px" }}>
+          <p className="admin-muted" style={{ margin: 0 }}>
+            {entryTypeFilter === "intake"
+              ? "Showing intake entries only."
+              : entryTypeFilter === "expense"
+                ? "Showing expense entries only."
+                : "Showing all revenue entries."}
+          </p>
+          {entryTypeFilter !== "all" ? (
+            <button
+              type="button"
+              className="admin-back-btn"
+              onClick={() => setEntryTypeFilter("all")}
+            >
+              Clear type filter
+            </button>
+          ) : null}
+        </div>
         <div
           style={{
             display: "grid",
@@ -531,8 +583,8 @@ export default function AdminRevenue({ setCurrentPage }) {
                   <tr key={item.id}>
                     <td>#{item.id}</td>
                     <td>{item.entryType}</td>
-                    <td>{toCurrency(item.companyRev)}</td>
-                    <td>{toCurrency(item.expense)}</td>
+                    <td>{item.entryType === "intake" ? toCurrency(item.companyRev) : "—"}</td>
+                    <td>{item.entryType === "expense" ? toCurrency(item.expense) : "—"}</td>
                     <td>
                       {item.companyName ||
                         item.company_name ||
