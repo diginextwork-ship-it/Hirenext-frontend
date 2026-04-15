@@ -50,3 +50,14 @@ export const updateRecruiterTaskStatus = (rid, assignmentId, status) =>
     },
     "Failed to update task status.",
   );
+
+export const rescheduleRecruiterTask = (rid, assignmentId, assignmentDate) =>
+  authFetch(
+    `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/tasks/${encodeURIComponent(assignmentId)}/reschedule`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignmentDate }),
+    },
+    "Failed to reschedule task.",
+  );

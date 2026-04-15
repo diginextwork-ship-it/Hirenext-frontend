@@ -1155,6 +1155,40 @@
   margin-top: 1rem;
 }
 
+.recruiter-task-note-box,
+.recruiter-task-reschedule-box {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.recruiter-task-note-box {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.recruiter-task-reschedule-copy p {
+  margin: 0.35rem 0 0;
+}
+
+.recruiter-task-reschedule-form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.85rem;
+}
+
+.recruiter-task-reschedule-form input[type="date"] {
+  min-width: 200px;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+}
+
 @media (max-width: 768px) {
   .recruiter-task-summary-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1165,6 +1199,11 @@
   }
 
   .recruiter-task-actions button {
+    width: 100%;
+  }
+
+  .recruiter-task-reschedule-form input[type="date"],
+  .recruiter-task-reschedule-form button {
     width: 100%;
   }
 }

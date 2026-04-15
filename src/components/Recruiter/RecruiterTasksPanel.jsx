@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import useDailyRefresh from "../../hooks/useDailyRefresh";
 import {
   fetchRecruiterTasks,
+  rescheduleRecruiterTask,
   updateRecruiterTaskStatus,
 } from "../../services/taskService";
 
@@ -19,6 +20,13 @@ const formatDateTime = (value) => {
   return parsed.toLocaleString();
 };
 
+const formatDateOnly = (value) => {
+  if (!value) return "N/A";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString();
+};
+
 export default function RecruiterTasksPanel({ recruiterId }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +34,7 @@ export default function RecruiterTasksPanel({ recruiterId }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
 
   const loadTasks = async ({ silent = false } = {}) => {
     if (!recruiterId) return;
@@ -58,6 +67,10 @@ export default function RecruiterTasksPanel({ recruiterId }) {
     () => tasks.find((task) => task.id === selectedTaskId) || null,
     [tasks, selectedTaskId],
   );
+
+  useEffect(() => {
+    setRescheduleDate("");
+  }, [selectedTaskId]);
 
   const summary = useMemo(
     () =>
@@ -97,6 +110,27 @@ export default function RecruiterTasksPanel({ recruiterId }) {
       await loadTasks({ silent: true });
     } catch (error) {
       setErrorMessage(error.message || "Failed to update task status.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!selectedTask?.assignmentId || !rescheduleDate) return;
+    setBusyAction("reschedule");
+    setErrorMessage("");
+    setStatusMessage("");
+    try {
+      await rescheduleRecruiterTask(
+        recruiterId,
+        selectedTask.assignmentId,
+        rescheduleDate,
+      );
+      setStatusMessage(`Task rescheduled to ${formatDateOnly(rescheduleDate)}.`);
+      setRescheduleDate("");
+      await loadTasks({ silent: true });
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to reschedule task.");
     } finally {
       setBusyAction("");
     }
@@ -193,10 +227,40 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                     <div>{formatDateTime(selectedTask.assignedAt)}</div>
                   </div>
                   <div>
+                    <strong>Action date</strong>
+                    <div>{formatDateOnly(selectedTask.assignmentDate)}</div>
+                  </div>
+                  <div>
                     <strong>Action time</strong>
                     <div>{formatDateTime(selectedTask.actedAt)}</div>
                   </div>
                 </div>
+
+                {selectedTask.rescheduledAt ? (
+                  <div className="recruiter-task-note-box">
+                    <strong>Last reschedule</strong>
+                    <div>
+                      {selectedTask.rescheduledFromDate
+                        ? `Moved from ${formatDateOnly(selectedTask.rescheduledFromDate)} to ${formatDateOnly(selectedTask.assignmentDate)}`
+                        : `Scheduled for ${formatDateOnly(selectedTask.assignmentDate)}`}
+                    </div>
+                    <div className="admin-muted">
+                      {selectedTask.rescheduledByName
+                        ? `Updated by ${selectedTask.rescheduledByName}`
+                        : "Updated"}
+                      {" on "}
+                      {formatDateTime(selectedTask.rescheduledAt)}
+                    </div>
+                  </div>
+                ) : null}
+
+                {selectedTask.isScheduledForFuture ? (
+                  <p className="admin-muted">
+                    This task is scheduled for{" "}
+                    {formatDateOnly(selectedTask.assignmentDate)}. Complete or
+                    reject actions will unlock on that date only.
+                  </p>
+                ) : null}
 
                 <div className="recruiter-task-members">
                   <h4>Other assignees on this task</h4>
@@ -218,7 +282,11 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                     type="button"
                     className="btn-primary"
                     onClick={() => handleStatusUpdate("completed")}
-                    disabled={busyAction !== "" || selectedTask.status !== "pending"}
+                    disabled={
+                      busyAction !== "" ||
+                      selectedTask.status !== "pending" ||
+                      !selectedTask.isActionableToday
+                    }
                   >
                     {busyAction === "completed" ? "Saving..." : "Completed"}
                   </button>
@@ -226,11 +294,44 @@ export default function RecruiterTasksPanel({ recruiterId }) {
                     type="button"
                     className="btn-secondary"
                     onClick={() => handleStatusUpdate("rejected")}
-                    disabled={busyAction !== "" || selectedTask.status !== "pending"}
+                    disabled={
+                      busyAction !== "" ||
+                      selectedTask.status !== "pending" ||
+                      !selectedTask.isActionableToday
+                    }
                   >
                     {busyAction === "rejected" ? "Saving..." : "Reject Task"}
                   </button>
                 </div>
+                {selectedTask.status === "pending" ? (
+                  <div className="recruiter-task-reschedule-box">
+                    <div className="recruiter-task-reschedule-copy">
+                      <h4>Reschedule task</h4>
+                      <p className="admin-muted">
+                        Move this task to a future date. The next action will be
+                        allowed only on that selected day.
+                      </p>
+                    </div>
+                    <div className="recruiter-task-reschedule-form">
+                      <input
+                        type="date"
+                        value={rescheduleDate}
+                        onChange={(event) => setRescheduleDate(event.target.value)}
+                        disabled={busyAction !== ""}
+                      />
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleReschedule}
+                        disabled={busyAction !== "" || !rescheduleDate}
+                      >
+                        {busyAction === "reschedule"
+                          ? "Saving..."
+                          : "Reschedule"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {selectedTask.status === "timed_out" ? (
                   <p className="admin-muted">
                     This task timed out because no action was taken by the end of

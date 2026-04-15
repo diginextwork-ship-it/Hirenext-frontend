@@ -414,6 +414,7 @@ export default function AdminTasks({ setCurrentPage }) {
                       <th>RID</th>
                       <th>Assigned day</th>
                       <th>Status</th>
+                      <th>Rescheduled</th>
                       <th>Assigned at</th>
                       <th>Action time</th>
                     </tr>
@@ -440,6 +441,35 @@ export default function AdminTasks({ setCurrentPage }) {
                           >
                             {STATUS_LABELS[assignment.status] || assignment.status}
                           </span>
+                          {assignment.isScheduledForFuture ? (
+                            <div className="admin-muted" style={{ marginTop: "0.35rem" }}>
+                              Action unlocks on{" "}
+                              {formatDateOnly(assignment.assignmentDate)}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td>
+                          {assignment.rescheduledAt ? (
+                            <div className="admin-cell-stack">
+                              <span>
+                                {assignment.rescheduledFromDate
+                                  ? `${formatDateOnly(
+                                      assignment.rescheduledFromDate,
+                                    )} to ${formatDateOnly(
+                                      assignment.assignmentDate,
+                                    )}`
+                                  : formatDateOnly(assignment.assignmentDate)}
+                              </span>
+                              <span className="admin-muted">
+                                {assignment.rescheduledByName ||
+                                  assignment.rescheduledByRid ||
+                                  "Updated"}{" "}
+                                on {formatDateTime(assignment.rescheduledAt)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="admin-muted">Not rescheduled</span>
+                          )}
                         </td>
                         <td>{formatDateTime(assignment.assignedAt)}</td>
                         <td>{formatDateTime(assignment.actedAt)}</td>
