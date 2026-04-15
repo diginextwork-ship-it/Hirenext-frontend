@@ -5,7 +5,10 @@ import {
   getAdminHeaders,
   readJsonResponse,
 } from "./adminApi";
-import { normalizeResumeData } from "../../utils/dashboardData";
+import {
+  formatResumeCompanyDisplay,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
 
 const formatDateTime = (value) => {
@@ -112,15 +115,14 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           const normalized = normalizeResumeData(item);
           return {
             ...normalized,
-            applicantName:
-              normalized.applicantName ||
-              normalized.candidateName ||
-              normalized.name ||
-              "N/A",
+              applicantName:
+                normalized.applicantName ||
+                normalized.candidateName ||
+                normalized.name ||
+                "N/A",
             job: {
               ...normalized.job,
-              companyName:
-                normalized.companyName || normalized.job?.companyName || "",
+              companyName: formatResumeCompanyDisplay(normalized),
             },
             atsScore: pickFirstValue(
               normalized.atsScore,
@@ -318,7 +320,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         resume.candidateName ||
                         "Name not found"}
                     </td>
-                    <td>{resume.job?.companyName || "N/A"}</td>
+                    <td>{formatResumeCompanyDisplay(resume) || "N/A"}</td>
                     <td>{resume.city || resume.job?.city || "N/A"}</td>
                     <td>
                       <span className="admin-stat-pill">

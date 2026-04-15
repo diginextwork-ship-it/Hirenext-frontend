@@ -7,7 +7,10 @@ import {
 } from "../../services/performanceService";
 import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
-import { normalizeResumeData } from "../../utils/dashboardData";
+import {
+  formatResumeCompanyDisplay,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
@@ -18,7 +21,7 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString();
 };
 const getResumeCompanyName = (resume) =>
-  normalizeResumeData(resume).companyName || "N/A";
+  formatResumeCompanyDisplay(resume);
 const getResumeCityName = (resume) =>
   normalizeResumeData(resume).city || "N/A";
 const getResumeCandidateName = (resume) =>

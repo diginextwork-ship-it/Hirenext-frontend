@@ -3,6 +3,7 @@ import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import {
   buildCandidatePayloadAliases,
+  formatResumeCompanyDisplay,
   normalizeJobData,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -22,10 +23,7 @@ const formatDate = (value) => {
   return date.toLocaleDateString();
 };
 const getResumeCompanyName = (resume, selectedJob) =>
-  normalizeResumeData(resume, selectedJob).companyName ||
-  selectedJob?.companyName ||
-  selectedJob?.company_name ||
-  "N/A";
+  formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>
   normalizeResumeData(resume, selectedJob).city || selectedJob?.city || "N/A";
 

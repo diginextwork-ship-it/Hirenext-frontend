@@ -2,11 +2,14 @@ import AdminLayout from "./AdminLayout";
 import useAdminDashboard from "./useAdminDashboard";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import { useState } from "react";
-import { normalizeResumeData } from "../../utils/dashboardData";
+import {
+  formatResumeCompanyDisplay,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
 
 const getResumeCompanyName = (item) =>
-  normalizeResumeData(item).companyName || "N/A";
+  formatResumeCompanyDisplay(item);
 const getResumeCityName = (item) =>
   normalizeResumeData(item).city || "N/A";
 

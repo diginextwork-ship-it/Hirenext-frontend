@@ -9,6 +9,7 @@ import {
 import { useNotification } from "../../context/NotificationContext";
 import {
   buildCandidatePayloadAliases,
+  formatResumeCompanyDisplay,
   normalizeJobData,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -32,10 +33,7 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString();
 };
 const getResumeCompanyName = (resume, selectedJob) =>
-  normalizeResumeData(resume, selectedJob).companyName ||
-  selectedJob?.companyName ||
-  selectedJob?.company_name ||
-  "N/A";
+  formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>
   normalizeResumeData(resume, selectedJob).city || selectedJob?.city || "N/A";
 const getResumeCandidatePhone = (resume, selectedJob) => {

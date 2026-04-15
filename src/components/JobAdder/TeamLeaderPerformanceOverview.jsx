@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAuthSession } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
-import { normalizeResumeData } from "../../utils/dashboardData";
+import {
+  formatResumeCompanyDisplay,
+  normalizeResumeData,
+} from "../../utils/dashboardData";
 import {
   fetchTeamLeaderPerformanceDashboard,
   rollbackJobResumeStatus,
@@ -737,12 +740,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       )}
                     </td>
                     <td>{item.jobJid ?? "N/A"}</td>
-                    <td>
-                      {item.companyName ||
-                        item.company_name ||
-                        item.job?.companyName ||
-                        "N/A"}
-                    </td>
+                    <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                     <td>{item.city || item.job?.city || "N/A"}</td>
                     <td>
                       <button

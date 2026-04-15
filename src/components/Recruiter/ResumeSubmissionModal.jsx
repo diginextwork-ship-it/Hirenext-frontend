@@ -22,6 +22,8 @@ const initialFormState = {
   phone: "",
   email: "",
   candidate_location: "",
+  office_location_option: "jd",
+  office_location_city: "",
   source: "",
   latest_education_level: "",
   board_university: "",
@@ -293,6 +295,13 @@ export default function ResumeSubmissionModal({
       }
 
       const jid = String(jobId || "").trim();
+      const officeLocationCity = String(
+        formData.office_location_option === "manual" ? formData.office_location_city : "",
+      ).trim();
+      if (formData.office_location_option === "manual" && !officeLocationCity) {
+        setErrorMessage("Please enter the office city name.");
+        return;
+      }
       let currentResumeBase64 = resumeBase64;
       let currentParsedPayload = parsedPayload;
 
@@ -388,8 +397,11 @@ export default function ResumeSubmissionModal({
       const companyName = String(
         job?.company_name || data?.company_name || data?.companyName || "Unknown company",
       ).trim();
+      const companyDisplay = officeLocationCity
+        ? `${companyName}, ${officeLocationCity}`
+        : companyName;
       addNotification(
-        `Candidate submitted successfully for ${companyName}. Phone: ${candidatePhone || "N/A"}`,
+        `Candidate submitted successfully for ${companyDisplay}. Phone: ${candidatePhone || "N/A"}`,
         "success",
         5000,
       );
@@ -453,6 +465,39 @@ export default function ResumeSubmissionModal({
                 onChange={(event) => setField("candidate_location", event.target.value)}
               />
             </div>
+            <div className="resume-modal-field">
+              <label htmlFor="office_location_option">Office Location</label>
+              <select
+                id="office_location_option"
+                value={formData.office_location_option}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    office_location_option: nextValue,
+                    office_location_city:
+                      nextValue === "manual" ? prev.office_location_city : "",
+                  }));
+                }}
+                required
+              >
+                <option value="jd">Already specified in the JD</option>
+                <option value="manual">Enter manually</option>
+              </select>
+            </div>
+            {formData.office_location_option === "manual" ? (
+              <div className="resume-modal-field">
+                <label htmlFor="office_location_city">City Name</label>
+                <input
+                  id="office_location_city"
+                  type="text"
+                  placeholder="Enter office city"
+                  value={formData.office_location_city}
+                  onChange={(event) => setField("office_location_city", event.target.value)}
+                  required
+                />
+              </div>
+            ) : null}
             <select
               value={formData.source}
               onChange={(event) => setField("source", event.target.value)}

@@ -17,7 +17,11 @@ import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
-import { normalizeJobData, normalizeResumeData } from "../utils/dashboardData";
+import {
+  formatResumeCompanyDisplay,
+  normalizeJobData,
+  normalizeResumeData,
+} from "../utils/dashboardData";
 import { fetchWithRetry } from "../utils/network";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
@@ -71,11 +75,7 @@ const toUiJob = (job) => ({
   recruiterCount: Number(job.recruiterCount) || 0,
 });
 const getResumeCompanyName = (item) =>
-  item?.companyName ||
-  item?.company_name ||
-  item?.job?.companyName ||
-  item?.job?.company_name ||
-  "N/A";
+  formatResumeCompanyDisplay(item);
 const getResumeCityName = (item) =>
   item?.city || item?.job?.city || item?.jobCity || "N/A";
 const INITIAL_VISIBLE_APPLICATIONS = 5;

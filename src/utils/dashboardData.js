@@ -374,6 +374,8 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   );
   const city = pickFirst(
     pickNested(source, [
+      "officeLocationCity",
+      "office_location_city",
       "city",
       "jobCity",
       "job_city",
@@ -390,6 +392,15 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       "job.location",
     ]),
     nestedJob.city,
+  );
+  const officeLocationCity = pickFirst(
+    pickNested(source, [
+      "officeLocationCity",
+      "office_location_city",
+      "manualOfficeLocationCity",
+      "manual_office_location_city",
+    ]),
+    pickNested(nestedJob, ["officeLocationCity", "office_location_city"]),
   );
   const normalizedJob = {
     ...nestedJob,
@@ -443,9 +454,30 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     company_name: pickFirst(source.company_name, companyName),
     roleName: pickFirst(source.roleName, roleName),
     role_name: pickFirst(source.role_name, roleName),
-    city: pickFirst(source.city, city),
+    officeLocationCity: pickFirst(source.officeLocationCity, officeLocationCity),
+    office_location_city: pickFirst(source.office_location_city, officeLocationCity),
+    city: pickFirst(source.city, officeLocationCity, city),
     job: normalizedJob,
   };
+};
+
+export const formatResumeCompanyDisplay = (resume, fallbackJob = null) => {
+  const normalized = normalizeResumeData(resume, fallbackJob);
+  const companyName = pickFirst(
+    normalized.companyName,
+    normalized.company_name,
+    normalized.job?.companyName,
+    normalized.job?.company_name,
+  );
+  const officeLocationCity = pickFirst(
+    normalized.officeLocationCity,
+    normalized.office_location_city,
+  );
+
+  if (!companyName) return "N/A";
+  if (!officeLocationCity) return companyName;
+
+  return `${companyName}, ${officeLocationCity}`;
 };
 
 export const buildCandidatePayloadAliases = (resume, fallbackJob = null) => {

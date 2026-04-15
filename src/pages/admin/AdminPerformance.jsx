@@ -12,6 +12,7 @@ import {
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
+  formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
 import "../../styles/admin-panel.css";
@@ -623,6 +624,10 @@ export default function AdminPerformance({ setCurrentPage }) {
             candidatePhone: normalized.candidatePhone || null,
             jobJid: normalized.jobJid ?? "N/A",
             companyName: normalized.companyName || null,
+            officeLocationCity:
+              normalized.officeLocationCity ||
+              normalized.office_location_city ||
+              null,
             city: normalized.city || null,
             resumeFilename:
               normalized.resumeFilename || normalized.resId || "View resume",
@@ -1541,12 +1546,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           )}
                         </td>
                         <td>{item.jobJid ?? "N/A"}</td>
-                        <td>
-                          {item.companyName ||
-                            item.company_name ||
-                            item.job?.companyName ||
-                            "N/A"}
-                        </td>
+                        <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                         <td>{item.city || item.job?.city || "N/A"}</td>
                         <td>
                           <button
@@ -1888,12 +1888,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           )}
                         </td>
                         <td>{item.jobJid ?? "N/A"}</td>
-                        <td>
-                          {item.companyName ||
-                            item.company_name ||
-                            item.job?.companyName ||
-                            "N/A"}
-                        </td>
+                        <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                         <td>{item.city || item.job?.city || "N/A"}</td>
                         <td>
                           <button
