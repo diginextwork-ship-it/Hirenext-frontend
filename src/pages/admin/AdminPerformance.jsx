@@ -8,6 +8,7 @@ import {
   adminRollbackStatus,
   adminDeleteRecruiter,
   adminUpdateRecruiterAccountStatus,
+  updateTeamLeaderNote,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
 import {
@@ -477,6 +478,8 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionModalItem, setActionModalItem] = useState(null);
   const [actionTarget, setActionTarget] = useState("");
   const [actionReason, setActionReason] = useState("");
+  const [actionContacted, setActionContacted] = useState("Yes");
+  const [actionSituation, setActionSituation] = useState("");
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionRevenue, setActionRevenue] = useState("");
@@ -1079,6 +1082,8 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionModalItem(item);
     setActionTarget(targetStatus);
     setActionReason("");
+    setActionContacted("Yes");
+    setActionSituation("");
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
@@ -1091,6 +1096,8 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionModalItem(null);
     setActionTarget("");
     setActionReason("");
+    setActionContacted("Yes");
+    setActionSituation("");
     setActionJoiningDate("");
     setActionJoiningNote("");
     setActionRevenue("");
@@ -1215,6 +1222,17 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionSubmitting(true);
     setActionError("");
     try {
+      if (actionTarget === "walk_in" && actionContacted === "No") {
+        await updateTeamLeaderNote(
+          actionModalItem.resId,
+          `[Not Contacted] ${actionSituation}`
+        );
+        closeActionModal();
+        await fetchPerformance();
+        await fetchSubmittedResumes();
+        return;
+      }
+
       const payload =
         actionTarget === "billed" && actionAttachmentFile
           ? buildBilledFormData(actionModalItem, actionAttachmentFile)
@@ -1869,7 +1887,17 @@ export default function AdminPerformance({ setCurrentPage }) {
                         rowActionState.availableActions.length > 0 ||
                         rowActionState.canRollback;
                       return (
-                      <tr key={`${selectedStatusKey}-${item.resId}`}>
+                      <tr
+                        key={`${selectedStatusKey}-${item.resId}`}
+                        style={{
+                          backgroundColor:
+                            selectedStatusKey === "verified" &&
+                            item.verifiedReason &&
+                            item.verifiedReason.includes("[Not Contacted]")
+                              ? "lightpink"
+                              : "inherit",
+                        }}
+                      >
                         <td>
                           <strong>{getCandidateDisplayName(item)}</strong>
                         </td>
@@ -2556,6 +2584,87 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </p>
                 </div>
               </>
+            ) : actionTarget === "walk_in" ? (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Contacted to the candidate?
+                  </label>
+                  <select
+                    value={actionContacted}
+                    onChange={(e) => setActionContacted(e.target.value)}
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                {actionContacted === "No" ? (
+                  <div style={{ marginBottom: "10px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontWeight: 600,
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Describe the situation
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={actionSituation}
+                      onChange={(e) => setActionSituation(e.target.value)}
+                      placeholder="Describe what happened..."
+                      disabled={actionSubmitting}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        borderRadius: "4px",
+                        border: "1px solid #ccc",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: "10px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontWeight: 600,
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Walk-in Reason (optional)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={actionReason}
+                      onChange={(e) => setActionReason(e.target.value)}
+                      placeholder="Enter reason..."
+                      disabled={actionSubmitting}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        borderRadius: "4px",
+                        border: "1px solid #ccc",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             ) : (
               <div style={{ marginBottom: "10px" }}>
                 <label
@@ -2573,9 +2682,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         ? "Shortlist Reason (optional)"
                         : actionTarget === "selected"
                         ? "Selection Reason (optional)"
-                        : actionTarget === "walk_in"
-                          ? "Walk-in Reason (optional)"
-                          : actionTarget === "dropout"
+                        : actionTarget === "dropout"
                             ? "Dropout Reason (optional)"
                             : actionTarget === "left"
                               ? "Reason for Leaving (optional)"
