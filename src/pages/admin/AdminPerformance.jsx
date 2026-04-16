@@ -336,15 +336,23 @@ function matchesCandidateSearch(item, searchValue) {
   if (!normalizedSearch) return true;
 
   const candidateName = getCandidateDisplayName(item);
-  let matchesName = false;
   if (candidateName !== "N/A" && normalizeLookupKey(candidateName).includes(normalizedSearch)) {
-    matchesName = true;
+    return true;
   }
 
-  return matchesName || [
-    item?.candidatePhone,
-    item?.phone,
-  ].some((value) => normalizeLookupKey(value).includes(normalizedSearch));
+  const digitsOnlySearch = normalizedSearch.replace(/\D/g, "");
+  if (digitsOnlySearch) {
+    const phones = [item?.candidatePhone, item?.phone].map((p) =>
+      String(p || "").replace(/\D/g, ""),
+    );
+    if (phones.some((p) => p.includes(digitsOnlySearch))) {
+      return true;
+    }
+  }
+
+  return [item?.candidatePhone, item?.phone].some((value) =>
+    normalizeLookupKey(value).includes(normalizedSearch),
+  );
 }
 
 function matchesPersonStatusItem(item, person, roleLabel) {
@@ -987,43 +995,29 @@ export default function AdminPerformance({ setCurrentPage }) {
     [recruiterEntrySearch, selectedStatusItems],
   );
   const visibleSummary = useMemo(() => {
-    if (!normalizeLookupKey(recruiterEntrySearch)) {
-      return summary;
-    }
+    const isSearchEmpty = !normalizeLookupKey(recruiterEntrySearch);
+
+    const getCount = (key) => {
+      const items = statusItemsByStatus[key] || [];
+      if (isSearchEmpty) return items.length;
+      return items.filter((item) =>
+        matchesCandidateSearch(item, recruiterEntrySearch),
+      ).length;
+    };
 
     return {
-      totalSubmitted: (statusItemsByStatus.submitted || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalVerified: (statusItemsByStatus.verified || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalWalkIn: (statusItemsByStatus.walk_in || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalShortlisted: (statusItemsByStatus.shortlisted || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalSelected: (statusItemsByStatus.selected || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalRejected: (statusItemsByStatus.rejected || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalJoined: (statusItemsByStatus.joined || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalDropout: (statusItemsByStatus.dropout || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalBilled: (statusItemsByStatus.billed || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
-      totalLeft: (statusItemsByStatus.left || []).filter((item) =>
-        matchesCandidateSearch(item, recruiterEntrySearch),
-      ).length,
+      totalSubmitted: getCount("submitted"),
+      totalVerified: getCount("verified"),
+      totalWalkIn: getCount("walk_in"),
+      totalShortlisted: getCount("shortlisted"),
+      totalSelected: getCount("selected"),
+      totalRejected: getCount("rejected"),
+      totalJoined: getCount("joined"),
+      totalDropout: getCount("dropout"),
+      totalBilled: getCount("billed"),
+      totalLeft: getCount("left"),
     };
-  }, [recruiterEntrySearch, statusItemsByStatus, summary]);
+  }, [recruiterEntrySearch, statusItemsByStatus]);
 
   const selectedRecruiterStatusItems = useMemo(() => {
     const items = statusItemsByStatus[selectedStatusKey] || [];

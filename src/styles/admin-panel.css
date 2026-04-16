@@ -140,6 +140,10 @@
   min-width: 0;
 }
 
+.admin-page-body > * {
+  min-width: 0;
+}
+
 .admin-page-actions {
   display: flex;
   flex-direction: column;
@@ -1780,10 +1784,6 @@
   .admin-dashboard-card {
     padding: 1rem;
     border-radius: 0.85rem;
-  }
-
-  .admin-page-body > * {
-    min-width: 0;
   }
 
   .admin-page-actions {
