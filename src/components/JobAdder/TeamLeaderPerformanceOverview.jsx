@@ -704,8 +704,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
             <table className="admin-table admin-table-wide">
               <thead>
                 <tr>
+                  <th>Candidate Name</th>
                   <th>Recruiter</th>
-                  <th>Team Leader</th>
                   <th>Contact Number</th>
                   <th>Job ID</th>
                   <th>Company Name</th>
@@ -713,17 +713,10 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>Resume File</th>
                   <th>Status</th>
                   {selectedStatusKey === "walk_in" ? <th>Walk-in Date</th> : null}
-                  {["dropout", "selected", "joined", "billed", "left"].includes(
-                    selectedStatusKey,
-                  ) ? (
-                    <th>
-                      {selectedStatusKey === "dropout"
-                        ? "Dropout Reason"
-                        : selectedStatusKey === "selected"
-                          ? "Joining Date"
-                          : "Joining Info"}
-                    </th>
+                  {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
+                    <th>Joining Date</th>
                   ) : null}
+                  <th>Note / Reason</th>
                   {hasAnyRowActions ? <th>Actions</th> : null}
                 </tr>
               </thead>
@@ -737,10 +730,12 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   return (
                   <tr key={`${selectedStatusKey}-${item.resId}`}>
                     <td>
+                      <strong>{getCandidateDisplayName(item)}</strong>
+                    </td>
+                    <td>
                       <strong>{item.recruiterName || "N/A"}</strong>
                       <div className="admin-muted">{item.recruiterRid || "N/A"}</div>
                     </td>
-                    <td>{item.teamLeaderName || "N/A"}</td>
                     <td>
                       {item.candidatePhone || item.phone ? (
                         <a href={`tel:${item.candidatePhone || item.phone}`}>
@@ -766,33 +761,24 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                     {selectedStatusKey === "walk_in" ? (
                       <td>{formatDate(item.walkInDate)}</td>
                     ) : null}
-                    {["dropout", "selected", "joined", "billed", "left"].includes(
-                      selectedStatusKey,
-                    ) ? (
-                      <td>
-                        {selectedStatusKey === "dropout" ? (
-                          item.dropoutReason || item.reason || "Not set"
-                        ) : selectedStatusKey === "selected" ? (
-                          formatDate(item.joiningDate)
-                        ) : item.joiningDate || item.joiningNote || item.joinedReason ? (
-                          <>
-                            {item.joiningDate ? (
-                              <div>
-                                <strong>Date:</strong> {formatDate(item.joiningDate)}
-                              </div>
-                            ) : null}
-                            {item.joiningNote || item.joinedReason ? (
-                              <div>
-                                <strong>Note:</strong>{" "}
-                                {item.joiningNote || item.joinedReason}
-                              </div>
-                            ) : null}
-                          </>
-                        ) : (
-                          "Not set"
-                        )}
-                      </td>
+                    {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
+                      <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
                     ) : null}
+                    <td>
+                      {item.note ||
+                       item.reason ||
+                       item.verifiedReason ||
+                       item.walkInReason ||
+                       item.shortlistedReason ||
+                       item.selectReason ||
+                       item.joiningNote ||
+                       item.joinedReason ||
+                       item.dropoutReason ||
+                       item.rejectReason ||
+                       item.billedReason ||
+                       item.leftReason ||
+                       "N/A"}
+                    </td>
                     {hasAnyRowActions ? (
                       <td>
                         {rowHasActions ? (
