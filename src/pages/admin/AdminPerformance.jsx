@@ -330,15 +330,19 @@ function normalizeLookupKey(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function matchesRecruiterEntrySearch(item, searchValue) {
+function matchesCandidateSearch(item, searchValue) {
   const normalizedSearch = normalizeLookupKey(searchValue);
   if (!normalizedSearch) return true;
 
-  return [
-    item?.recruiterName,
-    item?.recruiterRid,
-    item?.rid,
-    item?.recruiter?.name,
+  const candidateName = getCandidateDisplayName(item);
+  let matchesName = false;
+  if (candidateName !== "N/A" && normalizeLookupKey(candidateName).includes(normalizedSearch)) {
+    matchesName = true;
+  }
+
+  return matchesName || [
+    item?.candidatePhone,
+    item?.phone,
   ].some((value) => normalizeLookupKey(value).includes(normalizedSearch));
 }
 
@@ -975,7 +979,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const filteredSelectedStatusItems = useMemo(
     () =>
       selectedStatusItems.filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ),
     [recruiterEntrySearch, selectedStatusItems],
   );
@@ -986,34 +990,34 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     return {
       totalSubmitted: (statusItemsByStatus.submitted || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalVerified: (statusItemsByStatus.verified || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalWalkIn: (statusItemsByStatus.walk_in || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalShortlisted: (statusItemsByStatus.shortlisted || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalSelected: (statusItemsByStatus.selected || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalRejected: (statusItemsByStatus.rejected || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalJoined: (statusItemsByStatus.joined || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalDropout: (statusItemsByStatus.dropout || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalBilled: (statusItemsByStatus.billed || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalLeft: (statusItemsByStatus.left || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
     };
   }, [recruiterEntrySearch, statusItemsByStatus, summary]);
@@ -1792,7 +1796,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               <input
                 type="text"
                 className="perf-search perf-search-wide"
-                placeholder="Search by recruiter name..."
+                placeholder="Search by candidate name or phone..."
                 value={recruiterEntrySearch}
                 onChange={(e) => setRecruiterEntrySearch(e.target.value)}
               />

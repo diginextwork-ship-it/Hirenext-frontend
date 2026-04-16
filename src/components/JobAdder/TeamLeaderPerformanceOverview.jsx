@@ -175,13 +175,30 @@ const getStatusRank = (status) => {
 
 const normalizeLookupKey = (value) => String(value || "").trim().toLowerCase();
 
-const matchesRecruiterEntrySearch = (item, searchValue) => {
+const getCandidateDisplayName = (item) => {
+  return (
+    item?.candidateName ||
+    item?.applicantName ||
+    item?.name ||
+    item?.fullName ||
+    "N/A"
+  );
+};
+
+const matchesCandidateSearch = (item, searchValue) => {
   const normalizedSearch = normalizeLookupKey(searchValue);
   if (!normalizedSearch) return true;
 
-  return [item?.recruiterName, item?.recruiterRid, item?.rid].some((value) =>
-    normalizeLookupKey(value).includes(normalizedSearch),
-  );
+  const candidateName = getCandidateDisplayName(item);
+  let matchesName = false;
+  if (candidateName !== "N/A" && normalizeLookupKey(candidateName).includes(normalizedSearch)) {
+    matchesName = true;
+  }
+
+  return matchesName || [
+    item?.candidatePhone,
+    item?.phone,
+  ].some((value) => normalizeLookupKey(value).includes(normalizedSearch));
 };
 
 const dedupeItemsByResId = (items) => {
@@ -385,7 +402,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   const filteredSelectedStatusItems = useMemo(
     () =>
       selectedStatusItems.filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ),
     [recruiterEntrySearch, selectedStatusItems],
   );
@@ -396,34 +413,34 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
     return {
       totalSubmitted: (statusItemsByStatus.submitted || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalVerified: (statusItemsByStatus.verified || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalWalkIn: (statusItemsByStatus.walk_in || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalShortlisted: (statusItemsByStatus.shortlisted || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalSelected: (statusItemsByStatus.selected || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalRejected: (statusItemsByStatus.rejected || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalJoined: (statusItemsByStatus.joined || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalDropout: (statusItemsByStatus.dropout || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalBilled: (statusItemsByStatus.billed || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
       totalLeft: (statusItemsByStatus.left || []).filter((item) =>
-        matchesRecruiterEntrySearch(item, recruiterEntrySearch),
+        matchesCandidateSearch(item, recruiterEntrySearch),
       ).length,
     };
   }, [recruiterEntrySearch, statusItemsByStatus, summary]);
@@ -650,7 +667,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           <input
             type="text"
             className="perf-search perf-search-wide"
-            placeholder="Search by recruiter name..."
+            placeholder="Search by candidate name or phone..."
             value={recruiterEntrySearch}
             onChange={(event) => setRecruiterEntrySearch(event.target.value)}
           />
