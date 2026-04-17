@@ -306,6 +306,27 @@ function getCandidateDisplayName(item) {
   );
 }
 
+function getLatestPerformanceNote(item) {
+  return (
+    item?.latestNote ||
+    item?.note ||
+    item?.reason ||
+    item?.selectionNote ||
+    item?.submittedReason ||
+    item?.verifiedReason ||
+    item?.walkInReason ||
+    item?.shortlistedReason ||
+    item?.selectReason ||
+    item?.joiningNote ||
+    item?.joinedReason ||
+    item?.dropoutReason ||
+    item?.rejectReason ||
+    item?.billedReason ||
+    item?.leftReason ||
+    "N/A"
+  );
+}
+
 function normalizeStatus(value) {
   const normalized = String(value || "")
     .trim()
@@ -1922,19 +1943,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
                         )}
                         <td>
-                          {item.note ||
-                           item.reason ||
-                           item.verifiedReason ||
-                           item.walkInReason ||
-                           item.shortlistedReason ||
-                           item.selectReason ||
-                           item.joiningNote ||
-                           item.joinedReason ||
-                           item.dropoutReason ||
-                           item.rejectReason ||
-                           item.billedReason ||
-                           item.leftReason ||
-                           "N/A"}
+                          {getLatestPerformanceNote(item)}
                         </td>
                         {hasAnyRowActions && (
                           <td>
