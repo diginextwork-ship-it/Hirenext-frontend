@@ -321,12 +321,6 @@ function normalizeStatus(value) {
   return normalized;
 }
 
-function formatAccountStatusLabel(status) {
-  return String(status || "").trim().toLowerCase() === "inactive"
-    ? "Deactivated"
-    : "Active";
-}
-
 function normalizeLookupKey(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -642,6 +636,8 @@ export default function AdminPerformance({ setCurrentPage }) {
             ...normalized,
             recruiterName: normalized.recruiterName || "N/A",
             recruiterRid: normalized.rid || "N/A",
+            teamLeaderRid:
+              item.teamLeaderRid || item.team_leader_rid || null,
             teamLeaderName:
               item.teamLeaderName || item.team_leader_name || "N/A",
             candidatePhone: normalized.candidatePhone || null,
@@ -727,30 +723,14 @@ export default function AdminPerformance({ setCurrentPage }) {
     [data?.teamLeaders, selectedTeamLeaderRid],
   );
 
-  const statusDrilldown = data?.statusDrilldown || {};
-  const selectedTeamLeaderMetrics = useMemo(() => {
-    if (!selectedTeamLeader) return null;
-    return (
-      teamLeaderMetricMap.get(selectedTeamLeader.rid) || {
-        submitted: 0,
-        verified: 0,
-        walk_in: 0,
-        shortlisted: 0,
-        selected: 0,
-        rejected: 0,
-        joined: 0,
-        dropout: 0,
-        billed: 0,
-        left: 0,
-        on_hold: 0,
-        points: Number(selectedTeamLeader.points) || 0,
-      }
-    );
-  }, [selectedTeamLeader, teamLeaderMetricMap]);
-  const performanceSubmittedItems =
-    statusDrilldown?.submitted && Array.isArray(statusDrilldown.submitted)
-      ? statusDrilldown.submitted
-      : [];
+  const statusDrilldown = useMemo(() => data?.statusDrilldown || {}, [data]);
+  const performanceSubmittedItems = useMemo(
+    () =>
+      statusDrilldown?.submitted && Array.isArray(statusDrilldown.submitted)
+        ? statusDrilldown.submitted
+        : [],
+    [statusDrilldown],
+  );
   const latestStatusByResId = useMemo(() => {
     const map = new Map();
     const getResId = (item) =>
@@ -971,6 +951,25 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     return map;
   }, [data?.teamLeaders, statusItemsByStatus]);
+  const selectedTeamLeaderMetrics = useMemo(() => {
+    if (!selectedTeamLeader) return null;
+    return (
+      teamLeaderMetricMap.get(selectedTeamLeader.rid) || {
+        submitted: 0,
+        verified: 0,
+        walk_in: 0,
+        shortlisted: 0,
+        selected: 0,
+        rejected: 0,
+        joined: 0,
+        dropout: 0,
+        billed: 0,
+        left: 0,
+        on_hold: 0,
+        points: Number(selectedTeamLeader.points) || 0,
+      }
+    );
+  }, [selectedTeamLeader, teamLeaderMetricMap]);
   const drilldownKey = selectedStatusKey;
   const selectedStatusItems = useMemo(() => {
     const items = statusItemsByStatus[drilldownKey] || [];
@@ -1379,11 +1378,6 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const openDeleteModal = (item) => {
-    setDeleteTarget(item);
-    setDeleteError("");
-  };
-
   const closeDeleteModal = () => {
     if (deleteDeleting) return;
     setDeleteTarget(null);
@@ -1403,16 +1397,6 @@ export default function AdminPerformance({ setCurrentPage }) {
     } finally {
       setDeleteDeleting(false);
     }
-  };
-
-  const openStatusModal = (person, nextStatus) => {
-    setStatusTarget({
-      rid: person?.rid,
-      name: person?.name,
-      role: person?.role,
-      nextStatus,
-    });
-    setStatusError("");
   };
 
   const closeStatusModal = () => {
