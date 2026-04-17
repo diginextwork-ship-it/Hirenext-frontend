@@ -368,6 +368,14 @@ function matchesPersonStatusItem(item, person, roleLabel) {
   }
 
   if (normalizedRole === "team leader") {
+    const itemTeamLeaderRid = normalizeLookupKey(
+      item?.teamLeaderRid || item?.team_leader_rid,
+    );
+    const personRid = normalizeLookupKey(person?.rid);
+    if (itemTeamLeaderRid && personRid) {
+      return itemTeamLeaderRid === personRid;
+    }
+
     return normalizeLookupKey(item?.teamLeaderName) === normalizeLookupKey(person?.name);
   }
 
@@ -719,66 +727,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     [data?.teamLeaders, selectedTeamLeaderRid],
   );
 
-  const summary = data?.summary || {};
   const statusDrilldown = data?.statusDrilldown || {};
-  const teamLeaderMetricMap = useMemo(() => {
-    const baseMetrics = () => ({
-      submitted: 0,
-      verified: 0,
-      walk_in: 0,
-      shortlisted: 0,
-      selected: 0,
-      rejected: 0,
-      joined: 0,
-      dropout: 0,
-      billed: 0,
-      left: 0,
-      on_hold: 0,
-      points: 0,
-    });
-
-    const teamLeaders = data?.teamLeaders || [];
-    const map = new Map();
-    const teamLeaderByName = new Map();
-
-    for (const teamLeader of teamLeaders) {
-      map.set(teamLeader.rid, {
-        ...baseMetrics(),
-        points: Number(teamLeader.points) || 0,
-      });
-      teamLeaderByName.set(normalizeLookupKey(teamLeader.name), teamLeader);
-    }
-
-    const incrementFromBucket = (bucketKey, items) => {
-      if (!Array.isArray(items)) return;
-      for (const item of items) {
-        const matchedTeamLeader = teamLeaderByName.get(
-          normalizeLookupKey(item?.teamLeaderName),
-        );
-        if (!matchedTeamLeader) continue;
-        const current = map.get(matchedTeamLeader.rid) || {
-          ...baseMetrics(),
-          points: Number(matchedTeamLeader.points) || 0,
-        };
-        current[bucketKey] = (Number(current[bucketKey]) || 0) + 1;
-        current.points = Number(matchedTeamLeader.points) || 0;
-        map.set(matchedTeamLeader.rid, current);
-      }
-    };
-
-    incrementFromBucket("submitted", statusDrilldown.submitted);
-    incrementFromBucket("verified", statusDrilldown.verified);
-    incrementFromBucket("walk_in", statusDrilldown.walk_in);
-    incrementFromBucket("shortlisted", statusDrilldown.shortlisted);
-    incrementFromBucket("selected", statusDrilldown.selected);
-    incrementFromBucket("rejected", statusDrilldown.rejected);
-    incrementFromBucket("joined", statusDrilldown.joined);
-    incrementFromBucket("dropout", statusDrilldown.dropout);
-    incrementFromBucket("billed", statusDrilldown.billed);
-    incrementFromBucket("left", statusDrilldown.left);
-
-    return map;
-  }, [data?.teamLeaders, statusDrilldown]);
   const selectedTeamLeaderMetrics = useMemo(() => {
     if (!selectedTeamLeader) return null;
     return (
@@ -879,6 +828,12 @@ export default function AdminPerformance({ setCurrentPage }) {
 
         return {
           ...normalized,
+          teamLeaderRid:
+            item?.teamLeaderRid ||
+            item?.team_leader_rid ||
+            normalized?.teamLeaderRid ||
+            normalized?.team_leader_rid ||
+            null,
           teamLeaderName,
           resId,
           status: effectiveStatus,
@@ -953,6 +908,69 @@ export default function AdminPerformance({ setCurrentPage }) {
     statusDrilldown,
     submittedResumes,
   ]);
+  const teamLeaderMetricMap = useMemo(() => {
+    const baseMetrics = () => ({
+      submitted: 0,
+      verified: 0,
+      walk_in: 0,
+      shortlisted: 0,
+      selected: 0,
+      rejected: 0,
+      joined: 0,
+      dropout: 0,
+      billed: 0,
+      left: 0,
+      on_hold: 0,
+      points: 0,
+    });
+
+    const teamLeaders = data?.teamLeaders || [];
+    const map = new Map();
+    const teamLeaderByRid = new Map();
+    const teamLeaderByName = new Map();
+
+    for (const teamLeader of teamLeaders) {
+      map.set(teamLeader.rid, {
+        ...baseMetrics(),
+        points: Number(teamLeader.points) || 0,
+      });
+      teamLeaderByRid.set(normalizeLookupKey(teamLeader.rid), teamLeader);
+      teamLeaderByName.set(normalizeLookupKey(teamLeader.name), teamLeader);
+    }
+
+    const incrementFromBucket = (bucketKey, items) => {
+      if (!Array.isArray(items)) return;
+      for (const item of items) {
+        const matchedTeamLeader =
+          teamLeaderByRid.get(
+            normalizeLookupKey(item?.teamLeaderRid || item?.team_leader_rid),
+          ) ||
+          teamLeaderByName.get(normalizeLookupKey(item?.teamLeaderName));
+        if (!matchedTeamLeader) continue;
+
+        const current = map.get(matchedTeamLeader.rid) || {
+          ...baseMetrics(),
+          points: Number(matchedTeamLeader.points) || 0,
+        };
+        current[bucketKey] = (Number(current[bucketKey]) || 0) + 1;
+        current.points = Number(matchedTeamLeader.points) || 0;
+        map.set(matchedTeamLeader.rid, current);
+      }
+    };
+
+    incrementFromBucket("submitted", statusItemsByStatus.submitted);
+    incrementFromBucket("verified", statusItemsByStatus.verified);
+    incrementFromBucket("walk_in", statusItemsByStatus.walk_in);
+    incrementFromBucket("shortlisted", statusItemsByStatus.shortlisted);
+    incrementFromBucket("selected", statusItemsByStatus.selected);
+    incrementFromBucket("rejected", statusItemsByStatus.rejected);
+    incrementFromBucket("joined", statusItemsByStatus.joined);
+    incrementFromBucket("dropout", statusItemsByStatus.dropout);
+    incrementFromBucket("billed", statusItemsByStatus.billed);
+    incrementFromBucket("left", statusItemsByStatus.left);
+
+    return map;
+  }, [data?.teamLeaders, statusItemsByStatus]);
   const drilldownKey = selectedStatusKey;
   const selectedStatusItems = useMemo(() => {
     const items = statusItemsByStatus[drilldownKey] || [];
