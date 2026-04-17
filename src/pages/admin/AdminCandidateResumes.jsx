@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
+  adminDeleteResume,
   getAdminHeaders,
   readJsonResponse,
 } from "./adminApi";
@@ -53,9 +54,11 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTERS.ALL);
   const [phoneSearch, setPhoneSearch] = useState("");
   const [citySearch, setCitySearch] = useState("");
+  const [deletingResId, setDeletingResId] = useState("");
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -193,6 +196,38 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     );
   };
 
+  const handleResumeDelete = async (resume) => {
+    const resId = String(resume?.resId || "").trim();
+    if (!resId) {
+      setErrorMessage("Resume ID is missing for this record.");
+      setSuccessMessage("");
+      return;
+    }
+
+    const candidateName =
+      resume?.applicantName || resume?.candidateName || "Unknown candidate";
+    const companyName = formatResumeCompanyDisplay(resume) || "Unknown company";
+    const shouldDelete = window.confirm(
+      `Delete this resume from the database?\n\nCandidate: ${candidateName}\nCompany: ${companyName}`,
+    );
+
+    if (!shouldDelete) return;
+
+    setDeletingResId(resId);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const data = await adminDeleteResume(resId);
+      await loadAllResumes();
+      setSuccessMessage(data?.message || "Resume deleted successfully.");
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to delete resume.");
+    } finally {
+      setDeletingResId("");
+    }
+  };
+
   return (
     <AdminLayout
       title="All Submitted Resumes"
@@ -209,6 +244,9 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         </button>
       }
     >
+      {successMessage ? (
+        <div className="admin-alert">{successMessage}</div>
+      ) : null}
       {errorMessage ? (
         <div className="admin-alert admin-alert-error">{errorMessage}</div>
       ) : null}
@@ -305,6 +343,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                   <th>Latest Status</th>
                   <th>Submitted At</th>
                   <th>Resume File</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,6 +399,20 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                             : ""}
                         </>
                       )}
+                    </td>
+                    <td>
+                      <div className="admin-actions-cell">
+                        <button
+                          type="button"
+                          className="admin-refresh-btn admin-delete-btn"
+                          onClick={() => handleResumeDelete(resume)}
+                          disabled={deletingResId === resume.resId}
+                        >
+                          {deletingResId === resume.resId
+                            ? "Deleting..."
+                            : "Delete"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -2336,6 +2336,16 @@
   white-space: nowrap;
 }
 
+.admin-candidate-resumes-table th:nth-child(8),
+.admin-candidate-resumes-table td:nth-child(8) {
+  min-width: 180px;
+}
+
+.admin-candidate-resumes-table th:nth-child(9),
+.admin-candidate-resumes-table td:nth-child(9) {
+  min-width: 150px;
+}
+
 .admin-candidate-status-badge {
   display: inline-flex;
   align-items: center;
@@ -2367,33 +2377,6 @@
   font-size: 0.82rem;
   line-height: 1.45;
   word-break: break-word;
-}
-
-.admin-candidate-resumes-table th:nth-child(11),
-.admin-candidate-resumes-table td:nth-child(11) {
-  min-width: 180px;
-}
-
-.admin-candidate-resumes-table th:nth-child(12),
-.admin-candidate-resumes-table td:nth-child(12) {
-  min-width: 160px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table th:nth-child(13),
-.admin-candidate-resumes-table td:nth-child(13) {
-  min-width: 120px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table th:nth-child(14),
-.admin-candidate-resumes-table td:nth-child(14) {
-  min-width: 220px;
-}
-
-.admin-candidate-resumes-table th:nth-child(15),
-.admin-candidate-resumes-table td:nth-child(15) {
-  min-width: 170px;
 }
 
 .admin-candidate-resumes-table .admin-job-cell {

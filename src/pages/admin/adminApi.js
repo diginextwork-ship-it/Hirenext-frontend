@@ -70,6 +70,13 @@ export const adminDeleteCandidate = async (resId) =>
     "Failed to delete candidate.",
   );
 
+export const adminDeleteResume = async (resId) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}`,
+    { method: "DELETE" },
+    "Failed to delete resume.",
+  );
+
 export const fetchAdminSalaryHistoryDetail = async (rid) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/salary-history`,
