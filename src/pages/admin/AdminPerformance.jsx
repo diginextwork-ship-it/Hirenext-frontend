@@ -113,6 +113,7 @@ const PERSON_METRIC_CARDS = [
 const ADMIN_ACTIONS_BY_STATUS = {
   submitted: [
     { value: "verified", label: "Verify", color: "#2563eb" },
+    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   verified: [
@@ -157,7 +158,7 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
 ]);
 
 const ALLOWED_TRANSITIONS = {
-  submitted: ["verified", "rejected"],
+  submitted: ["verified", "others", "rejected"],
   verified: ["walk_in", "others", "rejected"],
   others: ["walk_in", "rejected"],
   walk_in: ["shortlisted", "rejected"],
@@ -166,14 +167,25 @@ const ALLOWED_TRANSITIONS = {
   joined: ["billed", "left"],
 };
 
-const ROLLBACK_TARGET_STATUS = {
-  others: "verified",
-  verified: "submitted",
-  walk_in: "verified",
-  shortlisted: "walk_in",
-  selected: "shortlisted",
-  rejected: "verified",
-  joined: "selected",
+const resolveRollbackTargetStatus = (item) => {
+  const currentStatus = normalizeStatus(item?.status);
+  if (currentStatus === "others") {
+    return item?.verifiedReason ? "verified" : "submitted";
+  }
+  if (currentStatus === "walk_in") {
+    return item?.othersReason ? "others" : "verified";
+  }
+  if (currentStatus === "verified") return "submitted";
+  if (currentStatus === "shortlisted") return "walk_in";
+  if (currentStatus === "selected") return "shortlisted";
+  if (currentStatus === "rejected") {
+    if (item?.joiningDate) return "selected";
+    if (item?.walkInDate || item?.walkInReason) return "walk_in";
+    if (item?.othersReason) return "others";
+    return item?.verifiedReason ? "verified" : "submitted";
+  }
+  if (currentStatus === "joined") return "selected";
+  return null;
 };
 
 function toDateStr(d) {
@@ -1413,7 +1425,7 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     try {
       await adminRollbackStatus(item.resId);
-      const rollbackTarget = ROLLBACK_TARGET_STATUS[currentStatus];
+      const rollbackTarget = resolveRollbackTargetStatus(item);
       if (rollbackTarget) {
         setStatusOverrides((prev) => ({
           ...prev,

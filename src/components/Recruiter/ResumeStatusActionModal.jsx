@@ -43,6 +43,12 @@ export default function ResumeStatusActionModal({
     const normalized = String(currentStatus || "")
       .trim()
       .toLowerCase();
+    if (normalized === "submitted") {
+      return [
+        { value: "others", label: "Others", color: "info" },
+        { value: "rejected", label: "Reject", color: "danger" },
+      ];
+    }
     if (normalized === "verified") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },

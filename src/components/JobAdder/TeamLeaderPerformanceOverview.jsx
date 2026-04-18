@@ -36,6 +36,7 @@ const STATUS_CARDS = [
 const TEAM_LEADER_ACTIONS_BY_STATUS = {
   submitted: [
     { value: "verified", label: "Verify", color: "#2563eb" },
+    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   verified: [
