@@ -37,6 +37,7 @@ const getPointsProgressColor = (points) => {
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
+  others: 1,
   walk_in: 2,
   shortlisted: 3,
   selected: 4,
@@ -63,6 +64,7 @@ const mapStatusToFilter = (status) => {
   const normalized = normalizeStatusValue(status);
   if (normalized === "submitted") return "submitted";
   if (normalized === "verified") return "verified";
+  if (normalized === "others") return "others";
   if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
   if (
     normalized === "shortlisted" ||
@@ -101,6 +103,7 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [leftReason, setLeftReason] = useState("");
   const [leftSubmitting, setLeftSubmitting] = useState(false);
   const [leftError, setLeftError] = useState("");
+  const [rollbackSubmittingResId, setRollbackSubmittingResId] = useState("");
 
   const handleFilterChange = (field) => (event) => {
     const nextValue = event.target.value;
@@ -193,6 +196,28 @@ export default function RecruiterDashboard({ recruiterId }) {
       setStatusResumes([]);
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const handleRollbackOthers = async (resume) => {
+    const resId = String(resume?.resId || "").trim();
+    if (!resId) return;
+
+    setStatusError("");
+    setRollbackSubmittingResId(resId);
+    try {
+      await authFetch(
+        `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterId)}/resumes/${encodeURIComponent(resId)}/rollback-status`,
+        { method: "POST" },
+        "Failed to rollback resume status.",
+      );
+      const resumes = await fetchRecruiterResumes();
+      setStatusResumes(resumes);
+      refreshDashboardStats();
+    } catch (rollbackError) {
+      setStatusError(rollbackError.message || "Failed to rollback resume.");
+    } finally {
+      setRollbackSubmittingResId("");
     }
   };
 
@@ -401,6 +426,13 @@ export default function RecruiterDashboard({ recruiterId }) {
           onClick={() => handleStatusCardClick("verified")}
         />
         <PerformanceMetricCard
+          title="Others"
+          color="teal"
+          value={toDisplay(data.stats?.others)}
+          clickable
+          onClick={() => handleStatusCardClick("others")}
+        />
+        <PerformanceMetricCard
           title="Walk in"
           color="green"
           value={toDisplay(data.stats?.walk_in)}
@@ -523,7 +555,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                     <th>Submitted Reason</th>
                     <th>Verified Reason</th>
                     <th>
-                      {activeStatus === "walk_in"
+                      {activeStatus === "others"
+                        ? "Others Reason"
+                        : activeStatus === "walk_in"
                         ? "Walk In Reason"
                         : activeStatus === "shortlisted"
                           ? "Shortlist Reason"
@@ -554,7 +588,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                 <tbody>
                   {filteredStatusResumes.map((resume) => {
                     let currentReasonField = null;
-                    if (activeStatus === "walk_in") {
+                    if (activeStatus === "others") {
+                      currentReasonField = resume.othersReason;
+                    } else if (activeStatus === "walk_in") {
                       currentReasonField = resume.walkInReason;
                     } else if (activeStatus === "shortlisted") {
                       currentReasonField =
@@ -670,6 +706,23 @@ export default function RecruiterDashboard({ recruiterId }) {
                           >
                             Take Action
                           </button>
+                          {activeStatus === "others" ? (
+                            <button
+                              type="button"
+                              className="action-btn action-btn-warning"
+                              style={{ marginLeft: 6 }}
+                              onClick={() => handleRollbackOthers(resume)}
+                              disabled={
+                                rollbackSubmittingResId ===
+                                String(resume.resId || "")
+                              }
+                            >
+                              {rollbackSubmittingResId ===
+                              String(resume.resId || "")
+                                ? "Rolling back..."
+                                : "Rollback"}
+                            </button>
+                          ) : null}
                           {normalizeStatusValue(resume.workflowStatus) ===
                           "billed" ? (
                             <button

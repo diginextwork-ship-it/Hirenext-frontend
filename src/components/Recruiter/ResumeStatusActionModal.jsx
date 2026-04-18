@@ -46,6 +46,13 @@ export default function ResumeStatusActionModal({
     if (normalized === "verified") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },
+        { value: "others", label: "Others", color: "info" },
+        { value: "rejected", label: "Reject", color: "danger" },
+      ];
+    }
+    if (normalized === "others") {
+      return [
+        { value: "walk_in", label: "Walk In", color: "success" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
@@ -55,6 +62,7 @@ export default function ResumeStatusActionModal({
 
   const getReasonFieldLabel = () => {
     if (selectedAction === "walk_in") return "Walk In Reason";
+    if (selectedAction === "others") return "Others Reason";
     if (selectedAction === "selected") return "Selection Reason";
     if (selectedAction === "joined") return "Joining Reason";
     if (selectedAction === "dropout") return "Dropout Reason";
@@ -66,6 +74,11 @@ export default function ResumeStatusActionModal({
   const handleSubmitAction = async () => {
     if (!selectedAction) {
       setErrorMessage("Please select an action.");
+      return;
+    }
+
+    if (selectedAction === "others" && !additionalInfo.trim()) {
+      setErrorMessage("Please provide a reason for Others status.");
       return;
     }
 
@@ -93,7 +106,15 @@ export default function ResumeStatusActionModal({
             status: selectedAction,
             ...buildCandidatePayloadAliases(normalizedResume),
             ...(additionalInfo.trim()
-              ? { reason: additionalInfo.trim() }
+              ? {
+                  reason: additionalInfo.trim(),
+                  ...(selectedAction === "others"
+                    ? {
+                        othersReason: additionalInfo.trim(),
+                        others_reason: additionalInfo.trim(),
+                      }
+                    : {}),
+                }
               : {}),
             ...(selectedAction === "joined" && joiningDate
               ? { joining_date: joiningDate }
@@ -209,7 +230,8 @@ export default function ResumeStatusActionModal({
               {selectedAction && !showJoiningConfirm && (
                 <div className="form-group">
                   <label htmlFor="reason-input">
-                    {getReasonFieldLabel()} (optional)
+                    {getReasonFieldLabel()}
+                    {selectedAction === "others" ? " *" : " (optional)"}
                   </label>
                   <textarea
                     id="reason-input"
@@ -221,7 +243,9 @@ export default function ResumeStatusActionModal({
                     disabled={isSubmitting}
                   />
                   <small className="form-text-muted">
-                    This information will be saved for reference.
+                    {selectedAction === "others"
+                      ? "This reason is required and will be shown in the Others tab."
+                      : "This information will be saved for reference."}
                   </small>
                   {selectedAction === "walk_in" ? (
                     <small className="form-text-muted">
@@ -305,7 +329,10 @@ export default function ResumeStatusActionModal({
                 type="button"
                 className="btn-primary"
                 onClick={handleSubmitAction}
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  (selectedAction === "others" && !additionalInfo.trim())
+                }
               >
                 {isSubmitting
                   ? "Updating..."

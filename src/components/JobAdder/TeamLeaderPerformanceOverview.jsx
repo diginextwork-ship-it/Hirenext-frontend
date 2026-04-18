@@ -22,6 +22,7 @@ const PRESETS = {
 
 const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified", tone: "green" },
+  { key: "others", label: "Others", summaryKey: "totalOthers", tone: "teal" },
   { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn", tone: "green" },
   { key: "shortlisted", label: "Shortlisted", summaryKey: "totalShortlisted", tone: "blue" },
   { key: "selected", label: "Selected", summaryKey: "totalSelected", tone: "purple" },
@@ -38,6 +39,11 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   verified: [
+    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "others", label: "Others", color: "#0d9488" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  others: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
@@ -60,6 +66,7 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
 };
 
 const ROLLBACKABLE_STATUSES = new Set([
+  "others",
   "verified",
   "walk_in",
   "shortlisted",
@@ -74,6 +81,7 @@ const ROLLBACKABLE_STATUSES = new Set([
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
+  others: 1,
   walk_in: 2,
   shortlisted: 3,
   selected: 4,
@@ -369,6 +377,10 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         Array.isArray(statusDrilldown.verified) ? statusDrilldown.verified : [],
         "verified",
       ),
+      others: buildItems(
+        Array.isArray(statusDrilldown.others) ? statusDrilldown.others : [],
+        "others",
+      ),
       walk_in: buildItems(
         Array.isArray(statusDrilldown.walk_in) ? statusDrilldown.walk_in : [],
         "walk_in",
@@ -428,6 +440,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     return {
       totalSubmitted: getCount("submitted"),
       totalVerified: getCount("verified"),
+      totalOthers: getCount("others"),
       totalWalkIn: getCount("walk_in"),
       totalShortlisted: getCount("shortlisted"),
       totalSelected: getCount("selected"),
@@ -523,6 +536,14 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       } else if (actionTarget === "joined") {
         if (trimmedJoiningNote) payload.joinedReason = trimmedJoiningNote;
         else if (trimmedReason) payload.note = trimmedReason;
+      } else if (actionTarget === "others") {
+        if (!trimmedReason) {
+          throw new Error("A reason is required for Others status.");
+        }
+        payload.reason = trimmedReason;
+        payload.note = trimmedReason;
+        payload.othersReason = trimmedReason;
+        payload.others_reason = trimmedReason;
       } else if (trimmedReason) {
         payload.reason = trimmedReason;
         payload.note = trimmedReason;
@@ -768,6 +789,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       {item.note ||
                        item.reason ||
                        item.verifiedReason ||
+                       item.othersReason ||
                        item.walkInReason ||
                        item.shortlistedReason ||
                        item.selectReason ||
@@ -944,6 +966,37 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   }}
                 />
               </div>
+            ) : actionTarget === "others" ? (
+              <div style={{ marginBottom: 10 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: 600,
+                    marginBottom: 4,
+                  }}
+                >
+                  Others Reason <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={actionReason}
+                  onChange={(event) => setActionReason(event.target.value)}
+                  placeholder="Describe why this candidate is in Others status..."
+                  disabled={actionSubmitting}
+                  style={{
+                    width: "100%",
+                    padding: 8,
+                    borderRadius: 4,
+                    border: actionReason.trim() ? "1px solid #ccc" : "1px solid #dc2626",
+                    fontFamily: "inherit",
+                  }}
+                />
+                {!actionReason.trim() && (
+                  <p style={{ color: "#dc2626", margin: "4px 0 0", fontSize: "0.85em" }}>
+                    A reason is required for Others status.
+                  </p>
+                )}
+              </div>
             ) : ["rejected", "dropout", "left", "verified", "walk_in", "shortlisted", "billed"].includes(
                 actionTarget,
               ) ? (
@@ -998,6 +1051,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 onClick={handleAdvanceStatus}
                 disabled={
                   actionSubmitting ||
+                  (actionTarget === "others" && !actionReason.trim()) ||
                   (actionTarget === "selected" && !actionJoiningDate.trim())
                 }
               >

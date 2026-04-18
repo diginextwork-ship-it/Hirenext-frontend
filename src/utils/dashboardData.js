@@ -270,6 +270,10 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(source, ["verifiedReason", "verified_reason"]),
     pickNested(selection, ["verifiedReason", "verified_reason"]),
   );
+  const othersReason = pickFirst(
+    pickNested(source, ["othersReason", "others_reason"]),
+    pickNested(selection, ["othersReason", "others_reason"]),
+  );
   const walkInReason = pickFirst(
     pickNested(source, ["walkInReason", "walk_in_reason"]),
     pickNested(selection, ["walkInReason", "walk_in_reason"]),
@@ -434,6 +438,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     workflowStatus: pickFirst(source.workflowStatus, status),
     submittedReason: pickFirst(source.submittedReason, submittedReason),
     verifiedReason: pickFirst(source.verifiedReason, verifiedReason),
+    othersReason: pickFirst(source.othersReason, othersReason),
     walkInReason: pickFirst(source.walkInReason, walkInReason),
     selectReason: pickFirst(source.selectReason, selectReason),
     rejectReason: pickFirst(source.rejectReason, rejectReason),

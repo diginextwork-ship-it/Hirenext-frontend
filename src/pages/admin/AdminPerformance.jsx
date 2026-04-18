@@ -40,6 +40,12 @@ const STATUS_CARDS = [
     tone: "green",
   },
   {
+    key: "others",
+    label: "Others",
+    summaryKey: "totalOthers",
+    tone: "teal",
+  },
+  {
     key: "walk_in",
     label: "Walk In",
     summaryKey: "totalWalkIn",
@@ -111,6 +117,11 @@ const ADMIN_ACTIONS_BY_STATUS = {
   ],
   verified: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "others", label: "Others", color: "#0d9488" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  others: [
+    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   walk_in: [
@@ -136,6 +147,7 @@ const ADMIN_ACTIONS_BY_STATUS = {
 };
 
 const ROLLBACKABLE_ADMIN_STATUSES = new Set([
+  "others",
   "verified",
   "walk_in",
   "selected",
@@ -146,7 +158,8 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
 
 const ALLOWED_TRANSITIONS = {
   submitted: ["verified", "rejected"],
-  verified: ["walk_in", "rejected"],
+  verified: ["walk_in", "others", "rejected"],
+  others: ["walk_in", "rejected"],
   walk_in: ["shortlisted", "rejected"],
   shortlisted: ["selected", "dropout"],
   selected: ["joined", "dropout"],
@@ -154,6 +167,7 @@ const ALLOWED_TRANSITIONS = {
 };
 
 const ROLLBACK_TARGET_STATUS = {
+  others: "verified",
   verified: "submitted",
   walk_in: "verified",
   shortlisted: "walk_in",
@@ -314,6 +328,7 @@ function getLatestPerformanceNote(item) {
     item?.selectionNote ||
     item?.submittedReason ||
     item?.verifiedReason ||
+    item?.othersReason ||
     item?.walkInReason ||
     item?.shortlistedReason ||
     item?.selectReason ||
@@ -400,6 +415,7 @@ function matchesPersonStatusItem(item, person, roleLabel) {
 const STATUS_PROGRESS_RANK = {
   submitted: 0,
   verified: 1,
+  others: 1,
   walk_in: 2,
   shortlisted: 3,
   selected: 4,
@@ -868,6 +884,10 @@ export default function AdminPerformance({ setCurrentPage }) {
         Array.isArray(statusDrilldown?.verified) ? statusDrilldown.verified : [],
         "verified",
       ),
+      others: buildItems(
+        Array.isArray(statusDrilldown?.others) ? statusDrilldown.others : [],
+        "others",
+      ),
       walk_in: buildItems(
         Array.isArray(statusDrilldown?.walk_in) ? statusDrilldown.walk_in : [],
         "walk_in",
@@ -1046,6 +1066,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     return {
       totalSubmitted: getCount("submitted"),
       totalVerified: getCount("verified"),
+      totalOthers: getCount("others"),
       totalWalkIn: getCount("walk_in"),
       totalShortlisted: getCount("shortlisted"),
       totalSelected: getCount("selected"),
@@ -1216,6 +1237,10 @@ export default function AdminPerformance({ setCurrentPage }) {
       setActionError("Please provide a joining date.");
       return;
     }
+    if (actionTarget === "others" && !normalizedReason) {
+      setActionError("Please provide a reason for Others status.");
+      return;
+    }
     if (actionTarget === "joined") {
       const revStr = String(actionRevenue || "").trim();
       if (!revStr) {
@@ -1274,6 +1299,9 @@ export default function AdminPerformance({ setCurrentPage }) {
               ...(!["selected"].includes(actionTarget)
                 ? {
                     reason: normalizedReason || null,
+                    ...(actionTarget === "others"
+                      ? { othersReason: normalizedReason || null, others_reason: normalizedReason || null }
+                      : {}),
                   }
                 : {}),
               ...(actionTarget === "selected"
@@ -2560,6 +2588,37 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </p>
                 </div>
               </>
+            ) : actionTarget === "others" ? (
+              <div style={{ marginBottom: "10px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: 600,
+                    marginBottom: "4px",
+                  }}
+                >
+                  Others Reason <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={actionReason}
+                  onChange={(e) => setActionReason(e.target.value)}
+                  placeholder="Describe why this candidate is in Others status..."
+                  disabled={actionSubmitting}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: actionReason.trim() ? "1px solid #ccc" : "1px solid #dc2626",
+                    fontFamily: "inherit",
+                  }}
+                />
+                {!actionReason.trim() && (
+                  <p style={{ color: "#dc2626", margin: "4px 0 0", fontSize: "0.85em" }}>
+                    A reason is required for Others status.
+                  </p>
+                )}
+              </div>
             ) : actionTarget === "walk_in" ? (
               <>
                 <div style={{ marginBottom: "10px" }}>
