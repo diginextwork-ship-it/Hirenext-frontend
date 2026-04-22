@@ -250,6 +250,24 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(selection, ["status", "selection_status"]),
     pickNested(source, ["status"]),
   );
+  const genericReason = pickFirst(
+    pickNested(source, [
+      "reason",
+      "note",
+      "workflowNote",
+      "workflow_note",
+      "selectionNote",
+      "selection_note",
+    ]),
+    pickNested(selection, [
+      "reason",
+      "note",
+      "workflowNote",
+      "workflow_note",
+      "selectionNote",
+      "selection_note",
+    ]),
+  );
   const walkInDate = pickFirst(
     pickNested(source, ["walkInDate", "walk_in_date"]),
     pickNested(selection, ["walkInDate", "walk_in_date"]),
@@ -273,6 +291,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   const othersReason = pickFirst(
     pickNested(source, ["othersReason", "others_reason"]),
     pickNested(selection, ["othersReason", "others_reason"]),
+    status === "others" ? genericReason : null,
   );
   const walkInReason = pickFirst(
     pickNested(source, ["walkInReason", "walk_in_reason"]),
