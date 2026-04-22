@@ -340,7 +340,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
             normalized?.resId ??
             "",
         ).trim();
-        const effectiveStatus = normalizeStatus(
+        const bucketStatus = normalizeStatus(fallbackStatus);
+        const currentStatus = normalizeStatus(
           latestStatusByResId.get(resId) ||
             normalized?.workflowStatus ||
             normalized?.workflow_status ||
@@ -355,7 +356,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           ...normalized,
           ...item,
           resId,
-          status: effectiveStatus,
+          status: bucketStatus,
+          currentStatus,
         };
       });
 
@@ -364,9 +366,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         return dedupedItems;
       }
 
-      return dedupedItems.filter(
-        (item) => normalizeStatus(item?.status) === normalizeStatus(fallbackStatus),
-      );
+      return dedupedItems;
     };
 
     return {
@@ -467,7 +467,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   const getRowActionState = useCallback(
     (item) => {
-      const effectiveStatus = normalizeStatus(item?.status);
+      const effectiveStatus = normalizeStatus(
+        item?.currentStatus || item?.status,
+      );
       const effectiveRank = getStatusRank(effectiveStatus);
       const isPreviousStageView =
         selectedStatusRank >= 0 &&
@@ -562,8 +564,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   const handleRollback = async (item) => {
     if (!item?.jobJid || !item?.resId) return;
+    const currentStatus = normalizeStatus(item?.currentStatus || item?.status);
     const confirmed = window.confirm(
-      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(item.status)} to the previous stage?`,
+      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(currentStatus)} to the previous stage?`,
     );
     if (!confirmed) return;
 

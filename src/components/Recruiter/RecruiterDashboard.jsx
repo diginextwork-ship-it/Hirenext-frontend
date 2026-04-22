@@ -53,6 +53,20 @@ const normalizeStatusValue = (value) =>
     .trim()
     .toLowerCase();
 
+const hasValue = (value) =>
+  value !== null &&
+  value !== undefined &&
+  !(typeof value === "string" && value.trim() === "");
+
+const getOthersEventAt = (resume) => {
+  if (hasValue(resume?.othersAt)) return resume.othersAt;
+  if (hasValue(resume?.others_at)) return resume.others_at;
+  if (normalizeStatusValue(resume?.workflowStatus) === "others") {
+    return resume?.workflowUpdatedAt || null;
+  }
+  return null;
+};
+
 const getStatusRank = (status) => {
   const normalized = normalizeStatusValue(status);
   return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
@@ -226,8 +240,42 @@ export default function RecruiterDashboard({ recruiterId }) {
     return activeStatus.replace(/_/g, " ");
   }, [activeStatus]);
 
+  const matchesAppliedDateRange = useCallback(
+    (rawValue) => {
+      const { startDate, endDate } = appliedFilters;
+      if (!startDate || !endDate) return true;
+      if (!rawValue) return false;
+      const parsed = new Date(rawValue);
+      if (Number.isNaN(parsed.getTime())) return false;
+      const start = new Date(`${startDate}T00:00:00`);
+      const end = new Date(`${endDate}T23:59:59.999`);
+      return parsed >= start && parsed <= end;
+    },
+    [appliedFilters],
+  );
+
+  const othersEventResumes = useMemo(() => {
+    const byResId = new Map();
+    for (const resume of Array.isArray(statusResumes) ? statusResumes : []) {
+      const resId = String(
+        resume?.resId ?? resume?.res_id ?? resume?.resumeId ?? resume?.resume_id ?? "",
+      ).trim();
+      const othersEventAt = getOthersEventAt(resume);
+      if (!resId || !othersEventAt || !matchesAppliedDateRange(othersEventAt)) continue;
+      const nextTime = new Date(othersEventAt).getTime();
+      const prev = byResId.get(resId);
+      if (!prev || nextTime > prev.time) {
+        byResId.set(resId, { resume, time: Number.isFinite(nextTime) ? nextTime : 0 });
+      }
+    }
+    return Array.from(byResId.values()).map(({ resume }) => resume);
+  }, [matchesAppliedDateRange, statusResumes]);
+
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatusValue(activeStatus);
+    if (normalizedStatus === "others") {
+      return othersEventResumes;
+    }
     const dedupedByLatestStatus = (() => {
       const byResId = new Map();
       for (const resume of Array.isArray(statusResumes) ? statusResumes : []) {
@@ -270,20 +318,11 @@ export default function RecruiterDashboard({ recruiterId }) {
           normalizeStatusValue(resume.workflowStatus) === normalizedStatus,
       );
     }
-    const { startDate, endDate } = appliedFilters;
-    if (startDate && endDate) {
-      const start = new Date(`${startDate}T00:00:00`);
-      const end = new Date(`${endDate}T23:59:59.999`);
-      resumes = resumes.filter((resume) => {
-        const raw = resume.workflowUpdatedAt || resume.uploadedAt;
-        if (!raw) return false;
-        const parsed = new Date(raw);
-        if (Number.isNaN(parsed.getTime())) return false;
-        return parsed >= start && parsed <= end;
-      });
-    }
+    resumes = resumes.filter((resume) =>
+      matchesAppliedDateRange(resume.workflowUpdatedAt || resume.uploadedAt),
+    );
     return resumes;
-  }, [activeStatus, statusResumes, appliedFilters]);
+  }, [activeStatus, statusResumes, matchesAppliedDateRange, othersEventResumes]);
 
   const refreshDashboardStats = async () => {
     try {
@@ -428,7 +467,7 @@ export default function RecruiterDashboard({ recruiterId }) {
         <PerformanceMetricCard
           title="Others"
           color="teal"
-          value={toDisplay(data.stats?.others)}
+          value={toDisplay(othersEventResumes.length)}
           clickable
           onClick={() => handleStatusCardClick("others")}
         />

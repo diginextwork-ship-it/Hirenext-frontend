@@ -168,7 +168,7 @@ const ALLOWED_TRANSITIONS = {
 };
 
 const resolveRollbackTargetStatus = (item) => {
-  const currentStatus = normalizeStatus(item?.status);
+  const currentStatus = normalizeStatus(item?.currentStatus || item?.status);
   if (currentStatus === "others") {
     return item?.verifiedReason ? "verified" : "submitted";
   }
@@ -851,7 +851,8 @@ export default function AdminPerformance({ setCurrentPage }) {
             item?.status ||
             fallbackStatus,
         );
-        const effectiveStatus = normalizeStatus(
+        const bucketStatus = normalizeStatus(fallbackStatus);
+        const currentStatus = normalizeStatus(
           latestResolved?.status || sourceStatus || fallbackStatus,
         );
 
@@ -865,26 +866,22 @@ export default function AdminPerformance({ setCurrentPage }) {
             null,
           teamLeaderName,
           resId,
-          status: effectiveStatus,
+          status: bucketStatus,
+          currentStatus,
         };
       });
 
       const dedupedItems = dedupeItemsByResId(normalizedItems);
       if (fallbackStatus === "submitted") {
         return dedupedItems.filter((item) => {
-          const effectiveStatus = normalizeStatus(item?.status);
+          const effectiveStatus = normalizeStatus(
+            item?.currentStatus || item?.status,
+          );
           return !TERMINAL_EXCLUSIVE_STATUSES.has(effectiveStatus);
         });
       }
 
-      return dedupedItems.filter((item) => {
-        const effectiveStatus = normalizeStatus(item?.status);
-        if (!TERMINAL_EXCLUSIVE_STATUSES.has(effectiveStatus)) {
-          return true;
-        }
-
-        return effectiveStatus === normalizeStatus(fallbackStatus);
-      });
+      return dedupedItems;
     };
 
     const submittedRawItems =
@@ -1387,7 +1384,9 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const getRowActionState = useCallback(
     (item) => {
-      const effectiveStatus = normalizeStatus(item?.status);
+      const effectiveStatus = normalizeStatus(
+        item?.currentStatus || item?.status,
+      );
       const effectiveRank = getStatusRank(effectiveStatus);
       const isPreviousStageView =
         selectedStatusRank >= 0 &&
@@ -1417,9 +1416,9 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminRollback = async (item) => {
     if (!item?.resId) return;
-    const currentStatus = normalizeStatus(item.status);
+    const currentStatus = normalizeStatus(item?.currentStatus || item?.status);
     const confirmed = window.confirm(
-      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(item.status)} to the previous stage?`,
+      `Rollback ${item.candidateName || item.name || item.resId} from ${formatStatusLabel(currentStatus)} to the previous stage?`,
     );
     if (!confirmed) return;
 
