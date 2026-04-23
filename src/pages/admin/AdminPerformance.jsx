@@ -322,6 +322,13 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
+function formatDateTime(value) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
+}
+
 function getCandidateDisplayName(item) {
   return (
     item?.candidateName ||
@@ -1576,6 +1583,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Company Name</th>
                     <th>City</th>
                     <th>Resume File</th>
+                    <th>Submitted At</th>
                     <th>Status</th>
                     {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                     {[
@@ -1635,6 +1643,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             {item.resumeFilename || item.resId || "View resume"}
                           </button>
                         </td>
+                        <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                         <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>{item.walkInReason || formatDate(item.walkInDate)}</td>
@@ -1915,6 +1924,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Company Name</th>
                       <th>City</th>
                       <th>Resume File</th>
+                      <th>Submitted At</th>
                       <th>Status</th>
                       {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                       {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
@@ -1974,6 +1984,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             {item.resumeFilename || item.resId || "View resume"}
                           </button>
                         </td>
+                        <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                         <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>{formatDate(item.walkInDate)}</td>
