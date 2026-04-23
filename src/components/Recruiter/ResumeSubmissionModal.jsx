@@ -35,6 +35,91 @@ const initialFormState = {
 
 const allowedFilePattern = /\.(pdf|doc|docx)$/i;
 
+const mergeRecruiterOverridesIntoParsedData = (parsedData, formData) => {
+  const safeParsedData =
+    parsedData && typeof parsedData === "object" && !Array.isArray(parsedData)
+      ? { ...parsedData }
+      : {};
+  const educationSource =
+    Array.isArray(safeParsedData.education) && safeParsedData.education.length > 0
+      ? safeParsedData.education[0]
+      : safeParsedData.education && typeof safeParsedData.education === "object"
+        ? safeParsedData.education
+        : {};
+  const mergedEducation = { ...educationSource };
+
+  const candidateName = String(formData.candidate_name || "").trim();
+  const candidatePhone = String(formData.phone || "").replace(/\D/g, "").slice(0, 10);
+  const candidateEmail = String(formData.email || "").trim().toLowerCase();
+  const latestEducationLevel = String(formData.latest_education_level || "").trim();
+  const boardUniversity = String(formData.board_university || "").trim();
+  const institutionName = String(formData.institution_name || "").trim();
+  const age = String(formData.age || "").trim();
+
+  if (candidateName) {
+    safeParsedData.full_name = candidateName;
+    safeParsedData.fullName = candidateName;
+    safeParsedData.name = candidateName;
+    safeParsedData.candidate_name = candidateName;
+    safeParsedData.candidateName = candidateName;
+    safeParsedData.applicant_name = candidateName;
+    safeParsedData.applicantName = candidateName;
+  }
+
+  if (candidatePhone) {
+    safeParsedData.phone = candidatePhone;
+    safeParsedData.phone_number = candidatePhone;
+    safeParsedData.phoneNumber = candidatePhone;
+    safeParsedData.mobile = candidatePhone;
+    safeParsedData.mobile_number = candidatePhone;
+    safeParsedData.mobileNumber = candidatePhone;
+  }
+
+  if (candidateEmail) {
+    safeParsedData.email = candidateEmail;
+    safeParsedData.mail = candidateEmail;
+    safeParsedData.candidate_email = candidateEmail;
+    safeParsedData.candidateEmail = candidateEmail;
+    safeParsedData.applicant_email = candidateEmail;
+    safeParsedData.applicantEmail = candidateEmail;
+  }
+
+  if (latestEducationLevel) {
+    mergedEducation.latest_education_level = latestEducationLevel;
+    mergedEducation.latestEducationLevel = latestEducationLevel;
+    mergedEducation.education_level = latestEducationLevel;
+    mergedEducation.degree = latestEducationLevel;
+    mergedEducation.qualification = latestEducationLevel;
+  }
+
+  if (boardUniversity) {
+    mergedEducation.board_university = boardUniversity;
+    mergedEducation.boardUniversity = boardUniversity;
+    mergedEducation.university = boardUniversity;
+    mergedEducation.university_name = boardUniversity;
+    mergedEducation.board = boardUniversity;
+  }
+
+  if (institutionName) {
+    mergedEducation.institution_name = institutionName;
+    mergedEducation.institutionName = institutionName;
+    mergedEducation.college_name = institutionName;
+    mergedEducation.college = institutionName;
+    mergedEducation.school_name = institutionName;
+    mergedEducation.school = institutionName;
+  }
+
+  if (age) {
+    safeParsedData.age = age;
+  }
+
+  if (Object.keys(mergedEducation).length > 0) {
+    safeParsedData.education = [mergedEducation];
+  }
+
+  return Object.keys(safeParsedData).length > 0 ? safeParsedData : null;
+};
+
 export default function ResumeSubmissionModal({
   recruiterId,
   jobId,
@@ -364,9 +449,13 @@ export default function ResumeSubmissionModal({
         payload.append("mobile_number", candidatePhone);
         payload.append("mobileNumber", candidatePhone);
       }
+      const mergedParsedData = mergeRecruiterOverridesIntoParsedData(
+        currentParsedPayload?.parsedData || null,
+        formData,
+      );
       if (currentParsedPayload) {
-        if (currentParsedPayload.parsedData) {
-          payload.append("parsedData", JSON.stringify(currentParsedPayload.parsedData));
+        if (mergedParsedData) {
+          payload.append("parsedData", JSON.stringify(mergedParsedData));
         }
         if (currentParsedPayload.atsScore !== null && currentParsedPayload.atsScore !== undefined) {
           payload.append("atsScore", String(currentParsedPayload.atsScore));
@@ -380,10 +469,18 @@ export default function ResumeSubmissionModal({
         if (currentParsedPayload.atsRawJson) {
           payload.append("atsRawJson", JSON.stringify(currentParsedPayload.atsRawJson));
         }
+      } else if (mergedParsedData) {
+        payload.append("parsedData", JSON.stringify(mergedParsedData));
       }
       Object.entries(formData).forEach(([key, value]) => {
-        if (key === "resume_file") payload.append(key, value);
-        else payload.append(key, String(value ?? "").trim());
+        if (key === "resume_file") {
+          payload.append(key, value);
+          return;
+        }
+        if (key === "candidate_name" || key === "phone") {
+          return;
+        }
+        payload.append(key, String(value ?? "").trim());
       });
 
       const data = await submitRecruiterResume(payload);
