@@ -11,14 +11,15 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import {
+  formatDateInIndia,
+  formatDateTimeInIndia,
+} from "../../utils/dateTime";
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
 const formatDate = (value) => {
-  if (!value) return "Not set";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleDateString();
+  return formatDateInIndia(value, "Not set");
 };
 const getResumeCompanyName = (resume) =>
   formatResumeCompanyDisplay(resume);
@@ -383,12 +384,7 @@ export default function RecruiterDashboard({ recruiterId }) {
   const cappedPoints = Math.max(0, Math.min(100, totalPoints));
   const progressWidth = totalPoints > 100 ? 100 : cappedPoints;
   const pointsProgressColor = getPointsProgressColor(totalPoints);
-  const formatDateTime = (value) => {
-    if (!value) return "-";
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return String(value);
-    return parsed.toLocaleString();
-  };
+  const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
 
   return (
     <section className="recruiter-performance-dashboard">

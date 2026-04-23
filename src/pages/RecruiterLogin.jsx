@@ -22,18 +22,14 @@ import {
   normalizeJobData,
   normalizeResumeData,
 } from "../utils/dashboardData";
+import { formatDateTimeInIndia } from "../utils/dateTime";
 import { fetchWithRetry } from "../utils/network";
 import "../styles/recruiter-jobs-board.css";
 import "../styles/performance-dashboard.css";
 import "../styles/reimbursement.css";
 import logo from "../assets/Logo.png";
 
-const formatDateTime = (dateValue) => {
-  if (!dateValue) return "";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return String(dateValue);
-  return date.toLocaleString();
-};
+const formatDateTime = (dateValue) => formatDateTimeInIndia(dateValue, "");
 
 const readJsonResponse = async (response, fallbackMessage) => {
   const rawBody = await response.text();

@@ -13,25 +13,19 @@ import {
   normalizeJobData,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import {
+  formatDateInIndia,
+  formatDateTimeInIndia,
+} from "../../utils/dateTime";
 
 const formatLabel = (value) =>
   String(value || "")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const formatDateTime = (value) => {
-  if (!value) return "-";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleString();
-};
+const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
 
-const formatDate = (value) => {
-  if (!value) return "-";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleDateString();
-};
+const formatDate = (value) => formatDateInIndia(value, "-");
 const getResumeCompanyName = (resume, selectedJob) =>
   formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>

@@ -16,6 +16,10 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import {
+  formatDateInIndia,
+  formatDateTimeInIndia,
+} from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 
 const TABS = {
@@ -316,17 +320,11 @@ function formatStatusLabel(status) {
 }
 
 function formatDate(value) {
-  if (!value) return "Not set";
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString();
+  return formatDateInIndia(value, "Not set");
 }
 
 function formatDateTime(value) {
-  if (!value) return "Not set";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString();
+  return formatDateTimeInIndia(value, "Not set");
 }
 
 function getCandidateDisplayName(item) {

@@ -6,6 +6,7 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import { formatDateTimeInIndia } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 
 const getResumeCompanyName = (item) =>
@@ -113,7 +114,7 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                     <td>{Number(item.pointsPerJoining) || 0}</td>
                     <td>{item.isAccepted ? "accepted" : "pending"}</td>
                     <td>
-                      {item.uploadedAt ? new Date(item.uploadedAt).toLocaleString() : "N/A"}
+                      {formatDateTimeInIndia(item.uploadedAt)}
                     </td>
                     <td>
                       <button

@@ -10,14 +10,10 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import { formatDateTimeInIndia } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 
-const formatDateTime = (value) => {
-  if (!value) return "N/A";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleString();
-};
+const formatDateTime = (value) => formatDateTimeInIndia(value);
 
 const pickFirstValue = (...values) =>
   values.find((value) => value !== null && value !== undefined && value !== "");

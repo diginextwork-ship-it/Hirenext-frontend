@@ -7,21 +7,15 @@ import {
   normalizeJobData,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import {
+  formatDateInIndia,
+  formatDateTimeInIndia,
+} from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 
-const formatDateTime = (value) => {
-  if (!value) return "N/A";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString();
-};
+const formatDateTime = (value) => formatDateTimeInIndia(value);
 
-const formatDate = (value) => {
-  if (!value) return "N/A";
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString();
-};
+const formatDate = (value) => formatDateInIndia(value);
 const getResumeCompanyName = (resume, selectedJob) =>
   formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>
