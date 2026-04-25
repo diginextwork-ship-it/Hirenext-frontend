@@ -337,6 +337,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                   <th>City</th>
                   <th>ATS Score</th>
                   <th>Latest Status</th>
+                  <th>Recruiter Note</th>
                   <th>Submitted At</th>
                   <th>Resume File</th>
                   <th>Actions</th>
@@ -369,6 +370,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         )}
                       </span>
                     </td>
+                    <td>{resume.submittedReason || "-"}</td>
                     <td>{formatDateTime(resume.uploadedAt)}</td>
                     <td>
                       {resume.resId ? (

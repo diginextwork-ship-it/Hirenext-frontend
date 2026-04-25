@@ -212,6 +212,14 @@ export default function ResumeSubmissionModal({
   };
 
   const setField = (name, value) => {
+    if (name === "phone") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: String(value || "").replace(/\D/g, "").slice(0, 10),
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -278,15 +286,17 @@ export default function ResumeSubmissionModal({
       const autofill = data?.autofill || {};
       setFormData((prev) => ({
         ...prev,
-        candidate_name: autofill.name || prev.candidate_name,
-        phone: String(autofill.phone || prev.phone).replace(/\D/g, "").slice(0, 10),
-        email: autofill.email || prev.email,
-        latest_education_level: EDUCATION_LEVEL_OPTIONS.includes(autofill.latestEducationLevel)
-          ? autofill.latestEducationLevel
-          : prev.latest_education_level,
-        board_university: autofill.boardUniversity || prev.board_university,
-        institution_name: autofill.institutionName || prev.institution_name,
-        age: autofill.age || prev.age,
+        candidate_name: prev.candidate_name || autofill.name || "",
+        phone: String(prev.phone || autofill.phone || "").replace(/\D/g, "").slice(0, 10),
+        email: prev.email || autofill.email || "",
+        latest_education_level:
+          prev.latest_education_level ||
+          (EDUCATION_LEVEL_OPTIONS.includes(autofill.latestEducationLevel)
+            ? autofill.latestEducationLevel
+            : ""),
+        board_university: prev.board_university || autofill.boardUniversity || "",
+        institution_name: prev.institution_name || autofill.institutionName || "",
+        age: prev.age || autofill.age || "",
       }));
       setParseMessageType("success");
       setParseMessage("Resume parsed and form auto-filled successfully.");
@@ -424,7 +434,9 @@ export default function ResumeSubmissionModal({
       payload.append("jid", jid);
       const candidateName = String(formData.candidate_name || "").trim();
       const candidateEmail = String(formData.email || "").trim();
-      const candidatePhone = String(formData.phone || "").trim();
+      const candidatePhone = String(formData.phone || "")
+        .replace(/\D/g, "")
+        .slice(0, 10);
       if (candidateName) {
         payload.append("candidate_name", candidateName);
         payload.append("candidateName", candidateName);

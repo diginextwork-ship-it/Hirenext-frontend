@@ -85,6 +85,7 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                   <th>Email</th>
                   <th>RID</th>
                   <th>Job</th>
+                  <th>Recruiter Note</th>
                   <th>Filename</th>
                   <th>Type</th>
                   <th>Points / Joining</th>
@@ -109,6 +110,7 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                       </div>
                       <div className="admin-muted">{getResumeCityName(item)}</div>
                     </td>
+                    <td>{item.submittedReason || "-"}</td>
                     <td>{item.resumeFilename}</td>
                     <td>{String(item.resumeType || "").toUpperCase()}</td>
                     <td>{Number(item.pointsPerJoining) || 0}</td>

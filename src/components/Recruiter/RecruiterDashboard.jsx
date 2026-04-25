@@ -14,6 +14,7 @@ import {
 import {
   formatDateInIndia,
   formatDateTimeInIndia,
+  parseDateTimeValue,
 } from "../../utils/dateTime";
 
 const toDisplay = (value) =>
@@ -246,8 +247,8 @@ export default function RecruiterDashboard({ recruiterId }) {
       const { startDate, endDate } = appliedFilters;
       if (!startDate || !endDate) return true;
       if (!rawValue) return false;
-      const parsed = new Date(rawValue);
-      if (Number.isNaN(parsed.getTime())) return false;
+      const parsed = parseDateTimeValue(rawValue);
+      if (!parsed) return false;
       const start = new Date(`${startDate}T00:00:00`);
       const end = new Date(`${endDate}T23:59:59.999`);
       return parsed >= start && parsed <= end;
@@ -670,7 +671,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                           {resume.submittedReason || "-"}
                         </td>
                         <td className="table-cell-wrap">
-                          {resume.verifiedReason || "-"}
+                          {formatDateTime(
+                            resume.workflowUpdatedAt || resume.uploadedAt,
+                          )}
                         </td>
                         <td className="table-cell-wrap">
                           {currentReasonField || "-"}

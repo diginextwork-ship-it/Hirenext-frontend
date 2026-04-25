@@ -743,7 +743,9 @@ export default function RecruiterLogin() {
                               {item.submittedReason || "-"}
                             </td>
                             <td className="table-cell-wrap">
-                              {item.verifiedReason || "-"}
+                              {formatDateTime(
+                                item.workflowUpdatedAt || item.uploadedAt,
+                              ) || "-"}
                             </td>
                             <td>
                               {String(item.workflowStatus || "pending").replace(
