@@ -7,6 +7,7 @@ const RESUME_SOURCE_OPTIONS = [
   "Naukri",
   "Indeed",
   "Shine",
+  "Instagram ads",
   "Reference",
   "Apna Job",
   "Job Hai",
