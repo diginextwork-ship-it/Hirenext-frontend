@@ -712,7 +712,7 @@ export default function RecruiterLogin() {
                           <th>Phone Number</th>
                           <th>ATS Score</th>
                           <th>Submitted Note</th>
-                          <th>Timing Info</th>
+                          <th>Verified / Team Leader Note</th>
                           <th>Status</th>
                           <th>Uploaded At</th>
                           <th>File</th>
@@ -743,9 +743,7 @@ export default function RecruiterLogin() {
                               {item.submittedReason || "-"}
                             </td>
                             <td className="table-cell-wrap">
-                              {formatDateTime(
-                                item.workflowUpdatedAt || item.uploadedAt,
-                              ) || "-"}
+                              {item.verifiedReason || "-"}
                             </td>
                             <td>
                               {String(item.workflowStatus || "pending").replace(

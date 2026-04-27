@@ -671,9 +671,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                           {resume.submittedReason || "-"}
                         </td>
                         <td className="table-cell-wrap">
-                          {formatDateTime(
-                            resume.workflowUpdatedAt || resume.uploadedAt,
-                          )}
+                          {resume.verifiedReason || "-"}
                         </td>
                         <td className="table-cell-wrap">
                           {currentReasonField || "-"}

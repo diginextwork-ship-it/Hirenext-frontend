@@ -792,6 +792,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                     <td>
                       {item.note ||
                        item.reason ||
+                       item.submittedReason ||
                        item.verifiedReason ||
                        item.othersReason ||
                        item.walkInReason ||
