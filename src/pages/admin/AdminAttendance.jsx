@@ -35,6 +35,14 @@ const STATUS_OPTIONS = [
   { value: "absent", label: "Absent" },
 ];
 
+const HALF_DAY_HOUR_OPTIONS = Array.from({ length: 15 }, (_, index) => {
+  const value = 1 + index * 0.5;
+  return {
+    value: value.toFixed(1),
+    label: Number.isInteger(value) ? String(value) : value.toFixed(1),
+  };
+});
+
 export default function AdminAttendance({ setCurrentPage }) {
   const [attendanceDate, setAttendanceDate] = useState(getTodayValue);
   const [staff, setStaff] = useState([]);
@@ -49,6 +57,8 @@ export default function AdminAttendance({ setCurrentPage }) {
   const [savingRid, setSavingRid] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [halfDayTarget, setHalfDayTarget] = useState(null);
+  const [halfDayHours, setHalfDayHours] = useState("1.0");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteDeleting, setDeleteDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -133,6 +143,16 @@ export default function AdminAttendance({ setCurrentPage }) {
   );
 
   const handleMarkAttendance = async (recruiterRid, status) => {
+    if (status === "half_day") {
+      const member = staff.find((item) => item.rid === recruiterRid) || null;
+      setHalfDayTarget(member);
+      setHalfDayHours(
+        member?.hoursWorked
+          ? Number(member.hoursWorked).toFixed(1)
+          : HALF_DAY_HOUR_OPTIONS[0].value,
+      );
+      return;
+    }
     setSavingRid(recruiterRid);
     setErrorMessage("");
     setStatusMessage("");
@@ -146,6 +166,7 @@ export default function AdminAttendance({ setCurrentPage }) {
           recruiterRid,
           attendanceDate,
           status,
+          hoursWorked: null,
           markedBy: "admin-panel",
         }),
       });
@@ -158,6 +179,48 @@ export default function AdminAttendance({ setCurrentPage }) {
       }
 
       setStatusMessage(`Attendance updated for ${recruiterRid}.`);
+      await loadAttendance(attendanceDate);
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to update attendance.");
+    } finally {
+      setSavingRid("");
+    }
+  };
+
+  const closeHalfDayModal = (force = false) => {
+    if (!force && savingRid) return;
+    setHalfDayTarget(null);
+    setHalfDayHours(HALF_DAY_HOUR_OPTIONS[0].value);
+  };
+
+  const confirmHalfDay = async () => {
+    if (!halfDayTarget?.rid) return;
+    setSavingRid(halfDayTarget.rid);
+    setErrorMessage("");
+    setStatusMessage("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/attendance`, {
+        method: "PUT",
+        headers: getAdminHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          recruiterRid: halfDayTarget.rid,
+          attendanceDate,
+          status: "half_day",
+          hoursWorked: Number(halfDayHours),
+          markedBy: "admin-panel",
+        }),
+      });
+      const data = await readJsonResponse(
+        response,
+        "Failed to parse attendance update response.",
+      );
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to update attendance.");
+      }
+      setStatusMessage(`Attendance updated for ${halfDayTarget.rid}.`);
+      closeHalfDayModal(true);
       await loadAttendance(attendanceDate);
     } catch (error) {
       setErrorMessage(error.message || "Failed to update attendance.");
@@ -253,7 +316,7 @@ export default function AdminAttendance({ setCurrentPage }) {
                         className={`admin-attendance-badge admin-attendance-${member.status}`}
                       >
                         {member.status === "half_day"
-                          ? "Half Day"
+                          ? `Half Day${member.hoursWorked ? ` (${member.hoursWorked}h)` : ""}`
                           : member.status}
                       </span>
                     </td>
@@ -369,6 +432,56 @@ export default function AdminAttendance({ setCurrentPage }) {
                 disabled={deleteDeleting}
               >
                 {deleteDeleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {halfDayTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeHalfDayModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Half day hours</h3>
+            <p style={{ margin: "0 0 12px" }}>
+              {halfDayTarget.name || "Unknown"} ({halfDayTarget.rid})
+            </p>
+            <label htmlFor="halfDayHours">Enter hours working</label>
+            <select
+              id="halfDayHours"
+              value={halfDayHours}
+              onChange={(event) => setHalfDayHours(event.target.value)}
+              disabled={savingRid === halfDayTarget.rid}
+            >
+              {HALF_DAY_HOUR_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <div className="admin-modal-actions" style={{ marginTop: "16px" }}>
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeHalfDayModal}
+                disabled={savingRid === halfDayTarget.rid}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                onClick={confirmHalfDay}
+                disabled={savingRid === halfDayTarget.rid}
+              >
+                {savingRid === halfDayTarget.rid ? "Saving..." : "Confirm"}
               </button>
             </div>
           </div>
