@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import emailjs from "@emailjs/browser";
 import "../styles/job-application.css";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../config/api";
 import PageBackButton from "../components/PageBackButton";
-import { getEmailJsConfig, isEmailJsConfigured } from "../utils/emailjs";
 import {
   fetchJobsFromApi,
   readStoredJob,
@@ -46,8 +44,6 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
   const [isJobLoading, setIsJobLoading] = useState(() => !selectedJob && Boolean(routeJobId));
   const activeResumeRequestIdRef = useRef(0);
   const selectedJobId = String(selectedJob?.id ?? selectedJob?.jid ?? "").trim();
-  const { serviceId, publicKey, jobApplicationTemplateId } = getEmailJsConfig();
-
   useEffect(() => {
     let isActive = true;
 
@@ -384,19 +380,8 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
         throw new Error(data?.message || "Application submission is not complete yet.");
       }
 
-      if (!isEmailJsConfigured(jobApplicationTemplateId)) {
-        throw new Error(
-          "Application saved, but EmailJS is not configured. Please add the EmailJS environment variables.",
-        );
-      }
-
-      updateResumeRequestStage(requestId, "Sending email...");
-      await emailjs.sendForm(serviceId, jobApplicationTemplateId, formRef.current, {
-        publicKey,
-      });
-
       setSubmitted(true);
-      setSubmitMessage("Application submitted successfully and emailed to HireNext.");
+      setSubmitMessage("Application submitted successfully.");
       setFormData(initialFormData);
       setResumeFile(null);
       setParsedResume(null);
@@ -458,12 +443,6 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
             ) : null}
 
             <form ref={formRef} className="job-application-form" onSubmit={handleSubmit}>
-            <input type="hidden" name="form_type" value="Job Application" />
-            <input type="hidden" name="to_email" value="Hirenextindia@gmail.com" />
-            <input type="hidden" name="job_id" value={selectedJobId} />
-            <input type="hidden" name="job_title" value={selectedJob?.title || ""} />
-            <input type="hidden" name="company_name" value={selectedJob?.company || ""} />
-            <input type="hidden" name="job_location" value={selectedJob?.location || ""} />
             <div className="application-field">
               <label htmlFor="resumeUpload">Upload resume (PDF/DOCX) *</label>
               <input

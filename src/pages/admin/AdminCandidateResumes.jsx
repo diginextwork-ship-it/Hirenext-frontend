@@ -333,8 +333,13 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 <tr>
                   <th>Recruiter Name</th>
                   <th>Candidate Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
                   <th>Job Company Name</th>
+                  <th>Role</th>
                   <th>City</th>
+                  <th>Education</th>
+                  <th>Age</th>
                   <th>ATS Score</th>
                   <th>Latest Status</th>
                   <th>Recruiter Note</th>
@@ -356,8 +361,25 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         resume.candidateName ||
                         "Name not found"}
                     </td>
+                    <td>
+                      {resume.applicantPhone || resume.candidatePhone || "N/A"}
+                    </td>
+                    <td>
+                      {resume.applicantEmail || resume.candidateEmail || "N/A"}
+                    </td>
                     <td>{formatResumeCompanyDisplay(resume) || "N/A"}</td>
+                    <td>{resume.job?.roleName || resume.roleName || "N/A"}</td>
                     <td>{resume.city || resume.job?.city || "N/A"}</td>
+                    <td>
+                      {[
+                        resume.latestEducationLevel,
+                        resume.boardUniversity,
+                        resume.institutionName,
+                      ]
+                        .filter(Boolean)
+                        .join(" / ") || "N/A"}
+                    </td>
+                    <td>{resume.age ?? "N/A"}</td>
                     <td>
                       <span className="admin-stat-pill">
                         {formatPercent(resume.atsScore)}
