@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getAuthSession } from "../../auth/session";
 import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
@@ -181,8 +182,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     : filteredResumes;
 
   const handleResumeOpen = (resId) => {
-    const token =
-      localStorage.getItem("adminToken") || localStorage.getItem("token");
+    const token = getAuthSession()?.token;
     if (!token || !resId) return;
 
     window.open(
