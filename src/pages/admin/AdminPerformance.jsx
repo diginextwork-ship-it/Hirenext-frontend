@@ -145,6 +145,7 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "joined", label: "Joined", color: "#16a34a" },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
   ],
+  rejected: [{ value: "joined", label: "Joined", color: "#16a34a" }],
   joined: [
     { value: "billed", label: "Billed", color: "#16a34a" },
     { value: "left", label: "Left", color: "#dc2626" },
@@ -168,6 +169,7 @@ const ALLOWED_TRANSITIONS = {
   walk_in: ["shortlisted", "rejected"],
   shortlisted: ["selected", "dropout"],
   selected: ["joined", "dropout"],
+  rejected: ["joined"],
   joined: ["billed", "left"],
 };
 
