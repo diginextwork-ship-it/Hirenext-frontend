@@ -17,6 +17,14 @@ import {
   parseDateTimeValue,
 } from "../../utils/dateTime";
 
+const PRESETS = {
+  TODAY: "today",
+  YESTERDAY: "yesterday",
+  THIS_MONTH: "this_month",
+  LAST_MONTH: "last_month",
+  CUSTOM: "custom",
+};
+
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
 const formatDate = (value) => {
@@ -98,20 +106,98 @@ const mapStatusToFilter = (status) => {
   return "";
 };
 
+function toDateStr(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getPresetRange(preset) {
+  const now = new Date();
+  switch (preset) {
+    case PRESETS.TODAY:
+      return { startDate: toDateStr(now), endDate: toDateStr(now) };
+    case PRESETS.YESTERDAY: {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return {
+        startDate: toDateStr(yesterday),
+        endDate: toDateStr(yesterday),
+      };
+    }
+    case PRESETS.THIS_MONTH:
+      return {
+        startDate: toDateStr(new Date(now.getFullYear(), now.getMonth(), 1)),
+        endDate: toDateStr(now),
+      };
+    case PRESETS.LAST_MONTH: {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      return {
+        startDate: toDateStr(first),
+        endDate: toDateStr(last),
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+function formatLabel(preset) {
+  switch (preset) {
+    case PRESETS.TODAY:
+      return "Today";
+    case PRESETS.YESTERDAY:
+      return "Yesterday";
+    case PRESETS.THIS_MONTH:
+      return "This Month";
+    case PRESETS.LAST_MONTH:
+      return "Last Month";
+    case PRESETS.CUSTOM:
+      return "Custom Range";
+    default:
+      return "";
+  }
+}
+
+const normalizeLookupKey = (value) => String(value || "").trim().toLowerCase();
+
+function matchesCandidateSearch(item, searchValue) {
+  const normalizedSearch = normalizeLookupKey(searchValue);
+  if (!normalizedSearch) return true;
+
+  const candidateName = getResumeCandidateName(item);
+  if (
+    candidateName !== "N/A" &&
+    normalizeLookupKey(candidateName).includes(normalizedSearch)
+  ) {
+    return true;
+  }
+
+  const digitsOnlySearch = normalizedSearch.replace(/\D/g, "");
+  const candidatePhone = String(getResumeCandidatePhone(item) || "");
+  const candidatePhoneDigits = candidatePhone.replace(/\D/g, "");
+
+  if (digitsOnlySearch && candidatePhoneDigits.includes(digitsOnlySearch)) {
+    return true;
+  }
+
+  return normalizeLookupKey(candidatePhone).includes(normalizedSearch);
+}
+
 export default function RecruiterDashboard({ recruiterId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState({ startDate: "", endDate: "" });
-  const [appliedFilters, setAppliedFilters] = useState({
-    startDate: "",
-    endDate: "",
-  });
-  const [filterError, setFilterError] = useState("");
+  const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [statusResumes, setStatusResumes] = useState([]);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [activeStatus, setActiveStatus] = useState("");
+  const [candidateSearch, setCandidateSearch] = useState("");
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [selectedResumeForAction, setSelectedResumeForAction] = useState(null);
   const [leftModalOpen, setLeftModalOpen] = useState(false);
@@ -121,34 +207,14 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [leftError, setLeftError] = useState("");
   const [rollbackSubmittingResId, setRollbackSubmittingResId] = useState("");
 
-  const handleFilterChange = (field) => (event) => {
-    const nextValue = event.target.value;
-    setFilters((prev) => ({ ...prev, [field]: nextValue }));
-    if (filterError) setFilterError("");
-  };
-
-  const handleApplyFilters = () => {
-    const startDate = String(filters.startDate || "").trim();
-    const endDate = String(filters.endDate || "").trim();
-
-    if ((startDate && !endDate) || (!startDate && endDate)) {
-      setFilterError("Select both start date and end date.");
-      return;
+  const appliedFilters = useMemo(() => {
+    if (timelinePreset === PRESETS.CUSTOM) {
+      return customStart && customEnd
+        ? { startDate: customStart, endDate: customEnd }
+        : { startDate: "", endDate: "" };
     }
-    if (startDate && endDate && startDate > endDate) {
-      setFilterError("Start date cannot be after end date.");
-      return;
-    }
-
-    setFilterError("");
-    setAppliedFilters({ startDate, endDate });
-  };
-
-  const handleClearFilters = () => {
-    setFilterError("");
-    setFilters({ startDate: "", endDate: "" });
-    setAppliedFilters({ startDate: "", endDate: "" });
-  };
+    return getPresetRange(timelinePreset) || { startDate: "", endDate: "" };
+  }, [timelinePreset, customEnd, customStart]);
 
   const fetchRecruiterResumes = useCallback(async () => {
     const payload = await authFetch(
@@ -323,8 +389,17 @@ export default function RecruiterDashboard({ recruiterId }) {
     resumes = resumes.filter((resume) =>
       matchesAppliedDateRange(resume.workflowUpdatedAt || resume.uploadedAt),
     );
+    resumes = resumes.filter((resume) =>
+      matchesCandidateSearch(resume, candidateSearch),
+    );
     return resumes;
-  }, [activeStatus, statusResumes, matchesAppliedDateRange, othersEventResumes]);
+  }, [
+    activeStatus,
+    candidateSearch,
+    statusResumes,
+    matchesAppliedDateRange,
+    othersEventResumes,
+  ]);
 
   const refreshDashboardStats = async () => {
     try {
@@ -401,48 +476,53 @@ export default function RecruiterDashboard({ recruiterId }) {
         </button>
       </div>
       <div className="dashboard-date-filter">
-        <div className="dashboard-date-input">
-          <label htmlFor="recruiterDashboardStartDate">Start date</label>
-          <input
-            id="recruiterDashboardStartDate"
-            type="date"
-            value={filters.startDate}
-            onChange={handleFilterChange("startDate")}
-          />
+        <div className="perf-timeline-presets">
+          {[
+            { key: PRESETS.TODAY, label: "Today" },
+            { key: PRESETS.YESTERDAY, label: "Yesterday" },
+            { key: PRESETS.THIS_MONTH, label: "This Month" },
+            { key: PRESETS.LAST_MONTH, label: "Last Month" },
+            { key: PRESETS.CUSTOM, label: "Custom" },
+          ].map((preset) => (
+            <button
+              key={preset.key}
+              type="button"
+              className={`perf-timeline-btn${timelinePreset === preset.key ? " perf-timeline-btn-active" : ""}`}
+              onClick={() => setTimelinePreset(preset.key)}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
-        <div className="dashboard-date-input">
-          <label htmlFor="recruiterDashboardEndDate">End date</label>
-          <input
-            id="recruiterDashboardEndDate"
-            type="date"
-            value={filters.endDate}
-            onChange={handleFilterChange("endDate")}
-          />
-        </div>
-        <div className="dashboard-date-actions">
-          <button
-            type="button"
-            className="dashboard-date-btn"
-            onClick={handleApplyFilters}
-          >
-            Apply
-          </button>
-          <button
-            type="button"
-            className="dashboard-date-btn dashboard-date-btn-secondary"
-            onClick={handleClearFilters}
-          >
-            Clear
-          </button>
-        </div>
+        {timelinePreset === PRESETS.CUSTOM ? (
+          <div className="perf-timeline-custom">
+            <label className="perf-timeline-input">
+              From
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(event) => setCustomStart(event.target.value)}
+              />
+            </label>
+            <label className="perf-timeline-input">
+              To
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(event) => setCustomEnd(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
       </div>
-      {filterError ? (
-        <p className="job-message job-message-error">{filterError}</p>
-      ) : null}
       {appliedFilters.startDate && appliedFilters.endDate ? (
         <p className="dashboard-filter-summary">
-          Showing statistics from <strong>{appliedFilters.startDate}</strong> to{" "}
-          <strong>{appliedFilters.endDate}</strong>.
+          Showing: <strong>{formatLabel(timelinePreset)}</strong>{" "}
+          {appliedFilters.startDate === appliedFilters.endDate
+            ? appliedFilters.startDate
+            : `${appliedFilters.startDate} to ${appliedFilters.endDate}`}
         </p>
       ) : null}
       <h3>Status Breakdown</h3>
@@ -567,6 +647,24 @@ export default function RecruiterDashboard({ recruiterId }) {
               Close
             </button>
           </div>
+          <div className="perf-inline-search">
+            <input
+              type="text"
+              className="perf-search perf-search-wide"
+              placeholder="Search by candidate name or phone..."
+              value={candidateSearch}
+              onChange={(event) => setCandidateSearch(event.target.value)}
+            />
+            {normalizeLookupKey(candidateSearch) ? (
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={() => setCandidateSearch("")}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
           {statusLoading ? (
             <p className="chart-empty">Loading resumes...</p>
           ) : null}
@@ -576,7 +674,11 @@ export default function RecruiterDashboard({ recruiterId }) {
           {!statusLoading &&
           !statusError &&
           filteredStatusResumes.length === 0 ? (
-            <p className="chart-empty">No resumes found for this status.</p>
+            <p className="chart-empty">
+              {normalizeLookupKey(candidateSearch)
+                ? "No resumes match this search."
+                : "No resumes found for this status."}
+            </p>
           ) : null}
           {!statusLoading &&
           !statusError &&
