@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
+import TablePaginationControls from "../common/TablePaginationControls";
 import {
   fetchRecruiterDashboard,
   markResumeLeft,
 } from "../../services/performanceService";
 import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
+import useTablePagination from "../../hooks/useTablePagination";
 import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
@@ -400,6 +402,15 @@ export default function RecruiterDashboard({ recruiterId }) {
     matchesAppliedDateRange,
     othersEventResumes,
   ]);
+  const statusPagination = useTablePagination(
+    filteredStatusResumes,
+    JSON.stringify({
+      activeStatus,
+      candidateSearch,
+      endDate: appliedFilters.endDate,
+      startDate: appliedFilters.startDate,
+    }),
+  );
 
   const refreshDashboardStats = async () => {
     try {
@@ -724,7 +735,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStatusResumes.map((resume) => {
+                  {statusPagination.paginatedItems.map((resume) => {
                     let currentReasonField = null;
                     if (activeStatus === "others") {
                       currentReasonField = resume.othersReason;
@@ -883,6 +894,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                   })}
                 </tbody>
               </table>
+              <TablePaginationControls {...statusPagination} />
             </div>
           ) : null}
         </section>

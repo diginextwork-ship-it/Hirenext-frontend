@@ -13,9 +13,11 @@ import RecruiterMultiSelect from "../components/JobAdder/RecruiterMultiSelect";
 import RecruiterJobsBoard from "../components/Recruiter/RecruiterJobsBoard";
 import RecruiterDashboard from "../components/Recruiter/RecruiterDashboard";
 import RecruiterTasksPanel from "../components/Recruiter/RecruiterTasksPanel";
+import TablePaginationControls from "../components/common/TablePaginationControls";
 import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
+import useTablePagination from "../hooks/useTablePagination";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import {
   formatResumeCompanyDisplay,
@@ -74,7 +76,6 @@ const getResumeCompanyName = (item) =>
   formatResumeCompanyDisplay(item);
 const getResumeCityName = (item) =>
   item?.city || item?.job?.city || item?.jobCity || "N/A";
-const INITIAL_VISIBLE_APPLICATIONS = 5;
 
 const isTeamLeaderRole = (role) => {
   const normalized = String(role || "")
@@ -100,7 +101,6 @@ export default function RecruiterLogin() {
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [applications, setApplications] = useState([]);
-  const [showAllApplications, setShowAllApplications] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [activeAccessJobId, setActiveAccessJobId] = useState(null);
@@ -143,12 +143,14 @@ export default function RecruiterLogin() {
     normalizedRole === "recruiter" || isTeamLeader;
   const canUploadResumes =
     normalizedRole === "recruiter" || isTeamLeader;
-  const shouldCollapseApplications =
-    canManageJobAccess && applications.length > INITIAL_VISIBLE_APPLICATIONS;
-  const visibleApplications =
-    shouldCollapseApplications && !showAllApplications
-      ? applications.slice(0, INITIAL_VISIBLE_APPLICATIONS)
-      : applications;
+  const applicationsPagination = useTablePagination(
+    applications,
+    `${recruiter?.rid || ""}-applications`,
+  );
+  const uploadedResumesPagination = useTablePagination(
+    uploadedResumes,
+    `${recruiter?.rid || ""}-uploaded-resumes`,
+  );
   const getAuthHeaders = (extraHeaders = {}) => {
     const token = getAuthSession()?.token || "";
     return token
@@ -164,7 +166,6 @@ export default function RecruiterLogin() {
         {},
         "Failed to fetch recruiter applications.",
       );
-      setShowAllApplications(false);
       setApplications(
         Array.isArray(data.applications) ? data.applications : [],
       );
@@ -641,7 +642,7 @@ export default function RecruiterLogin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleApplications.map((item) => (
+                      {applicationsPagination.paginatedItems.map((item) => (
                         <tr key={item.id}>
                           <td>{item.candidateName}</td>
                           <td>{item.email}</td>
@@ -666,19 +667,7 @@ export default function RecruiterLogin() {
                       ))}
                     </tbody>
                   </table>
-                  {shouldCollapseApplications ? (
-                    <div className="ui-mt-xs">
-                      <button
-                        type="button"
-                        className="click-here-btn"
-                        onClick={() =>
-                          setShowAllApplications((current) => !current)
-                        }
-                      >
-                        {showAllApplications ? "View Less" : "View More"}
-                      </button>
-                    </div>
-                  ) : null}
+                  <TablePaginationControls {...applicationsPagination} />
                 </div>
               )}
             </div>
@@ -703,78 +692,81 @@ export default function RecruiterLogin() {
                   {uploadedResumes.length === 0 ? (
                     <p className="chart-empty">No resumes uploaded yet.</p>
                   ) : (
-                    <table className="ui-table">
-                      <thead>
-                        <tr>
-                          <th>Resume ID</th>
-                          <th>Job</th>
-                          <th>Candidate Name</th>
-                          <th>Phone Number</th>
-                          <th>ATS Score</th>
-                          <th>Submitted Note</th>
-                          <th>Verified / Team Leader Note</th>
-                          <th>Status</th>
-                          <th>Uploaded At</th>
-                          <th>File</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {uploadedResumes.map((item) => (
-                          <tr key={item.resId}>
-                            <td>{item.resId}</td>
-                            <td>
-                              <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
-                              <div className="admin-muted">
-                                {getResumeCompanyName(item)}
-                              </div>
-                              <div className="admin-muted">
-                                {getResumeCityName(item)}
-                              </div>
-                            </td>
-                            <td>{item.candidateName || item.applicantName || "N/A"}</td>
-                            <td>{item.phone || item.mobile || item.candidatePhone || "N/A"}</td>
-                            <td>
-                              {item.atsScore === null ||
-                              item.atsScore === undefined
-                                ? "N/A"
-                                : `${item.atsScore}%`}
-                            </td>
-                            <td className="table-cell-wrap">
-                              {item.submittedReason || "-"}
-                            </td>
-                            <td className="table-cell-wrap">
-                              {item.verifiedReason || "-"}
-                            </td>
-                            <td>
-                              {String(item.workflowStatus || "pending").replace(
-                                /_/g,
-                                " ",
-                              )}
-                            </td>
-                            <td>{formatDateTime(item.uploadedAt)}</td>
-                            <td>
-                              <a
-                                href={`${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  const token = getAuthSession()?.token;
-                                  if (!token) return;
-                                  window.open(
-                                    `${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file?token=${encodeURIComponent(token)}`,
-                                    "_blank",
-                                    "noopener,noreferrer",
-                                  );
-                                }}
-                              >
-                                View
-                              </a>
-                            </td>
+                    <>
+                      <table className="ui-table">
+                        <thead>
+                          <tr>
+                            <th>Resume ID</th>
+                            <th>Job</th>
+                            <th>Candidate Name</th>
+                            <th>Phone Number</th>
+                            <th>ATS Score</th>
+                            <th>Submitted Note</th>
+                            <th>Verified / Team Leader Note</th>
+                            <th>Status</th>
+                            <th>Uploaded At</th>
+                            <th>File</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {uploadedResumesPagination.paginatedItems.map((item) => (
+                            <tr key={item.resId}>
+                              <td>{item.resId}</td>
+                              <td>
+                                <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
+                                <div className="admin-muted">
+                                  {getResumeCompanyName(item)}
+                                </div>
+                                <div className="admin-muted">
+                                  {getResumeCityName(item)}
+                                </div>
+                              </td>
+                              <td>{item.candidateName || item.applicantName || "N/A"}</td>
+                              <td>{item.phone || item.mobile || item.candidatePhone || "N/A"}</td>
+                              <td>
+                                {item.atsScore === null ||
+                                item.atsScore === undefined
+                                  ? "N/A"
+                                  : `${item.atsScore}%`}
+                              </td>
+                              <td className="table-cell-wrap">
+                                {item.submittedReason || "-"}
+                              </td>
+                              <td className="table-cell-wrap">
+                                {item.verifiedReason || "-"}
+                              </td>
+                              <td>
+                                {String(item.workflowStatus || "pending").replace(
+                                  /_/g,
+                                  " ",
+                                )}
+                              </td>
+                              <td>{formatDateTime(item.uploadedAt)}</td>
+                              <td>
+                                <a
+                                  href={`${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    const token = getAuthSession()?.token;
+                                    if (!token) return;
+                                    window.open(
+                                      `${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file?token=${encodeURIComponent(token)}`,
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    );
+                                  }}
+                                >
+                                  View
+                                </a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <TablePaginationControls {...uploadedResumesPagination} />
+                    </>
                   )}
                 </div>
               </div>

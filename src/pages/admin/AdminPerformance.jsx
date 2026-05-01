@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
+import TablePaginationControls from "../../components/common/TablePaginationControls";
+import useTablePagination from "../../hooks/useTablePagination";
 import {
   API_BASE_URL,
   getAdminHeaders,
@@ -1107,6 +1109,31 @@ export default function AdminPerformance({ setCurrentPage }) {
       matchesPersonStatusItem(item, selectedTeamLeader, "Team Leader"),
     );
   }, [selectedStatusKey, selectedTeamLeader, statusItemsByStatus]);
+  const overviewPagination = useTablePagination(
+    filteredSelectedStatusItems,
+    JSON.stringify({
+      customEnd,
+      customStart,
+      recruiterEntrySearch,
+      selectedStatusKey,
+      tab: activeTab,
+      timelinePreset,
+    }),
+  );
+  const recruiterDetailPagination = useTablePagination(
+    selectedRecruiterStatusItems,
+    JSON.stringify({
+      recruiterRid: selectedRecruiter?.rid || "",
+      selectedStatusKey,
+    }),
+  );
+  const teamLeaderDetailPagination = useTablePagination(
+    selectedTeamLeaderStatusItems,
+    JSON.stringify({
+      selectedStatusKey,
+      teamLeaderRid: selectedTeamLeader?.rid || "",
+    }),
+  );
 
   const handleSubmittedCardClick = async () => {
     setSelectedStatusKey("submitted");
@@ -1506,7 +1533,13 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const renderPersonMetrics = (person, metrics, roleLabel, personStatusItems) => {
+  const renderPersonMetrics = (
+    person,
+    metrics,
+    roleLabel,
+    personStatusItems,
+    pagination,
+  ) => {
     if (!person || !metrics) return null;
 
     return (
@@ -1605,7 +1638,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {personStatusItems.map((item) => {
+                  {pagination.paginatedItems.map((item) => {
                     const rowActionState = getRowActionState(item);
                     const rowHasActions =
                       rowActionState.availableActions.length > 0 ||
@@ -1732,6 +1765,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   })}
                 </tbody>
               </table>
+              <TablePaginationControls {...pagination} />
             </div>
           ) : selectedStatusKey === "submitted" && submittedLoading ? (
             <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
@@ -1935,7 +1969,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSelectedStatusItems.map((item) => {
+                    {overviewPagination.paginatedItems.map((item) => {
                       const rowActionState = getRowActionState(item);
                       const rowHasActions =
                         rowActionState.availableActions.length > 0 ||
@@ -2045,6 +2079,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     })}
                   </tbody>
                 </table>
+                <TablePaginationControls {...overviewPagination} />
               </div>
             ) : selectedStatusKey === "submitted" && submittedLoading ? (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
@@ -2182,6 +2217,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 selectedTeamLeaderMetrics,
                 "Team Leader",
                 selectedTeamLeaderStatusItems,
+                teamLeaderDetailPagination,
               )}
             </>
           ) : filteredTLs.length > 0 ? (
@@ -2249,6 +2285,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 selectedRecruiter,
                 "Recruiter",
                 selectedRecruiterStatusItems,
+                recruiterDetailPagination,
               )}
             </>
           ) : filteredRecruiters.length > 0 ? (
