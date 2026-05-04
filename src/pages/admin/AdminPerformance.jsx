@@ -142,6 +142,7 @@ const ADMIN_ACTIONS_BY_STATUS = {
       color: "#16a34a",
     },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
     { value: "joined", label: "Joined", color: "#16a34a" },
@@ -169,7 +170,7 @@ const ALLOWED_TRANSITIONS = {
   verified: ["walk_in", "others", "rejected"],
   others: ["walk_in", "rejected"],
   walk_in: ["shortlisted", "rejected"],
-  shortlisted: ["selected", "dropout"],
+  shortlisted: ["selected", "dropout", "rejected"],
   selected: ["joined", "dropout"],
   rejected: ["joined"],
   joined: ["billed", "left"],
@@ -1263,7 +1264,9 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const handleAdminAdvanceStatus = async () => {
     if (!actionModalItem || !actionTarget) return;
-    const currentStatus = normalizeStatus(actionModalItem.status);
+    const currentStatus = normalizeStatus(
+      actionModalItem.currentStatus || actionModalItem.status,
+    );
     const normalizedTarget = normalizeStatus(actionTarget);
     const allowedTargets = ALLOWED_TRANSITIONS[currentStatus] || [];
     if (!allowedTargets.includes(normalizedTarget)) {
@@ -1414,29 +1417,17 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const selectedStatusRank = getStatusRank(selectedStatusKey);
-
   const getRowActionState = useCallback(
     (item) => {
       const effectiveStatus = normalizeStatus(
         item?.currentStatus || item?.status,
       );
-      const effectiveRank = getStatusRank(effectiveStatus);
-      const isPreviousStageView =
-        selectedStatusRank >= 0 &&
-        effectiveRank >= 0 &&
-        selectedStatusRank < effectiveRank;
-
-      if (isPreviousStageView) {
-        return { availableActions: [], canRollback: false };
-      }
-
       return {
         availableActions: ADMIN_ACTIONS_BY_STATUS[effectiveStatus] || [],
         canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
       };
     },
-    [selectedStatusRank],
+    [],
   );
 
   const hasAnyRowActions = useMemo(
