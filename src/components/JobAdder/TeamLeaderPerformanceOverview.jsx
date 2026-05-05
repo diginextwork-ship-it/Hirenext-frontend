@@ -5,6 +5,7 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import { formatDateTimeInIndia } from "../../utils/dateTime";
 import {
   fetchTeamLeaderPerformanceDashboard,
   rollbackJobResumeStatus,
@@ -160,6 +161,8 @@ const formatDate = (value) => {
   if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleDateString();
 };
+
+const formatDateTime = (value) => formatDateTimeInIndia(value);
 
 const normalizeStatus = (value) => {
   const normalized = String(value || "")
@@ -737,6 +740,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>City</th>
                   <th>Resume File</th>
                   <th>Status</th>
+                  {selectedStatusKey === "submitted" ? <th>Submitted At</th> : null}
                   {selectedStatusKey === "walk_in" ? <th>Walk-in Date</th> : null}
                   {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
                     <th>Joining Date</th>
@@ -783,6 +787,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       </button>
                     </td>
                     <td>{formatStatusLabel(item.status)}</td>
+                    {selectedStatusKey === "submitted" ? (
+                      <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                    ) : null}
                     {selectedStatusKey === "walk_in" ? (
                       <td>{formatDate(item.walkInDate)}</td>
                     ) : null}

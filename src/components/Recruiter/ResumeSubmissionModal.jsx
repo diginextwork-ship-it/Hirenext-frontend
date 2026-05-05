@@ -376,6 +376,7 @@ export default function ResumeSubmissionModal({
     }
 
     const requestId = beginResumeRequest("Submitting...");
+    const submittedAtClient = new Date().toISOString();
     setErrorMessage("");
 
     try {
@@ -433,6 +434,7 @@ export default function ResumeSubmissionModal({
       payload.append("job_jid", String(jobId));
       payload.append("recruiter_rid", String(recruiterId));
       payload.append("jid", jid);
+      payload.append("submitted_at_client", submittedAtClient);
       const candidateName = String(formData.candidate_name || "").trim();
       const candidateEmail = String(formData.email || "").trim();
       const candidatePhone = String(formData.phone || "")

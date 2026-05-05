@@ -141,8 +141,7 @@ export default function RecruiterLogin() {
   const canManageJobAccess = isTeamLeader;
   const canViewTasks =
     normalizedRole === "recruiter" || isTeamLeader;
-  const canUploadResumes =
-    normalizedRole === "recruiter" || isTeamLeader;
+  const canUploadResumes = normalizedRole === "recruiter";
   const applicationsPagination = useTablePagination(
     applications,
     `${recruiter?.rid || ""}-applications`,
@@ -300,7 +299,10 @@ export default function RecruiterLogin() {
 
     const loadDashboard = async () => {
       try {
-        const tasks = [fetchApplications(recruiter.rid)];
+        const tasks = [];
+        if (!canManageJobAccess) {
+          tasks.push(fetchApplications(recruiter.rid));
+        }
         if (canCreateJobs) {
           tasks.push(fetchAllJobs());
           if (canManageJobAccess) {
@@ -608,69 +610,71 @@ export default function RecruiterLogin() {
               </>
             ) : null}
 
-            <div className="chart-card ui-mt-md">
-              <div className="ui-row-between ui-row-wrap">
-                <h2>Applicants and ATS score</h2>
-                <button
-                  type="button"
-                  className="click-here-btn"
-                  onClick={() => fetchApplications(recruiter.rid)}
-                  disabled={isLoadingApplications}
-                >
-                  {isLoadingApplications ? "Refreshing..." : "Refresh"}
-                </button>
-              </div>
-
-              {applications.length === 0 ? (
-                <p className="chart-empty">
-                  {isLoadingApplications
-                    ? "Loading applications..."
-                    : "No applications found yet for your jobs."}
-                </p>
-              ) : (
-                <div className="ui-table-wrap ui-mt-xs">
-                  <table className="ui-table">
-                    <thead>
-                      <tr>
-                        <th>Candidate</th>
-                        <th>Email</th>
-                        <th>Job ID</th>
-                        <th>Job</th>
-                        <th>ATS Score</th>
-                        <th>Resume</th>
-                        <th>Applied At</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {applicationsPagination.paginatedItems.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.candidateName}</td>
-                          <td>{item.email}</td>
-                          <td>{item.jobJid ?? "N/A"}</td>
-                          <td>
-                            <div>{item.job?.roleName || "N/A"}</div>
-                            <div className="admin-muted">
-                              {getResumeCompanyName(item)}
-                            </div>
-                            <div className="admin-muted">
-                              {getResumeCityName(item)}
-                            </div>
-                          </td>
-                          <td>
-                            {item.atsScore === null
-                              ? "N/A"
-                              : `${item.atsScore}%`}
-                          </td>
-                          <td>{item.resumeFilename || "N/A"}</td>
-                          <td>{formatDateTime(item.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <TablePaginationControls {...applicationsPagination} />
+            {!canManageJobAccess ? (
+              <div className="chart-card ui-mt-md">
+                <div className="ui-row-between ui-row-wrap">
+                  <h2>Applicants and ATS score</h2>
+                  <button
+                    type="button"
+                    className="click-here-btn"
+                    onClick={() => fetchApplications(recruiter.rid)}
+                    disabled={isLoadingApplications}
+                  >
+                    {isLoadingApplications ? "Refreshing..." : "Refresh"}
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {applications.length === 0 ? (
+                  <p className="chart-empty">
+                    {isLoadingApplications
+                      ? "Loading applications..."
+                      : "No applications found yet for your jobs."}
+                  </p>
+                ) : (
+                  <div className="ui-table-wrap ui-mt-xs">
+                    <table className="ui-table">
+                      <thead>
+                        <tr>
+                          <th>Candidate</th>
+                          <th>Email</th>
+                          <th>Job ID</th>
+                          <th>Job</th>
+                          <th>ATS Score</th>
+                          <th>Resume</th>
+                          <th>Applied At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {applicationsPagination.paginatedItems.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.candidateName}</td>
+                            <td>{item.email}</td>
+                            <td>{item.jobJid ?? "N/A"}</td>
+                            <td>
+                              <div>{item.job?.roleName || "N/A"}</div>
+                              <div className="admin-muted">
+                                {getResumeCompanyName(item)}
+                              </div>
+                              <div className="admin-muted">
+                                {getResumeCityName(item)}
+                              </div>
+                            </td>
+                            <td>
+                              {item.atsScore === null
+                                ? "N/A"
+                                : `${item.atsScore}%`}
+                            </td>
+                            <td>{item.resumeFilename || "N/A"}</td>
+                            <td>{formatDateTime(item.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <TablePaginationControls {...applicationsPagination} />
+                  </div>
+                )}
+              </div>
+            ) : null}
             {canUploadResumes ? (
               <div className="chart-card ui-mt-md">
                 <RecruiterJobsBoard
