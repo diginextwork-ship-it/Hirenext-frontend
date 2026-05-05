@@ -2272,6 +2272,15 @@
   margin-bottom: 1rem;
 }
 
+.admin-candidate-filter-btn {
+  margin-left: auto;
+  min-height: 46px;
+}
+
+.admin-candidate-filter-btn.is-active {
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.16);
+}
+
 .admin-candidate-resumes-search {
   display: grid;
   gap: 0.35rem;
@@ -2299,6 +2308,44 @@
 
 .admin-candidate-resumes-clear {
   min-height: 46px;
+}
+
+.admin-candidate-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.85rem;
+  align-items: end;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+}
+
+.admin-candidate-filter-panel label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.admin-candidate-filter-panel input,
+.admin-candidate-filter-panel select {
+  width: 100%;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.admin-candidate-filter-actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .admin-candidate-resumes-table th,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAuthSession } from "../../auth/session";
 import AdminLayout from "./AdminLayout";
 import {
@@ -11,10 +11,17 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
-import { formatDateTimeInIndia } from "../../utils/dateTime";
+import { formatDateTimeInIndia, parseDateTimeValue } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 
 const formatDateTime = (value) => formatDateTimeInIndia(value);
+
+const EMPTY_ADVANCED_FILTERS = {
+  company: "",
+  city: "",
+  submittedDate: "",
+  status: "",
+};
 
 const pickFirstValue = (...values) =>
   values.find((value) => value !== null && value !== undefined && value !== "");
@@ -39,6 +46,27 @@ const formatStatusLabel = (value) => {
     .join(" ");
 };
 
+const normalizeStatusValue = (value) =>
+  String(value || "submitted")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+const formatDateInputInIndia = (value) => {
+  const parsed = parseDateTimeValue(value);
+  if (!parsed) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(parsed);
+  const lookup = Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+  );
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+};
+
 const SOURCE_FILTERS = {
   ALL: "all",
   CANDIDATE: "candidate",
@@ -54,7 +82,9 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTERS.ALL);
   const [phoneSearch, setPhoneSearch] = useState("");
-  const [citySearch, setCitySearch] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(EMPTY_ADVANCED_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_ADVANCED_FILTERS);
   const [deletingResId, setDeletingResId] = useState("");
 
   const loadCandidateResumes = async () => {
@@ -157,6 +187,15 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         ? recruiterResumes
         : [...resumes, ...recruiterResumes];
 
+  const statusOptions = useMemo(() => {
+    const statusMap = new Map();
+    displayedResumes.forEach((resume) => {
+      const value = normalizeStatusValue(resume.workflowStatus || resume.status);
+      statusMap.set(value, formatStatusLabel(value));
+    });
+    return Array.from(statusMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [displayedResumes]);
+
   const filteredResumes = phoneSearch.trim()
     ? displayedResumes.filter((resume) =>
         [
@@ -172,14 +211,43 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       )
     : displayedResumes;
 
-  const cityFilteredResumes = citySearch.trim()
-    ? filteredResumes.filter((resume) =>
-        String(resume.city || resume.job?.city || "")
-          .trim()
-          .toLowerCase()
-          .includes(citySearch.trim().toLowerCase()),
-      )
-    : filteredResumes;
+  const hasAppliedAdvancedFilters = Object.values(appliedFilters).some((value) =>
+    String(value || "").trim(),
+  );
+
+  const advancedFilteredResumes = filteredResumes.filter((resume) => {
+    const companyQuery = appliedFilters.company.trim().toLowerCase();
+    const cityQuery = appliedFilters.city.trim().toLowerCase();
+    const statusQuery = normalizeStatusValue(appliedFilters.status);
+    const submittedDateQuery = appliedFilters.submittedDate.trim();
+
+    const company = String(formatResumeCompanyDisplay(resume) || "").toLowerCase();
+    const city = String(resume.city || resume.job?.city || "").toLowerCase();
+    const status = normalizeStatusValue(resume.workflowStatus || resume.status);
+    const submittedDate = formatDateInputInIndia(resume.uploadedAt);
+
+    return (
+      (!companyQuery || company.includes(companyQuery)) &&
+      (!cityQuery || city.includes(cityQuery)) &&
+      (!appliedFilters.status || status === statusQuery) &&
+      (!submittedDateQuery || submittedDate === submittedDateQuery)
+    );
+  });
+
+  const handleDraftFilterChange = (event) => {
+    const { name, value } = event.target;
+    setDraftFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleApplyAdvancedFilters = () => {
+    setAppliedFilters({ ...draftFilters });
+    setShowAdvancedFilters(false);
+  };
+
+  const handleClearAdvancedFilters = () => {
+    setDraftFilters(EMPTY_ADVANCED_FILTERS);
+    setAppliedFilters(EMPTY_ADVANCED_FILTERS);
+  };
 
   const handleResumeOpen = (resId) => {
     const token = getAuthSession()?.token;
@@ -294,22 +362,20 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
             onChange={(event) => setPhoneSearch(event.target.value)}
           />
         </label>
-        <label className="admin-candidate-resumes-search">
-          <span>Search by city</span>
-          <input
-            type="text"
-            placeholder="Enter city"
-            value={citySearch}
-            onChange={(event) => setCitySearch(event.target.value)}
-          />
-        </label>
-        {phoneSearch.trim() || citySearch.trim() ? (
+        <button
+          type="button"
+          className={`admin-refresh-btn admin-candidate-filter-btn${hasAppliedAdvancedFilters ? " is-active" : ""}`}
+          onClick={() => setShowAdvancedFilters((prev) => !prev)}
+        >
+          Filter
+        </button>
+        {phoneSearch.trim() || hasAppliedAdvancedFilters ? (
           <button
             type="button"
             className="admin-back-btn admin-candidate-resumes-clear"
             onClick={() => {
               setPhoneSearch("");
-              setCitySearch("");
+              handleClearAdvancedFilters();
             }}
           >
             Clear
@@ -317,12 +383,77 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         ) : null}
       </div>
 
+      {showAdvancedFilters ? (
+        <div className="admin-candidate-filter-panel">
+          <label>
+            <span>Company</span>
+            <input
+              name="company"
+              type="text"
+              placeholder="Company name"
+              value={draftFilters.company}
+              onChange={handleDraftFilterChange}
+            />
+          </label>
+          <label>
+            <span>City</span>
+            <input
+              name="city"
+              type="text"
+              placeholder="City"
+              value={draftFilters.city}
+              onChange={handleDraftFilterChange}
+            />
+          </label>
+          <label>
+            <span>Submission date</span>
+            <input
+              name="submittedDate"
+              type="date"
+              value={draftFilters.submittedDate}
+              onChange={handleDraftFilterChange}
+            />
+          </label>
+          <label>
+            <span>Current status</span>
+            <select
+              name="status"
+              value={draftFilters.status}
+              onChange={handleDraftFilterChange}
+            >
+              <option value="">Any status</option>
+              {statusOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="admin-candidate-filter-actions">
+            <button
+              type="button"
+              className="admin-back-btn"
+              onClick={handleClearAdvancedFilters}
+            >
+              Clear filters
+            </button>
+            <button
+              type="button"
+              className="admin-refresh-btn"
+              onClick={handleApplyAdvancedFilters}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="admin-dashboard-card admin-card-large">
-        {cityFilteredResumes.length === 0 ? (
+        {advancedFilteredResumes.length === 0 ? (
           <p className="admin-chart-empty">
             {isLoading
               ? "Loading resumes..."
-              : phoneSearch.trim() || citySearch.trim()
+              : phoneSearch.trim() || hasAppliedAdvancedFilters
                 ? "No resumes found for the current search."
                 : "No resumes found for this filter."}
           </p>
@@ -349,7 +480,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {cityFilteredResumes.map((resume) => (
+                {advancedFilteredResumes.map((resume) => (
                   <tr key={`${resume._source}-${resume.resId}`}>
                     <td>
                       {resume._source === "recruiter"
