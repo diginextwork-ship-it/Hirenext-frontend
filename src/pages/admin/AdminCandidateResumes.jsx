@@ -26,6 +26,14 @@ const EMPTY_ADVANCED_FILTERS = {
 const pickFirstValue = (...values) =>
   values.find((value) => value !== null && value !== undefined && value !== "");
 
+const displayNote = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
+    return "-";
+  }
+  return normalized;
+};
+
 const formatPercent = (value) => {
   const resolved = pickFirstValue(value);
   if (resolved === undefined) return "N/A";
@@ -523,7 +531,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                         )}
                       </span>
                     </td>
-                    <td>{resume.submittedReason || "-"}</td>
+                    <td>{displayNote(resume.submittedReason)}</td>
                     <td>{formatDateTime(resume.uploadedAt)}</td>
                     <td>
                       {resume.resId ? (

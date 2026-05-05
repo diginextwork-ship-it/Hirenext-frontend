@@ -342,8 +342,16 @@ function getCandidateDisplayName(item) {
   );
 }
 
+function displayNote(value) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
+    return "-";
+  }
+  return normalized;
+}
+
 function getLatestPerformanceNote(item) {
-  return (
+  return displayNote(
     item?.latestNote ||
     item?.note ||
     item?.reason ||
@@ -359,8 +367,7 @@ function getLatestPerformanceNote(item) {
     item?.dropoutReason ||
     item?.rejectReason ||
     item?.billedReason ||
-    item?.leftReason ||
-    "N/A"
+    item?.leftReason
   );
 }
 
@@ -1685,7 +1692,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         ].includes(selectedStatusKey) && (
                           <td>
                             {selectedStatusKey === "dropout" ? (
-                              item.dropoutReason || item.reason || "Not set"
+                              displayNote(item.dropoutReason || item.reason)
                             ) : selectedStatusKey === "selected" ? (
                               formatDate(item.joiningDate)
                             ) : item.joiningDate ||
@@ -1701,12 +1708,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 {item.joiningNote || item.joinedReason ? (
                                   <div>
                                     <strong>Note:</strong>{" "}
-                                    {item.joiningNote || item.joinedReason}
+                                    {displayNote(item.joiningNote || item.joinedReason)}
                                   </div>
                                 ) : null}
                               </>
                             ) : (
-                              "Not set"
+                              "-"
                             )}
                           </td>
                         )}

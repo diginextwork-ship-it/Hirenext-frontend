@@ -26,6 +26,13 @@ const formatLabel = (value) =>
 const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
 
 const formatDate = (value) => formatDateInIndia(value, "-");
+const displayNote = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
+    return "-";
+  }
+  return normalized;
+};
 const getResumeCompanyName = (resume, selectedJob) =>
   formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>
@@ -399,10 +406,10 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                       : `${resume.atsMatchPercentage}%`}
                   </td>
                   <td className="table-cell-wrap">
-                    {resume.submittedReason || "-"}
+                    {displayNote(resume.submittedReason)}
                   </td>
                   <td className="table-cell-wrap">
-                    {resume.verifiedReason || "-"}
+                    {displayNote(resume.verifiedReason)}
                   </td>
                   <td>
                     <span
@@ -549,7 +556,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                         {resume.joiningNote || resume.joinedReason ? (
                           <div>
                             <strong>Note:</strong>{" "}
-                            {resume.joiningNote || resume.joinedReason}
+                            {displayNote(resume.joiningNote || resume.joinedReason)}
                           </div>
                         ) : null}
                         {!resume.walkInDate &&

@@ -29,6 +29,13 @@ const PRESETS = {
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
+const displayNote = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
+    return "-";
+  }
+  return normalized;
+};
 const formatDate = (value) => {
   return formatDateInIndia(value, "Not set");
 };
@@ -781,13 +788,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                           </div>
                         </td>
                         <td className="table-cell-wrap">
-                          {resume.submittedReason || "-"}
+                          {displayNote(resume.submittedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          {resume.verifiedReason || "-"}
+                          {displayNote(resume.verifiedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          {currentReasonField || "-"}
+                          {displayNote(currentReasonField)}
                         </td>
                         <td>
                           {String(resume.workflowStatus || "pending").replace(
@@ -831,13 +838,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                             {resume.joiningNote || resume.joinedReason ? (
                               <div>
                                 <strong>Note:</strong>{" "}
-                                {resume.joiningNote || resume.joinedReason}
+                                {displayNote(resume.joiningNote || resume.joinedReason)}
                               </div>
                             ) : null}
                             {!resume.joiningDate &&
                             !resume.joiningNote &&
                             !resume.joinedReason
-                              ? "Not set"
+                              ? "-"
                               : null}
                           </td>
                         )}
