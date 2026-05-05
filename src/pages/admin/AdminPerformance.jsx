@@ -1120,6 +1120,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       tab: activeTab,
       timelinePreset,
     }),
+    "admin-performance-overview-page-size",
   );
   const recruiterDetailPagination = useTablePagination(
     selectedRecruiterStatusItems,
@@ -1127,6 +1128,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       recruiterRid: selectedRecruiter?.rid || "",
       selectedStatusKey,
     }),
+    "admin-performance-recruiter-detail-page-size",
   );
   const teamLeaderDetailPagination = useTablePagination(
     selectedTeamLeaderStatusItems,
@@ -1134,6 +1136,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       selectedStatusKey,
       teamLeaderRid: selectedTeamLeader?.rid || "",
     }),
+    "admin-performance-team-leader-detail-page-size",
   );
 
   const handleSubmittedCardClick = async () => {
@@ -1596,6 +1599,7 @@ export default function AdminPerformance({ setCurrentPage }) {
           </div>
           {personStatusItems.length > 0 ? (
             <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+              <TablePaginationControls {...pagination} />
               <table className="admin-table admin-table-wide">
                 <thead>
                   <tr>
@@ -1756,7 +1760,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                   })}
                 </tbody>
               </table>
-              <TablePaginationControls {...pagination} />
             </div>
           ) : selectedStatusKey === "submitted" && submittedLoading ? (
             <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
@@ -1939,6 +1942,7 @@ export default function AdminPerformance({ setCurrentPage }) {
             </div>
             {filteredSelectedStatusItems.length > 0 ? (
               <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+                <TablePaginationControls {...overviewPagination} />
                 <table className="admin-table admin-table-wide">
                   <thead>
                     <tr>
@@ -2070,7 +2074,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                     })}
                   </tbody>
                 </table>
-                <TablePaginationControls {...overviewPagination} />
               </div>
             ) : selectedStatusKey === "submitted" && submittedLoading ? (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>

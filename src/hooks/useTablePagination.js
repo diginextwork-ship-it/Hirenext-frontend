@@ -2,11 +2,26 @@ import { useEffect, useMemo, useState } from "react";
 
 export const DEFAULT_TABLE_PAGE_SIZE = 50;
 
-export default function useTablePagination(items, resetKey = "") {
-  const [pageSizeInput, setPageSizeInput] = useState(
-    String(DEFAULT_TABLE_PAGE_SIZE),
+function getStoredPageSize(storageKey) {
+  if (!storageKey || typeof window === "undefined") {
+    return DEFAULT_TABLE_PAGE_SIZE;
+  }
+
+  const parsed = Number.parseInt(
+    String(window.localStorage?.getItem(storageKey) || "").trim(),
+    10,
   );
-  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_TABLE_PAGE_SIZE;
+}
+
+export default function useTablePagination(items, resetKey = "", storageKey = "") {
+  const initialPageSize = getStoredPageSize(storageKey);
+  const [pageSizeInput, setPageSizeInput] = useState(
+    String(initialPageSize),
+  );
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -14,8 +29,11 @@ export default function useTablePagination(items, resetKey = "") {
     if (Number.isInteger(parsed) && parsed > 0) {
       setPageSize(parsed);
       setCurrentPage(1);
+      if (storageKey && typeof window !== "undefined") {
+        window.localStorage?.setItem(storageKey, String(parsed));
+      }
     }
-  }, [pageSizeInput]);
+  }, [pageSizeInput, storageKey]);
 
   useEffect(() => {
     setCurrentPage(1);
