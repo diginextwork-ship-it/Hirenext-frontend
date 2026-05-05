@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import useDailyRefresh from "../../hooks/useDailyRefresh";
@@ -26,15 +26,35 @@ const REASON_OPTIONS = [
   { value: "others", label: "Others" },
 ];
 
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  return {
+    fromDate: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    toDate: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
+};
+
+const getEntryDate = (item) => {
+  if (!item?.createdAt) return "";
+  const date = new Date(item.createdAt);
+  return Number.isNaN(date.getTime()) ? "" : toDateInputValue(date);
+};
+
 export default function AdminRevenue({ setCurrentPage }) {
   const [entries, setEntries] = useState([]);
   const [recruiters, setRecruiters] = useState([]);
   const [reimbursements, setReimbursements] = useState([]);
-  const [summary, setSummary] = useState({ totalIntake: 0, totalExpense: 0, netProfit: 0 });
+  const [, setSummary] = useState({ totalIntake: 0, totalExpense: 0, netProfit: 0 });
   const [entryTypeFilter, setEntryTypeFilter] = useState("all");
   const [searchFilters, setSearchFilters] = useState({
-    fromDate: "",
-    toDate: "",
+    ...getCurrentMonthRange(),
     reason: "",
   });
   const [formData, setFormData] = useState({
@@ -120,6 +140,14 @@ export default function AdminRevenue({ setCurrentPage }) {
   }, []);
 
   useDailyRefresh(() => {
+    const now = new Date();
+    if (now.getDate() === 1) {
+      setSearchFilters((prev) => ({
+        ...prev,
+        ...getCurrentMonthRange(),
+      }));
+      loadRevenue();
+    }
     loadReimbursements();
   });
 
@@ -127,21 +155,42 @@ export default function AdminRevenue({ setCurrentPage }) {
     await Promise.all([loadRevenue(), loadReimbursements()]);
   };
 
-  const filteredEntries = entries.filter((item) => {
+  const dateFilteredEntries = useMemo(() => entries.filter((item) => {
     const fromDateQuery = searchFilters.fromDate.trim();
     const toDateQuery = searchFilters.toDate.trim();
     const reasonQuery = searchFilters.reason.trim().toLowerCase();
     const itemReason = String(item.reason || "").toLowerCase();
-    const itemDate = item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : "";
-    const itemEntryType = String(item.entryType || "").trim().toLowerCase();
+    const itemDate = getEntryDate(item);
 
     const matchesFromDate = fromDateQuery ? itemDate >= fromDateQuery : true;
     const matchesToDate = toDateQuery ? itemDate <= toDateQuery : true;
     const matchesReason = reasonQuery ? itemReason.includes(reasonQuery) : true;
-    const matchesType = entryTypeFilter === "all" ? true : itemEntryType === entryTypeFilter;
 
-    return matchesFromDate && matchesToDate && matchesReason && matchesType;
-  });
+    return matchesFromDate && matchesToDate && matchesReason;
+  }), [entries, searchFilters]);
+
+  const visibleSummary = useMemo(() => {
+    const totals = dateFilteredEntries.reduce(
+      (acc, item) => {
+        acc.totalIntake += Number(item.companyRev) || 0;
+        acc.totalExpense += Number(item.expense) || 0;
+        return acc;
+      },
+      { totalIntake: 0, totalExpense: 0 },
+    );
+    const totalIntake = Math.round(totals.totalIntake * 100) / 100;
+    const totalExpense = Math.round(totals.totalExpense * 100) / 100;
+    return {
+      totalIntake,
+      totalExpense,
+      netProfit: Math.round((totalIntake - totalExpense) * 100) / 100,
+    };
+  }, [dateFilteredEntries]);
+
+  const filteredEntries = useMemo(() => dateFilteredEntries.filter((item) => {
+    const itemEntryType = String(item.entryType || "").trim().toLowerCase();
+    return entryTypeFilter === "all" ? true : itemEntryType === entryTypeFilter;
+  }), [dateFilteredEntries, entryTypeFilter]);
 
   const handleEntryTypeCardClick = (nextType) => {
     setEntryTypeFilter((prev) => (prev === nextType ? "all" : nextType));
@@ -320,7 +369,7 @@ export default function AdminRevenue({ setCurrentPage }) {
           aria-pressed={entryTypeFilter === "intake"}
         >
           <div className="admin-muted">Total Intake</div>
-          <h3 style={{ margin: "8px 0 0", color: "#166534" }}>{toCurrency(summary.totalIntake)}</h3>
+          <h3 style={{ margin: "8px 0 0", color: "#166534" }}>{toCurrency(visibleSummary.totalIntake)}</h3>
         </button>
         <button
           type="button"
@@ -330,12 +379,12 @@ export default function AdminRevenue({ setCurrentPage }) {
           aria-pressed={entryTypeFilter === "expense"}
         >
           <div className="admin-muted">Total Expense</div>
-          <h3 style={{ margin: "8px 0 0", color: "#b91c1c" }}>{toCurrency(summary.totalExpense)}</h3>
+          <h3 style={{ margin: "8px 0 0", color: "#b91c1c" }}>{toCurrency(visibleSummary.totalExpense)}</h3>
         </button>
         <div className="admin-dashboard-card">
           <div className="admin-muted">Net Profit</div>
-          <h3 style={{ margin: "8px 0 0", color: summary.netProfit >= 0 ? "#1d4ed8" : "#b91c1c" }}>
-            {toCurrency(summary.netProfit)}
+          <h3 style={{ margin: "8px 0 0", color: visibleSummary.netProfit >= 0 ? "#1d4ed8" : "#b91c1c" }}>
+            {toCurrency(visibleSummary.netProfit)}
           </h3>
         </div>
       </div>
