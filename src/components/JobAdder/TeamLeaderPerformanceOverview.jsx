@@ -185,6 +185,12 @@ const getStatusRank = (status) => {
     : -1;
 };
 
+const truncateResumeFilename = (value, maxLength = 15) => {
+  const text = String(value || "").trim();
+  if (!text) return "View resume";
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+};
+
 const normalizeLookupKey = (value) => String(value || "").trim().toLowerCase();
 
 const getCandidateDisplayName = (item) => {
@@ -301,6 +307,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
     for (const [bucketStatus, bucketItems] of Object.entries(statusDrilldown)) {
       if (!Array.isArray(bucketItems)) continue;
+      const bucketRank = getStatusRank(bucketStatus);
 
       for (const item of bucketItems) {
         const normalized = normalizeResumeData(item);
@@ -323,8 +330,20 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
             item?.status ||
             bucketStatus,
         );
+        const itemRank = getStatusRank(effectiveStatus);
+        const currentRank = Math.max(bucketRank, itemRank);
+        if (currentRank < 0) continue;
 
-        map.set(resId, effectiveStatus);
+        const previous = map.get(resId);
+        if (!previous || currentRank > previous.rank) {
+          map.set(resId, {
+            status:
+              currentRank === itemRank && itemRank >= 0
+                ? effectiveStatus
+                : normalizeStatus(bucketStatus),
+            rank: currentRank,
+          });
+        }
       }
     }
 
@@ -345,7 +364,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         ).trim();
         const bucketStatus = normalizeStatus(fallbackStatus);
         const currentStatus = normalizeStatus(
-          latestStatusByResId.get(resId) ||
+          latestStatusByResId.get(resId)?.status ||
             normalized?.workflowStatus ||
             normalized?.workflow_status ||
             normalized?.status ||
@@ -480,7 +499,10 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         selectedStatusRank < effectiveRank;
 
       if (isPreviousStageView) {
-        return { availableActions: [], canRollback: false };
+        return {
+          availableActions: [],
+          canRollback: ROLLBACKABLE_STATUSES.has(effectiveStatus),
+        };
       }
 
       return {
@@ -735,7 +757,6 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>Candidate Name</th>
                   <th>Recruiter</th>
                   <th>Contact Number</th>
-                  <th>Job ID</th>
                   <th>Company Name</th>
                   <th>City</th>
                   <th>Resume File</th>
@@ -774,19 +795,23 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                         "N/A"
                       )}
                     </td>
-                    <td>{item.jobJid ?? "N/A"}</td>
                     <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                     <td>{item.city || item.job?.city || "N/A"}</td>
                     <td>
                       <button
                         type="button"
-                        className="admin-refresh-btn"
+                        className="admin-refresh-btn admin-resume-file-btn"
                         onClick={() => handleResumeOpen(item.resId)}
+                        title={item.resumeFilename || item.resId || "View resume"}
                       >
-                        {item.resumeFilename || item.resId || "View resume"}
+                        <span className="admin-resume-file-btn-label">
+                          {truncateResumeFilename(
+                            item.resumeFilename || item.resId || "View resume",
+                          )}
+                        </span>
                       </button>
                     </td>
-                    <td>{formatStatusLabel(item.status)}</td>
+                    <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
                     {selectedStatusKey === "submitted" ? (
                       <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                     ) : null}

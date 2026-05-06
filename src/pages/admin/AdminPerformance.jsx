@@ -163,6 +163,9 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "rejected",
   "shortlisted",
   "joined",
+  "billed",
+  "left",
+  "dropout",
 ]);
 
 const ALLOWED_TRANSITIONS = {
@@ -194,6 +197,10 @@ const resolveRollbackTargetStatus = (item) => {
     return item?.verifiedReason ? "verified" : "submitted";
   }
   if (currentStatus === "joined") return "selected";
+  if (currentStatus === "billed" || currentStatus === "left") return "joined";
+  if (currentStatus === "dropout") {
+    return item?.joiningDate ? "selected" : "shortlisted";
+  }
   return null;
 };
 
@@ -460,6 +467,12 @@ function getStatusRank(status) {
   return Object.prototype.hasOwnProperty.call(STATUS_PROGRESS_RANK, normalized)
     ? STATUS_PROGRESS_RANK[normalized]
     : -1;
+}
+
+function truncateResumeFilename(value, maxLength = 15) {
+  const text = String(value || "").trim();
+  if (!text) return "View resume";
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
 
 const TERMINAL_EXCLUSIVE_STATUSES = new Set(["rejected", "left"]);
@@ -1145,6 +1158,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     }),
     "admin-performance-team-leader-detail-page-size",
   );
+  const selectedStatusRank = getStatusRank(selectedStatusKey);
 
   const handleSubmittedCardClick = async () => {
     setSelectedStatusKey("submitted");
@@ -1432,12 +1446,23 @@ export default function AdminPerformance({ setCurrentPage }) {
       const effectiveStatus = normalizeStatus(
         item?.currentStatus || item?.status,
       );
+      const effectiveRank = getStatusRank(effectiveStatus);
+      const isPreviousStageView =
+        selectedStatusRank >= 0 &&
+        effectiveRank >= 0 &&
+        selectedStatusRank < effectiveRank;
+      if (isPreviousStageView) {
+        return {
+          availableActions: [],
+          canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
+        };
+      }
       return {
         availableActions: ADMIN_ACTIONS_BY_STATUS[effectiveStatus] || [],
         canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
       };
     },
-    [],
+    [selectedStatusRank],
   );
 
   const hasAnyRowActions = useMemo(
@@ -1614,12 +1639,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Recruiter</th>
                     <th>Team Leader</th>
                     <th>Contact Number</th>
-                    <th>Job ID</th>
                     <th>Company Name</th>
                     <th>City</th>
                     <th>Resume File</th>
-                    <th>Submitted At</th>
                     <th>Status</th>
+                    <th>Submitted At</th>
                     {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                     {[
                       "dropout",
@@ -1666,20 +1690,24 @@ export default function AdminPerformance({ setCurrentPage }) {
                             "N/A"
                           )}
                         </td>
-                        <td>{item.jobJid ?? "N/A"}</td>
                         <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                         <td>{item.city || item.job?.city || "N/A"}</td>
                         <td>
                           <button
                             type="button"
-                            className="admin-refresh-btn"
+                            className="admin-refresh-btn admin-resume-file-btn"
                             onClick={() => handleResumeOpen(item.resId)}
+                            title={item.resumeFilename || item.resId || "View resume"}
                           >
-                            {item.resumeFilename || item.resId || "View resume"}
+                            <span className="admin-resume-file-btn-label">
+                              {truncateResumeFilename(
+                                item.resumeFilename || item.resId || "View resume",
+                              )}
+                            </span>
                           </button>
                         </td>
+                        <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
                         <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
-                        <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>{item.walkInReason || formatDate(item.walkInDate)}</td>
                         )}
@@ -1956,12 +1984,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Candidate Name</th>
                       <th>Recruiter</th>
                       <th>Contact Number</th>
-                      <th>Job ID</th>
                       <th>Company Name</th>
                       <th>City</th>
                       <th>Resume File</th>
-                      <th>Submitted At</th>
                       <th>Status</th>
+                      <th>Submitted At</th>
                       {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
                       {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
                         <th>Joining Date</th>
@@ -2008,20 +2035,24 @@ export default function AdminPerformance({ setCurrentPage }) {
                             "N/A"
                           )}
                         </td>
-                        <td>{item.jobJid ?? "N/A"}</td>
                         <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
                         <td>{item.city || item.job?.city || "N/A"}</td>
                         <td>
                           <button
                             type="button"
-                            className="admin-refresh-btn"
+                            className="admin-refresh-btn admin-resume-file-btn"
                             onClick={() => handleResumeOpen(item.resId)}
+                            title={item.resumeFilename || item.resId || "View resume"}
                           >
-                            {item.resumeFilename || item.resId || "View resume"}
+                            <span className="admin-resume-file-btn-label">
+                              {truncateResumeFilename(
+                                item.resumeFilename || item.resId || "View resume",
+                              )}
+                            </span>
                           </button>
                         </td>
+                        <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
                         <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
-                        <td>{formatStatusLabel(item.status)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>{formatDate(item.walkInDate)}</td>
                         )}

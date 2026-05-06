@@ -187,6 +187,19 @@
   cursor: not-allowed;
 }
 
+.admin-resume-file-btn {
+  max-width: 16ch;
+  padding-inline: 0.7rem;
+}
+
+.admin-resume-file-btn-label {
+  display: block;
+  max-width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-panel-card,
 .admin-dashboard-card {
   background: #fff;
