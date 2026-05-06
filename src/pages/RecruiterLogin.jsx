@@ -141,7 +141,8 @@ export default function RecruiterLogin() {
   const canManageJobAccess = isTeamLeader;
   const canViewTasks =
     normalizedRole === "recruiter" || isTeamLeader;
-  const canUploadResumes = normalizedRole === "recruiter";
+  const canUploadResumes = normalizedRole === "recruiter" || isTeamLeader;
+  const canViewUploadedResumes = normalizedRole === "recruiter";
   const applicationsPagination = useTablePagination(
     applications,
     `${recruiter?.rid || ""}-applications`,
@@ -309,7 +310,7 @@ export default function RecruiterLogin() {
             tasks.push(fetchAvailableRecruiters());
           }
         }
-        if (canUploadResumes) tasks.push(fetchRecruiterResumes(recruiter.rid));
+        if (canViewUploadedResumes) tasks.push(fetchRecruiterResumes(recruiter.rid));
         await Promise.all(tasks);
       } catch {
         // Dashboard sections fetch their own data; keep this page resilient if one list fails.
@@ -317,7 +318,7 @@ export default function RecruiterLogin() {
     };
 
     loadDashboard();
-  }, [recruiter?.rid, canCreateJobs, canManageJobAccess, canUploadResumes]);
+  }, [recruiter?.rid, canCreateJobs, canManageJobAccess, canViewUploadedResumes]);
 
   const handleJobInputChange = (event) => {
     const { name, value } = event.target;
@@ -494,7 +495,9 @@ export default function RecruiterLogin() {
     if (!recruiter?.rid) return;
     setJobMessageType("success");
     setJobMessage("Resume submitted successfully.");
-    await fetchRecruiterResumes(recruiter.rid);
+    if (canViewUploadedResumes) {
+      await fetchRecruiterResumes(recruiter.rid);
+    }
   };
 
   const handleLogout = () => {
@@ -682,6 +685,7 @@ export default function RecruiterLogin() {
                   onResumeSubmitted={handleResumeSubmitted}
                 />
 
+                {canViewUploadedResumes ? (
                 <div className="ui-table-wrap ui-mt-sm">
                   <div className="ui-row-between ui-row-wrap">
                     <h2 className="ui-title-sm">My uploaded resumes</h2>
@@ -773,6 +777,7 @@ export default function RecruiterLogin() {
                     </>
                   )}
                 </div>
+                ) : null}
               </div>
             ) : null}
             {canCreateJobs ? (
