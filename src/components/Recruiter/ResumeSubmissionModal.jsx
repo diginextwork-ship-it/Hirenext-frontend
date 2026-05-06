@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { checkRecruiterJobAccess, submitRecruiterResume } from "../../services/jobAccessService";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../../config/api";
 import { useNotification } from "../../context/NotificationContext";
+import { formatResumeCompanyDisplay } from "../../utils/dashboardData";
 
 const RESUME_SOURCE_OPTIONS = [
   "Naukri",
@@ -506,12 +507,10 @@ export default function ResumeSubmissionModal({
         throw new Error(data?.message || "Resume submission is not complete yet.");
       }
 
-      const companyName = String(
-        job?.company_name || data?.company_name || data?.companyName || "Unknown company",
-      ).trim();
-      const companyDisplay = officeLocationCity
-        ? `${companyName}, ${officeLocationCity}`
-        : companyName;
+      const companyDisplay = formatResumeCompanyDisplay({
+        companyName: job?.company_name || data?.company_name || data?.companyName,
+        officeLocationCity,
+      });
       addNotification(
         `Candidate submitted successfully for ${companyDisplay}. Phone: ${candidatePhone || "N/A"}`,
         "success",

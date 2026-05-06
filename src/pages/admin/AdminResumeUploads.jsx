@@ -4,15 +4,10 @@ import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import { useState } from "react";
 import {
   formatResumeCompanyDisplay,
-  normalizeResumeData,
+  formatResumeCityDisplay,
 } from "../../utils/dashboardData";
 import { formatDateTimeInIndia } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
-
-const getResumeCompanyName = (item) =>
-  formatResumeCompanyDisplay(item);
-const getResumeCityName = (item) =>
-  normalizeResumeData(item).city || "N/A";
 
 export default function AdminResumeUploads({ setCurrentPage }) {
   const [statusMessage, setStatusMessage] = useState("");
@@ -106,9 +101,9 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                     <td>
                       <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
                       <div className="admin-muted">
-                        {getResumeCompanyName(item)}
+                        {formatResumeCompanyDisplay(item)}
                       </div>
-                      <div className="admin-muted">{getResumeCityName(item)}</div>
+                      <div className="admin-muted">{formatResumeCityDisplay(item)}</div>
                     </td>
                     <td>{item.submittedReason || "-"}</td>
                     <td>{item.resumeFilename}</td>

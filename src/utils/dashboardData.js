@@ -504,6 +504,17 @@ export const formatResumeCompanyDisplay = (resume, fallbackJob = null) => {
   return `${companyName}, ${officeLocationCity}`;
 };
 
+export const formatResumeCityDisplay = (resume, fallbackJob = null) => {
+  const normalized = normalizeResumeData(resume, fallbackJob);
+  return pickFirst(
+    normalized.officeLocationCity,
+    normalized.office_location_city,
+    normalized.city,
+    normalized.job?.city,
+    normalized.job?.jobCity,
+  ) || "N/A";
+};
+
 export const buildCandidatePayloadAliases = (resume, fallbackJob = null) => {
   const normalized = normalizeResumeData(resume, fallbackJob);
   const candidateName = pickFirst(

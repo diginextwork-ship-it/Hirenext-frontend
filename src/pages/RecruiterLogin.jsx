@@ -21,6 +21,7 @@ import useTablePagination from "../hooks/useTablePagination";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import {
   formatResumeCompanyDisplay,
+  formatResumeCityDisplay,
   normalizeJobData,
   normalizeResumeData,
 } from "../utils/dashboardData";
@@ -72,11 +73,6 @@ const toUiJob = (job) => ({
       : "open",
   recruiterCount: Number(job.recruiterCount) || 0,
 });
-const getResumeCompanyName = (item) =>
-  formatResumeCompanyDisplay(item);
-const getResumeCityName = (item) =>
-  item?.city || item?.job?.city || item?.jobCity || "N/A";
-
 const isTeamLeaderRole = (role) => {
   const normalized = String(role || "")
     .trim()
@@ -656,10 +652,10 @@ export default function RecruiterLogin() {
                             <td>
                               <div>{item.job?.roleName || "N/A"}</div>
                               <div className="admin-muted">
-                                {getResumeCompanyName(item)}
+                                {formatResumeCompanyDisplay(item)}
                               </div>
                               <div className="admin-muted">
-                                {getResumeCityName(item)}
+                                {formatResumeCityDisplay(item)}
                               </div>
                             </td>
                             <td>
@@ -723,10 +719,10 @@ export default function RecruiterLogin() {
                               <td>
                                 <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
                                 <div className="admin-muted">
-                                  {getResumeCompanyName(item)}
+                                  {formatResumeCompanyDisplay(item)}
                                 </div>
                                 <div className="admin-muted">
-                                  {getResumeCityName(item)}
+                                  {formatResumeCityDisplay(item)}
                                 </div>
                               </td>
                               <td>{item.candidateName || item.applicantName || "N/A"}</td>
