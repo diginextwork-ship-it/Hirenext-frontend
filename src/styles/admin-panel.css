@@ -482,7 +482,7 @@
   border-collapse: collapse;
   min-width: 520px;
   table-layout: auto;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   color: #1e293b;
 }
 
@@ -504,7 +504,7 @@
   background: #f8fafc;
   padding: 0.7rem 0.9rem;
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #475569;
   text-transform: uppercase;
@@ -780,7 +780,7 @@
    TIMELINE FILTER BAR
    ═══════════════════════════════════════════════════════════════ */
 .admin-performance-key-cell {
-  font-size: 1.03rem;
+  font-size: 1.12rem;
   font-weight: 700;
   color: #0f172a;
 }
@@ -2567,7 +2567,7 @@
 
   .admin-table th,
   .admin-table td {
-    font-size: 0.84rem;
+    font-size: 0.9rem;
     padding: 0.56rem 0.58rem;
   }
 
@@ -2661,7 +2661,7 @@
 
   .admin-table th,
   .admin-table td {
-    font-size: 0.78rem;
+    font-size: 0.86rem;
     padding: 0.48rem 0.5rem;
   }
 
