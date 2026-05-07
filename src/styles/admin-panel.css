@@ -779,6 +779,16 @@
 /* ═══════════════════════════════════════════════════════════════
    TIMELINE FILTER BAR
    ═══════════════════════════════════════════════════════════════ */
+.admin-performance-key-cell {
+  font-size: 1.03rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-performance-key-cell a {
+  font-weight: 800;
+}
+
 .perf-timeline-bar {
   margin-bottom: 1.25rem;
   display: flex;

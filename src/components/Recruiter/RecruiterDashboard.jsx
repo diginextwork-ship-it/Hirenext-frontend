@@ -36,6 +36,22 @@ const displayNote = (value) => {
   }
   return normalized;
 };
+const displayNoteWithAuthor = (value, author) => {
+  const note = displayNote(value);
+  const authorName = String(author || "").trim();
+  if (note === "-" || !authorName) return note;
+  return (
+    <>
+      {note}, <strong>{authorName}</strong>
+    </>
+  );
+};
+const getWorkflowNoteAuthor = (resume, value) => {
+  const note = String(value ?? "").trim();
+  const workflowNote = String(resume?.workflowNote ?? "").trim();
+  if (!note || !workflowNote || note !== workflowNote) return "";
+  return resume?.workflowUpdatedByName || "";
+};
 const formatDate = (value) => {
   return formatDateInIndia(value, "Not set");
 };
@@ -791,10 +807,16 @@ export default function RecruiterDashboard({ recruiterId }) {
                           {displayNote(resume.submittedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          {displayNote(resume.verifiedReason)}
+                          {displayNoteWithAuthor(
+                            resume.verifiedReason,
+                            getWorkflowNoteAuthor(resume, resume.verifiedReason),
+                          )}
                         </td>
                         <td className="table-cell-wrap">
-                          {displayNote(currentReasonField)}
+                          {displayNoteWithAuthor(
+                            currentReasonField,
+                            getWorkflowNoteAuthor(resume, currentReasonField),
+                          )}
                         </td>
                         <td>
                           {String(resume.workflowStatus || "pending").replace(
@@ -806,12 +828,15 @@ export default function RecruiterDashboard({ recruiterId }) {
                           resume.leftReason ? (
                             <span
                               className="left-reason-tooltip"
-                              title={resume.leftReason}
+                              title={displayNote(resume.leftReason)}
                             >
                               {" "}
                               ℹ️
                               <span className="left-reason-text">
-                                {resume.leftReason}
+                                {displayNoteWithAuthor(
+                                  resume.leftReason,
+                                  getWorkflowNoteAuthor(resume, resume.leftReason),
+                                )}
                               </span>
                             </span>
                           ) : null}
@@ -838,7 +863,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                             {resume.joiningNote || resume.joinedReason ? (
                               <div>
                                 <strong>Note:</strong>{" "}
-                                {displayNote(resume.joiningNote || resume.joinedReason)}
+                                {displayNoteWithAuthor(
+                                  resume.joiningNote || resume.joinedReason,
+                                  getWorkflowNoteAuthor(
+                                    resume,
+                                    resume.joiningNote || resume.joinedReason,
+                                  ),
+                                )}
                               </div>
                             ) : null}
                             {!resume.joiningDate &&

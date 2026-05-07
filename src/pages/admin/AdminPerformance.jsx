@@ -1671,7 +1671,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       rowActionState.canRollback;
                     return (
                       <tr key={`${roleLabel}-${selectedStatusKey}-${item.resId}`}>
-                        <td>
+                        <td className="admin-performance-key-cell">
                           <strong>{getCandidateDisplayName(item)}</strong>
                         </td>
                         <td>
@@ -1681,7 +1681,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </div>
                         </td>
                         <td>{item.teamLeaderName || "N/A"}</td>
-                        <td>
+                        <td className="admin-performance-key-cell">
                           {item.candidatePhone || item.phone ? (
                             <a href={`tel:${item.candidatePhone || item.phone}`}>
                               {item.candidatePhone || item.phone}
@@ -1690,8 +1690,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                             "N/A"
                           )}
                         </td>
-                        <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
-                        <td>{item.city || item.job?.city || "N/A"}</td>
+                        <td className="admin-performance-key-cell">
+                          {formatResumeCompanyDisplay(item) || "N/A"}
+                        </td>
+                        <td className="admin-performance-key-cell">
+                          {item.city || item.job?.city || "N/A"}
+                        </td>
                         <td>
                           <button
                             type="button"
@@ -2015,7 +2019,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               : "inherit",
                         }}
                       >
-                        <td>
+                        <td className="admin-performance-key-cell">
                           <strong>{getCandidateDisplayName(item)}</strong>
                         </td>
                         <td>
@@ -2024,7 +2028,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             {item.recruiterRid || "N/A"}
                           </div>
                         </td>
-                        <td>
+                        <td className="admin-performance-key-cell">
                           {item.candidatePhone || item.phone ? (
                             <a
                               href={`tel:${item.candidatePhone || item.phone}`}
@@ -2035,8 +2039,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                             "N/A"
                           )}
                         </td>
-                        <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>
-                        <td>{item.city || item.job?.city || "N/A"}</td>
+                        <td className="admin-performance-key-cell">
+                          {formatResumeCompanyDisplay(item) || "N/A"}
+                        </td>
+                        <td className="admin-performance-key-cell">
+                          {item.city || item.job?.city || "N/A"}
+                        </td>
                         <td>
                           <button
                             type="button"

@@ -287,6 +287,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   const verifiedReason = pickFirst(
     pickNested(source, ["verifiedReason", "verified_reason"]),
     pickNested(selection, ["verifiedReason", "verified_reason"]),
+    status === "verified" ? genericReason : null,
   );
   const othersReason = pickFirst(
     pickNested(source, ["othersReason", "others_reason"]),
@@ -296,6 +297,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   const walkInReason = pickFirst(
     pickNested(source, ["walkInReason", "walk_in_reason"]),
     pickNested(selection, ["walkInReason", "walk_in_reason"]),
+    status === "walk_in" ? genericReason : null,
   );
   const selectReason = pickFirst(
     pickNested(source, [
@@ -310,10 +312,12 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       "selectionReason",
       "selection_reason",
     ]),
+    status === "selected" ? genericReason : null,
   );
   const rejectReason = pickFirst(
     pickNested(source, ["rejectReason", "reject_reason"]),
     pickNested(selection, ["rejectReason", "reject_reason"]),
+    status === "rejected" ? genericReason : null,
   );
   const shortlistedReason = pickFirst(
     pickNested(source, [
@@ -333,22 +337,29 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       "pending_reason",
     ]),
     joiningNote,
+    status === "shortlisted" || status === "pending_joining"
+      ? genericReason
+      : null,
   );
   const joinedReason = pickFirst(
     pickNested(source, ["joinedReason", "joined_reason"]),
     pickNested(selection, ["joinedReason", "joined_reason"]),
+    status === "joined" ? genericReason : null,
   );
   const dropoutReason = pickFirst(
     pickNested(source, ["dropoutReason", "dropout_reason", "reason"]),
     pickNested(selection, ["dropoutReason", "dropout_reason", "reason"]),
+    status === "dropout" ? genericReason : null,
   );
   const billedReason = pickFirst(
     pickNested(source, ["billedReason", "billed_reason"]),
     pickNested(selection, ["billedReason", "billed_reason"]),
+    status === "billed" ? genericReason : null,
   );
   const leftReason = pickFirst(
     pickNested(source, ["leftReason", "left_reason"]),
     pickNested(selection, ["leftReason", "left_reason"]),
+    status === "left" ? genericReason : null,
   );
   const jobJid = pickFirst(
     pickNested(source, [
