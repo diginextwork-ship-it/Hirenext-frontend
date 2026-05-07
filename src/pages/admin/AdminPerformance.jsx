@@ -351,7 +351,7 @@ function getCandidateDisplayName(item) {
 }
 
 function getLatestPerformanceNote(item) {
-  return displayNote(
+  return (
     item?.latestNote ||
     item?.note ||
     item?.reason ||
@@ -369,6 +369,28 @@ function getLatestPerformanceNote(item) {
     item?.billedReason ||
     item?.leftReason
   );
+}
+
+const normalizeNoteText = (value) => String(value ?? "").trim();
+
+function resolveNoteAuthor(item, noteValue) {
+  const note = normalizeNoteText(noteValue);
+  if (!note) return "N/A";
+
+  if (note === normalizeNoteText(item?.submittedReason)) {
+    return item?.recruiterName || "Recruiter";
+  }
+
+  const selectedByAdmin = normalizeNoteText(item?.selectedByAdmin);
+  const statusActorName =
+    item?.statusActorName ||
+    (selectedByAdmin === "admin-panel" ? "Admin" : selectedByAdmin);
+
+  if (note === normalizeNoteText(item?.selectionNote)) {
+    return statusActorName || "Admin";
+  }
+
+  return statusActorName || item?.teamLeaderName || item?.recruiterName || "N/A";
 }
 
 function normalizeStatus(value) {
@@ -581,6 +603,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [statusTarget, setStatusTarget] = useState(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [noteModal, setNoteModal] = useState(null);
 
   // Timeline filter state
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
@@ -1552,6 +1575,29 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const renderNoteButton = (item, noteValue) => {
+    const note = displayNote(noteValue);
+    if (note === "-") return "-";
+
+    const candidateName = getCandidateDisplayName(item);
+    const authorName = resolveNoteAuthor(item, noteValue);
+    return (
+      <button
+        type="button"
+        className="admin-note-view-btn"
+        onClick={() =>
+          setNoteModal({
+            note,
+            candidateName,
+            authorName,
+          })
+        }
+      >
+        view note
+      </button>
+    );
+  };
+
   const renderPersonMetrics = (
     person,
     metrics,
@@ -1706,7 +1752,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
                         <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                         {selectedStatusKey === "walk_in" && (
-                          <td>{item.walkInReason || formatDate(item.walkInDate)}</td>
+                          <td>
+                            {item.walkInReason
+                              ? renderNoteButton(item, item.walkInReason)
+                              : formatDate(item.walkInDate)}
+                          </td>
                         )}
                         {[
                           "dropout",
@@ -1717,7 +1767,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                         ].includes(selectedStatusKey) && (
                           <td>
                             {selectedStatusKey === "dropout" ? (
-                              displayNote(item.dropoutReason || item.reason)
+                              renderNoteButton(
+                                item,
+                                item.dropoutReason || item.reason,
+                              )
                             ) : selectedStatusKey === "selected" ? (
                               formatDate(item.joiningDate)
                             ) : item.joiningDate ||
@@ -1733,7 +1786,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 {item.joiningNote || item.joinedReason ? (
                                   <div>
                                     <strong>Note:</strong>{" "}
-                                    {displayNote(item.joiningNote || item.joinedReason)}
+                                    {renderNoteButton(
+                                      item,
+                                      item.joiningNote || item.joinedReason,
+                                    )}
                                   </div>
                                 ) : null}
                               </>
@@ -2061,7 +2117,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
                         )}
                         <td>
-                          {getLatestPerformanceNote(item)}
+                          {renderNoteButton(item, getLatestPerformanceNote(item))}
                         </td>
                         {hasAnyRowActions && (
                           <td>
@@ -2362,6 +2418,39 @@ export default function AdminPerformance({ setCurrentPage }) {
           )}
         </div>
       )}
+
+      {noteModal ? (
+        <div
+          className="admin-note-card-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setNoteModal(null)}
+        >
+          <div
+            className="admin-note-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="admin-note-card-close"
+              aria-label="Close note"
+              onClick={() => setNoteModal(null)}
+            >
+              x
+            </button>
+            <div className="admin-note-card-body">
+              <p className="admin-note-card-label">Candidate</p>
+              <h3>{noteModal.candidateName || "N/A"}</h3>
+              <p className="admin-note-card-label">Mentioned by</p>
+              <p className="admin-note-card-author">
+                {noteModal.authorName || "N/A"}
+              </p>
+              <p className="admin-note-card-label">Note</p>
+              <p className="admin-note-card-text">{noteModal.note}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {statusTarget ? (
         <div

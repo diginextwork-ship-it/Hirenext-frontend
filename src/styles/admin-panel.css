@@ -1,6 +1,7 @@
 .admin-page {
   min-height: 80vh;
-  padding: clamp(2.5rem, 4vw, 4rem) var(--spacing-md);
+  width: 100%;
+  padding: clamp(1.5rem, 3vw, 3rem) clamp(0.75rem, 1.5vw, 1.75rem);
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-family: var(--font-body);
   color: var(--text-primary);
@@ -487,7 +488,7 @@
 }
 
 .admin-table-wide {
-  min-width: 1100px;
+  min-width: 1480px;
   /* wide tables scroll, never compress */
 }
 
@@ -2019,8 +2020,8 @@
 
 .perf-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+  gap: 14px;
   margin-bottom: 1.5rem;
   width: 100%;
   overflow: hidden;
@@ -2032,6 +2033,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 1rem;
+  min-height: 148px;
   box-sizing: border-box;
   border-radius: 12px;
   background: #fff;
@@ -2178,6 +2180,96 @@
   flex: 1 1 320px;
   min-width: min(100%, 320px);
   max-width: 520px;
+}
+
+.admin-note-view-btn {
+  border: 0;
+  background: transparent;
+  color: #d64a4a;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-note-view-btn:hover,
+.admin-note-view-btn:focus-visible {
+  color: #b91c1c;
+}
+
+.admin-note-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.admin-note-card {
+  position: relative;
+  width: min(100%, 420px);
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fffafa;
+  box-shadow: 0 20px 48px rgba(127, 29, 29, 0.18);
+  color: #1f2937;
+}
+
+.admin-note-card-close {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fff;
+  color: #991b1b;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-note-card-body {
+  padding: 3rem 1.25rem 1.25rem;
+}
+
+.admin-note-card-label {
+  margin: 0.85rem 0 0.22rem;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-note-card-label:first-child {
+  margin-top: 0;
+}
+
+.admin-note-card h3,
+.admin-note-card-author,
+.admin-note-card-text {
+  margin: 0;
+}
+
+.admin-note-card h3 {
+  font-size: 1.12rem;
+}
+
+.admin-note-card-author {
+  font-weight: 800;
+}
+
+.admin-note-card-text {
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .perf-sortable {
