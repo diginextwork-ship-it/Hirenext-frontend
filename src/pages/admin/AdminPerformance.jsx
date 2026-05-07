@@ -333,11 +333,22 @@ function formatStatusLabel(status) {
 }
 
 function formatDate(value) {
-  return formatDateInIndia(value, "Not set");
+  return formatDateInIndia(value, "-");
 }
 
 function formatDateTime(value) {
-  return formatDateTimeInIndia(value, "Not set");
+  return formatDateTimeInIndia(value, "-");
+}
+
+function displayValue(value) {
+  const normalized = String(value ?? "").trim();
+  if (
+    !normalized ||
+    ["n/a", "na", "not set"].includes(normalized.toLowerCase())
+  ) {
+    return "-";
+  }
+  return normalized;
 }
 
 function getCandidateDisplayName(item) {
@@ -346,36 +357,38 @@ function getCandidateDisplayName(item) {
     item?.applicantName ||
     item?.name ||
     item?.fullName ||
-    "N/A"
+    "-"
   );
 }
 
 function getLatestPerformanceNote(item) {
-  return (
-    item?.latestNote ||
-    item?.note ||
-    item?.reason ||
-    item?.selectionNote ||
-    item?.submittedReason ||
-    item?.verifiedReason ||
-    item?.othersReason ||
-    item?.walkInReason ||
-    item?.shortlistedReason ||
-    item?.selectReason ||
-    item?.joiningNote ||
-    item?.joinedReason ||
-    item?.dropoutReason ||
-    item?.rejectReason ||
-    item?.billedReason ||
-    item?.leftReason
-  );
+  const status = normalizeStatus(item?.currentStatus || item?.status);
+  const byStatus = {
+    submitted: item?.submittedReason,
+    verified: item?.verifiedReason || item?.selectionNote,
+    others: item?.othersReason || item?.selectionNote,
+    walk_in: item?.walkInReason || item?.selectionNote,
+    shortlisted: item?.shortlistedReason || item?.selectionNote,
+    selected: item?.selectReason || item?.selectionNote,
+    joined: item?.joiningNote || item?.joinedReason || item?.selectionNote,
+    dropout: item?.dropoutReason || item?.selectionNote,
+    rejected: item?.rejectReason || item?.selectionNote,
+    billed: item?.billedReason || item?.selectionNote,
+    left: item?.leftReason || item?.selectionNote,
+  };
+
+  if (Object.prototype.hasOwnProperty.call(byStatus, status)) {
+    return byStatus[status];
+  }
+
+  return item?.latestNote || item?.note || item?.selectionNote;
 }
 
 const normalizeNoteText = (value) => String(value ?? "").trim();
 
 function resolveNoteAuthor(item, noteValue) {
   const note = normalizeNoteText(noteValue);
-  if (!note) return "N/A";
+  if (!note) return "-";
 
   if (note === normalizeNoteText(item?.submittedReason)) {
     return item?.recruiterName || "Recruiter";
@@ -390,7 +403,7 @@ function resolveNoteAuthor(item, noteValue) {
     return statusActorName || "Admin";
   }
 
-  return statusActorName || item?.teamLeaderName || item?.recruiterName || "N/A";
+  return statusActorName || item?.teamLeaderName || item?.recruiterName || "-";
 }
 
 function normalizeStatus(value) {
@@ -417,7 +430,7 @@ function matchesCandidateSearch(item, searchValue) {
   if (!normalizedSearch) return true;
 
   const candidateName = getCandidateDisplayName(item);
-  if (candidateName !== "N/A" && normalizeLookupKey(candidateName).includes(normalizedSearch)) {
+  if (candidateName !== "-" && normalizeLookupKey(candidateName).includes(normalizedSearch)) {
     return true;
   }
 
@@ -729,14 +742,14 @@ export default function AdminPerformance({ setCurrentPage }) {
           const normalized = normalizeResumeData(item);
           return {
             ...normalized,
-            recruiterName: normalized.recruiterName || "N/A",
-            recruiterRid: normalized.rid || "N/A",
+            recruiterName: normalized.recruiterName || "-",
+            recruiterRid: normalized.rid || "-",
             teamLeaderRid:
               item.teamLeaderRid || item.team_leader_rid || null,
             teamLeaderName:
-              item.teamLeaderName || item.team_leader_name || "N/A",
+              item.teamLeaderName || item.team_leader_name || "-",
             candidatePhone: normalized.candidatePhone || null,
-            jobJid: normalized.jobJid ?? "N/A",
+            jobJid: normalized.jobJid ?? "-",
             companyName: normalized.companyName || null,
             officeLocationCity:
               normalized.officeLocationCity ||
@@ -746,7 +759,8 @@ export default function AdminPerformance({ setCurrentPage }) {
             resumeFilename:
               normalized.resumeFilename || normalized.resId || "View resume",
             status: "submitted",
-            uploadedAt: normalized.uploadedAt || null,
+            submittedAt: item.submittedAt || item.uploadedAt || null,
+            uploadedAt: item.uploadedAt || item.submittedAt || null,
           };
         }),
       );
@@ -1714,26 +1728,26 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <strong>{getCandidateDisplayName(item)}</strong>
                         </td>
                         <td>
-                          <strong>{item.recruiterName || "N/A"}</strong>
+                          <strong>{displayValue(item.recruiterName)}</strong>
                           <div className="admin-muted">
-                            {item.recruiterRid || "N/A"}
+                            {displayValue(item.recruiterRid)}
                           </div>
                         </td>
-                        <td>{item.teamLeaderName || "N/A"}</td>
+                        <td>{displayValue(item.teamLeaderName)}</td>
                         <td className="admin-performance-key-cell">
                           {item.candidatePhone || item.phone ? (
                             <a href={`tel:${item.candidatePhone || item.phone}`}>
                               {item.candidatePhone || item.phone}
                             </a>
                           ) : (
-                            "N/A"
+                            "-"
                           )}
                         </td>
                         <td className="admin-performance-key-cell">
-                          {formatResumeCompanyDisplay(item) || "N/A"}
+                          {displayValue(formatResumeCompanyDisplay(item))}
                         </td>
                         <td className="admin-performance-key-cell">
-                          {item.city || item.job?.city || "N/A"}
+                          {displayValue(item.city || item.job?.city)}
                         </td>
                         <td>
                           <button
@@ -1750,7 +1764,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                        <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                        <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>
                             {item.walkInReason
@@ -2072,9 +2086,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <strong>{getCandidateDisplayName(item)}</strong>
                         </td>
                         <td>
-                          <strong>{item.recruiterName || "N/A"}</strong>
+                          <strong>{displayValue(item.recruiterName)}</strong>
                           <div className="admin-muted">
-                            {item.recruiterRid || "N/A"}
+                            {displayValue(item.recruiterRid)}
                           </div>
                         </td>
                         <td className="admin-performance-key-cell">
@@ -2085,14 +2099,14 @@ export default function AdminPerformance({ setCurrentPage }) {
                               {item.candidatePhone || item.phone}
                             </a>
                           ) : (
-                            "N/A"
+                            "-"
                           )}
                         </td>
                         <td className="admin-performance-key-cell">
-                          {formatResumeCompanyDisplay(item) || "N/A"}
+                          {displayValue(formatResumeCompanyDisplay(item))}
                         </td>
                         <td className="admin-performance-key-cell">
-                          {item.city || item.job?.city || "N/A"}
+                          {displayValue(item.city || item.job?.city)}
                         </td>
                         <td>
                           <button
@@ -2109,12 +2123,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                        <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                        <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
                         {selectedStatusKey === "walk_in" && (
                           <td>{formatDate(item.walkInDate)}</td>
                         )}
                         {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
-                          <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
+                          <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
                         )}
                         <td>
                           {renderNoteButton(item, getLatestPerformanceNote(item))}
@@ -2330,7 +2344,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           {tl.name || tl.rid}
                         </button>
                       </td>
-                      <td>{tl.email || "N/A"}</td>
+                      <td>{displayValue(tl.email)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2403,7 +2417,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           {r.name || r.rid}
                         </button>
                       </td>
-                      <td>{r.email || "N/A"}</td>
+                      <td>{displayValue(r.email)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2440,10 +2454,10 @@ export default function AdminPerformance({ setCurrentPage }) {
             </button>
             <div className="admin-note-card-body">
               <p className="admin-note-card-label">Candidate</p>
-              <h3>{noteModal.candidateName || "N/A"}</h3>
+              <h3>{displayValue(noteModal.candidateName)}</h3>
               <p className="admin-note-card-label">Mentioned by</p>
               <p className="admin-note-card-author">
-                {noteModal.authorName || "N/A"}
+                {displayValue(noteModal.authorName)}
               </p>
               <p className="admin-note-card-label">Note</p>
               <p className="admin-note-card-text">{noteModal.note}</p>
@@ -2537,7 +2551,7 @@ export default function AdminPerformance({ setCurrentPage }) {
               <strong>{deleteTarget.name}</strong> ({deleteTarget.rid})?
             </p>
             <p className="admin-muted" style={{ margin: "0 0 8px" }}>
-              Email: {deleteTarget.email || "N/A"}
+              Email: {displayValue(deleteTarget.email)}
             </p>
             <p
               style={{ margin: "0 0 12px", color: "#b91c1c", fontWeight: 600 }}
@@ -2600,7 +2614,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   actionModalItem.resId}
               </p>
               <p className="admin-muted" style={{ margin: 0 }}>
-                <strong>Job ID:</strong> {actionModalItem.jobJid ?? "N/A"}
+                <strong>Job ID:</strong> {displayValue(actionModalItem.jobJid)}
               </p>
               <p className="admin-muted" style={{ margin: 0 }}>
                 <strong>Current Status:</strong>{" "}
