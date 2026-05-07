@@ -208,10 +208,10 @@
 }
 
 @media (min-width: 769px) {
-  .recruiter-job-shell {
-    width: 100%;
+  .recruiter-login-page .recruiter-job-shell {
+    width: min(1600px, calc(100vw - 48px));
     max-width: none;
-    margin: 0;
+    margin: 0 auto;
   }
 
   .recruiter-job-card {
