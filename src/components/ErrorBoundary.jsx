@@ -37,6 +37,18 @@ const isRecoverableAsyncError = (error) => {
   );
 };
 
+const isChunkLoadError = (error) => {
+  const message = getErrorMessage(error).trim().toLowerCase();
+
+  return (
+    error?.name === "ChunkLoadError" ||
+    message.includes("failed to fetch dynamically imported module") ||
+    message.includes("importing a module script failed") ||
+    message.includes("loading chunk") ||
+    message.includes("module script load")
+  );
+};
+
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -52,6 +64,24 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Unhandled UI error:", error, errorInfo);
+
+    if (isChunkLoadError(error) && this.recoverFromChunkError()) {
+      return;
+    }
+  }
+
+  recoverFromChunkError() {
+    const reloadKey = "hirenext:chunk-reload";
+    const now = Date.now();
+    const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+
+    if (now - lastReload > 10000) {
+      sessionStorage.setItem(reloadKey, String(now));
+      window.location.reload();
+      return true;
+    }
+
+    return false;
   }
 
   componentDidMount() {
@@ -67,6 +97,11 @@ export default class ErrorBoundary extends Component {
   handleWindowError(event) {
     const nextError = event.error || event.message;
 
+    if (isChunkLoadError(nextError) && this.recoverFromChunkError()) {
+      event.preventDefault();
+      return;
+    }
+
     if (isRecoverableAsyncError(nextError)) {
       console.warn("Recoverable window error ignored by ErrorBoundary:", nextError);
       return;
@@ -77,6 +112,11 @@ export default class ErrorBoundary extends Component {
 
   handleUnhandledRejection(event) {
     const nextError = event.reason || "Unhandled promise rejection.";
+
+    if (isChunkLoadError(nextError) && this.recoverFromChunkError()) {
+      event.preventDefault();
+      return;
+    }
 
     if (isRecoverableAsyncError(nextError)) {
       console.warn(

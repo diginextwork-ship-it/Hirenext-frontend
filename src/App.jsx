@@ -4,6 +4,7 @@ import Footer from "./components/Footer";
 import { NotificationProvider } from "./context/NotificationContext";
 import NotificationContainer from "./context/NotificationContainer";
 import PageFallback from "./components/PageFallback";
+import RecruiterLogin from "./pages/RecruiterLogin";
 import {
   clearAuthSession,
   getAuthSession,
@@ -18,7 +19,6 @@ const Gallery = lazy(() => import("./pages/Gallery"));
 const JobSearch = lazy(() => import("./pages/JobSearch"));
 const JobDetails = lazy(() => import("./pages/JobDetails"));
 const JobApplication = lazy(() => import("./pages/JobApplication"));
-const RecruiterLogin = lazy(() => import("./pages/RecruiterLogin"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const AdminCreateRecruiter = lazy(
