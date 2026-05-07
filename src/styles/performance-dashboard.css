@@ -760,6 +760,96 @@
   vertical-align: top;
 }
 
+.note-view-btn {
+  border: 0;
+  background: transparent;
+  color: #d64a4a;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.note-view-btn:hover,
+.note-view-btn:focus-visible {
+  color: #b91c1c;
+}
+
+.note-view-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.note-view-card {
+  position: relative;
+  width: min(100%, 420px);
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fffafa;
+  box-shadow: 0 20px 48px rgba(127, 29, 29, 0.18);
+  color: #1f2937;
+}
+
+.note-view-close {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fff;
+  color: #991b1b;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.note-view-body {
+  padding: 3rem 1.25rem 1.25rem;
+}
+
+.note-view-label {
+  margin: 0.85rem 0 0.22rem;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.note-view-label:first-child {
+  margin-top: 0;
+}
+
+.note-view-card h3,
+.note-view-author,
+.note-view-text {
+  margin: 0;
+}
+
+.note-view-card h3 {
+  font-size: 1.12rem;
+}
+
+.note-view-author {
+  font-weight: 800;
+}
+
+.note-view-text {
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .resume-verify-box {
   margin-top: 10px;
   display: grid;

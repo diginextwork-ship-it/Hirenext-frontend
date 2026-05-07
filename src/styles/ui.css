@@ -4,7 +4,7 @@
 }
 
 .ui-shell {
-  width: min(1200px, 100%);
+  width: min(1720px, calc(100vw - 24px));
   margin: 0 auto;
   min-width: 0;
 }
@@ -203,7 +203,7 @@ video {
   }
 
   .ui-shell {
-    width: min(1200px, 100%);
+    width: 100%;
   }
 
   .ui-grid-2 {

@@ -7,6 +7,7 @@ import {
   updateJobResumeStatus,
 } from "../../services/performanceService";
 import { useNotification } from "../../context/NotificationContext";
+import NoteViewButton from "../common/NoteViewButton";
 import {
   buildCandidatePayloadAliases,
   displayNote,
@@ -41,6 +42,20 @@ const getResumeCandidatePhone = (resume, selectedJob) => {
     "N/A"
   );
 };
+const getResumeCandidateName = (resume, selectedJob) =>
+  normalizeResumeData(resume, selectedJob).candidateName || "-";
+const getNoteAuthor = (resume) =>
+  resume?.workflowUpdatedByName ||
+  resume?.teamLeaderName ||
+  resume?.recruiterName ||
+  "Team Leader";
+const renderNoteButton = (resume, selectedJob, note) => (
+  <NoteViewButton
+    note={note}
+    candidateName={getResumeCandidateName(resume, selectedJob)}
+    authorName={getNoteAuthor(resume)}
+  />
+);
 
 const isPostWalkInStatus = (status) =>
   ["walk_in", "shortlisted", "joined", "billed", "left"].includes(
@@ -400,10 +415,10 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                       : `${resume.atsMatchPercentage}%`}
                   </td>
                   <td className="table-cell-wrap">
-                    {displayNote(resume.submittedReason)}
+                    {renderNoteButton(resume, selectedJob, resume.submittedReason)}
                   </td>
                   <td className="table-cell-wrap">
-                    {displayNote(resume.verifiedReason)}
+                    {renderNoteButton(resume, selectedJob, resume.verifiedReason)}
                   </td>
                   <td>
                     <span
@@ -419,7 +434,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                         {" "}
                         ℹ️
                         <span className="left-reason-text">
-                          {resume.leftReason}
+                          {displayNote(resume.leftReason)}
                         </span>
                       </span>
                     ) : null}
@@ -550,7 +565,11 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
                         {resume.joiningNote || resume.joinedReason ? (
                           <div>
                             <strong>Note:</strong>{" "}
-                            {displayNote(resume.joiningNote || resume.joinedReason)}
+                            {renderNoteButton(
+                              resume,
+                              selectedJob,
+                              resume.joiningNote || resume.joinedReason,
+                            )}
                           </div>
                         ) : null}
                         {!resume.walkInDate &&

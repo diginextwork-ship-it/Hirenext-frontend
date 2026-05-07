@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
 import TablePaginationControls from "../common/TablePaginationControls";
-import NoteWithAuthor from "../common/NoteWithAuthor";
+import NoteViewButton from "../common/NoteViewButton";
 import {
   fetchRecruiterDashboard,
   markResumeLeft,
@@ -43,6 +43,17 @@ const getResumeCandidateName = (resume) =>
   normalizeResumeData(resume).candidateName || "N/A";
 const getResumeCandidatePhone = (resume) =>
   normalizeResumeData(resume).candidatePhone || null;
+const getNoteAuthor = (resume, note) => {
+  const workflowAuthor = getWorkflowNoteAuthor(resume, note);
+  return workflowAuthor || resume?.teamLeaderName || resume?.recruiterName || "-";
+};
+const renderNoteButton = (resume, note) => (
+  <NoteViewButton
+    note={note}
+    candidateName={getResumeCandidateName(resume)}
+    authorName={getNoteAuthor(resume, note)}
+  />
+);
 const getPointsProgressColor = (points) => {
   if (points <= 25) return "danger";
   if (points <= 75) return "warning";
@@ -784,25 +795,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                           </div>
                         </td>
                         <td className="table-cell-wrap">
-                          {displayNote(resume.submittedReason)}
+                          {renderNoteButton(resume, resume.submittedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          <NoteWithAuthor
-                            note={resume.verifiedReason}
-                            author={getWorkflowNoteAuthor(
-                              resume,
-                              resume.verifiedReason,
-                            )}
-                          />
+                          {renderNoteButton(resume, resume.verifiedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          <NoteWithAuthor
-                            note={currentReasonField}
-                            author={getWorkflowNoteAuthor(
-                              resume,
-                              currentReasonField,
-                            )}
-                          />
+                          {renderNoteButton(resume, currentReasonField)}
                         </td>
                         <td>
                           {String(resume.workflowStatus || "pending").replace(
@@ -819,13 +818,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                               {" "}
                               ℹ️
                               <span className="left-reason-text">
-                                <NoteWithAuthor
-                                  note={resume.leftReason}
-                                  author={getWorkflowNoteAuthor(
-                                    resume,
-                                    resume.leftReason,
-                                  )}
-                                />
+                                {displayNote(resume.leftReason)}
                               </span>
                             </span>
                           ) : null}
@@ -852,13 +845,10 @@ export default function RecruiterDashboard({ recruiterId }) {
                             {resume.joiningNote || resume.joinedReason ? (
                               <div>
                                 <strong>Note:</strong>{" "}
-                                <NoteWithAuthor
-                                  note={resume.joiningNote || resume.joinedReason}
-                                  author={getWorkflowNoteAuthor(
-                                    resume,
-                                    resume.joiningNote || resume.joinedReason,
-                                  )}
-                                />
+                                {renderNoteButton(
+                                  resume,
+                                  resume.joiningNote || resume.joinedReason,
+                                )}
                               </div>
                             ) : null}
                             {!resume.joiningDate &&

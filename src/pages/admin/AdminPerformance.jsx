@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import TablePaginationControls from "../../components/common/TablePaginationControls";
+import NoteViewButton from "../../components/common/NoteViewButton";
 import useTablePagination from "../../hooks/useTablePagination";
 import {
   API_BASE_URL,
@@ -616,7 +617,6 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [statusTarget, setStatusTarget] = useState(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusError, setStatusError] = useState("");
-  const [noteModal, setNoteModal] = useState(null);
 
   // Timeline filter state
   const [timelinePreset, setTimelinePreset] = useState(PRESETS.TODAY);
@@ -1590,25 +1590,12 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const renderNoteButton = (item, noteValue) => {
-    const note = displayNote(noteValue);
-    if (note === "-") return "-";
-
-    const candidateName = getCandidateDisplayName(item);
-    const authorName = resolveNoteAuthor(item, noteValue);
     return (
-      <button
-        type="button"
-        className="admin-note-view-btn"
-        onClick={() =>
-          setNoteModal({
-            note,
-            candidateName,
-            authorName,
-          })
-        }
-      >
-        view note
-      </button>
+      <NoteViewButton
+        note={noteValue}
+        candidateName={getCandidateDisplayName(item)}
+        authorName={resolveNoteAuthor(item, noteValue)}
+      />
     );
   };
 
@@ -2432,39 +2419,6 @@ export default function AdminPerformance({ setCurrentPage }) {
           )}
         </div>
       )}
-
-      {noteModal ? (
-        <div
-          className="admin-note-card-overlay"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setNoteModal(null)}
-        >
-          <div
-            className="admin-note-card"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="admin-note-card-close"
-              aria-label="Close note"
-              onClick={() => setNoteModal(null)}
-            >
-              x
-            </button>
-            <div className="admin-note-card-body">
-              <p className="admin-note-card-label">Candidate</p>
-              <h3>{displayValue(noteModal.candidateName)}</h3>
-              <p className="admin-note-card-label">Mentioned by</p>
-              <p className="admin-note-card-author">
-                {displayValue(noteModal.authorName)}
-              </p>
-              <p className="admin-note-card-label">Note</p>
-              <p className="admin-note-card-text">{noteModal.note}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {statusTarget ? (
         <div

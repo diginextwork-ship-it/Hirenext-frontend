@@ -5,6 +5,7 @@ import {
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
+import NoteViewButton from "../common/NoteViewButton";
 import { formatDateTimeInIndia } from "../../utils/dateTime";
 import {
   fetchTeamLeaderPerformanceDashboard,
@@ -202,6 +203,26 @@ const getCandidateDisplayName = (item) => {
     "N/A"
   );
 };
+
+const getLatestNote = (item) =>
+  item?.latestNote ||
+  item?.note ||
+  item?.selectionNote ||
+  item?.submittedReason ||
+  item?.verifiedReason ||
+  item?.othersReason ||
+  item?.walkInReason ||
+  item?.shortlistedReason ||
+  item?.selectReason ||
+  item?.joiningNote ||
+  item?.joinedReason ||
+  item?.dropoutReason ||
+  item?.rejectReason ||
+  item?.billedReason ||
+  item?.leftReason;
+
+const getNoteAuthor = (item) =>
+  item?.statusActorName || item?.teamLeaderName || item?.recruiterName || "Team Leader";
 
 const matchesCandidateSearch = (item, searchValue) => {
   const normalizedSearch = normalizeLookupKey(searchValue);
@@ -822,21 +843,11 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
                     ) : null}
                     <td>
-                      {item.note ||
-                       item.reason ||
-                       item.submittedReason ||
-                       item.verifiedReason ||
-                       item.othersReason ||
-                       item.walkInReason ||
-                       item.shortlistedReason ||
-                       item.selectReason ||
-                       item.joiningNote ||
-                       item.joinedReason ||
-                       item.dropoutReason ||
-                       item.rejectReason ||
-                       item.billedReason ||
-                       item.leftReason ||
-                       "N/A"}
+                      <NoteViewButton
+                        note={getLatestNote(item)}
+                        candidateName={getCandidateDisplayName(item)}
+                        authorName={getNoteAuthor(item)}
+                      />
                     </td>
                     {hasAnyRowActions ? (
                       <td>

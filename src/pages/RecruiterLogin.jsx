@@ -14,7 +14,7 @@ import RecruiterJobsBoard from "../components/Recruiter/RecruiterJobsBoard";
 import RecruiterDashboard from "../components/Recruiter/RecruiterDashboard";
 import RecruiterTasksPanel from "../components/Recruiter/RecruiterTasksPanel";
 import TablePaginationControls from "../components/common/TablePaginationControls";
-import NoteWithAuthor from "../components/common/NoteWithAuthor";
+import NoteViewButton from "../components/common/NoteViewButton";
 import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
@@ -739,21 +739,39 @@ export default function RecruiterLogin() {
                                   : `${item.atsScore}%`}
                               </td>
                               <td className="table-cell-wrap">
-                                {displayNote(item.submittedReason)}
+                                <NoteViewButton
+                                  note={item.submittedReason}
+                                  candidateName={
+                                    item.candidateName ||
+                                    item.applicantName ||
+                                    "-"
+                                  }
+                                  authorName={item.recruiterName || recruiter.name}
+                                />
                               </td>
                               <td className="table-cell-wrap">
-                                <NoteWithAuthor
+                                <NoteViewButton
                                   note={item.verifiedReason}
-                                  author={getWorkflowNoteAuthor(
+                                  candidateName={
+                                    item.candidateName ||
+                                    item.applicantName ||
+                                    "-"
+                                  }
+                                  authorName={getWorkflowNoteAuthor(
                                     item,
                                     item.verifiedReason,
                                   )}
                                 />
                               </td>
                               <td className="table-cell-wrap">
-                                <NoteWithAuthor
+                                <NoteViewButton
                                   note={getCurrentStatusNote(item)}
-                                  author={getWorkflowNoteAuthor(
+                                  candidateName={
+                                    item.candidateName ||
+                                    item.applicantName ||
+                                    "-"
+                                  }
+                                  authorName={getWorkflowNoteAuthor(
                                     item,
                                     getCurrentStatusNote(item),
                                   )}
