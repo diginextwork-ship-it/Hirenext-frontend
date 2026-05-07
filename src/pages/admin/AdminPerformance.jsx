@@ -15,6 +15,7 @@ import {
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
+  displayNote,
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -347,14 +348,6 @@ function getCandidateDisplayName(item) {
     item?.fullName ||
     "N/A"
   );
-}
-
-function displayNote(value) {
-  const normalized = String(value ?? "").trim();
-  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
-    return "-";
-  }
-  return normalized;
 }
 
 function getLatestPerformanceNote(item) {

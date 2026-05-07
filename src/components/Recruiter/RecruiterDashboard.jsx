@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
 import TablePaginationControls from "../common/TablePaginationControls";
+import NoteWithAuthor from "../common/NoteWithAuthor";
 import {
   fetchRecruiterDashboard,
   markResumeLeft,
@@ -10,6 +11,8 @@ import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
 import useTablePagination from "../../hooks/useTablePagination";
 import {
+  displayNote,
+  getWorkflowNoteAuthor,
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -29,29 +32,6 @@ const PRESETS = {
 
 const toDisplay = (value) =>
   value === null || value === undefined ? "-" : value;
-const displayNote = (value) => {
-  const normalized = String(value ?? "").trim();
-  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
-    return "-";
-  }
-  return normalized;
-};
-const displayNoteWithAuthor = (value, author) => {
-  const note = displayNote(value);
-  const authorName = String(author || "").trim();
-  if (note === "-" || !authorName) return note;
-  return (
-    <>
-      {note}, <strong>{authorName}</strong>
-    </>
-  );
-};
-const getWorkflowNoteAuthor = (resume, value) => {
-  const note = String(value ?? "").trim();
-  const workflowNote = String(resume?.workflowNote ?? "").trim();
-  if (!note || !workflowNote || note !== workflowNote) return "";
-  return resume?.workflowUpdatedByName || "";
-};
 const formatDate = (value) => {
   return formatDateInIndia(value, "Not set");
 };
@@ -807,16 +787,22 @@ export default function RecruiterDashboard({ recruiterId }) {
                           {displayNote(resume.submittedReason)}
                         </td>
                         <td className="table-cell-wrap">
-                          {displayNoteWithAuthor(
-                            resume.verifiedReason,
-                            getWorkflowNoteAuthor(resume, resume.verifiedReason),
-                          )}
+                          <NoteWithAuthor
+                            note={resume.verifiedReason}
+                            author={getWorkflowNoteAuthor(
+                              resume,
+                              resume.verifiedReason,
+                            )}
+                          />
                         </td>
                         <td className="table-cell-wrap">
-                          {displayNoteWithAuthor(
-                            currentReasonField,
-                            getWorkflowNoteAuthor(resume, currentReasonField),
-                          )}
+                          <NoteWithAuthor
+                            note={currentReasonField}
+                            author={getWorkflowNoteAuthor(
+                              resume,
+                              currentReasonField,
+                            )}
+                          />
                         </td>
                         <td>
                           {String(resume.workflowStatus || "pending").replace(
@@ -833,10 +819,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                               {" "}
                               ℹ️
                               <span className="left-reason-text">
-                                {displayNoteWithAuthor(
-                                  resume.leftReason,
-                                  getWorkflowNoteAuthor(resume, resume.leftReason),
-                                )}
+                                <NoteWithAuthor
+                                  note={resume.leftReason}
+                                  author={getWorkflowNoteAuthor(
+                                    resume,
+                                    resume.leftReason,
+                                  )}
+                                />
                               </span>
                             </span>
                           ) : null}
@@ -863,13 +852,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                             {resume.joiningNote || resume.joinedReason ? (
                               <div>
                                 <strong>Note:</strong>{" "}
-                                {displayNoteWithAuthor(
-                                  resume.joiningNote || resume.joinedReason,
-                                  getWorkflowNoteAuthor(
+                                <NoteWithAuthor
+                                  note={resume.joiningNote || resume.joinedReason}
+                                  author={getWorkflowNoteAuthor(
                                     resume,
                                     resume.joiningNote || resume.joinedReason,
-                                  ),
-                                )}
+                                  )}
+                                />
                               </div>
                             ) : null}
                             {!resume.joiningDate &&

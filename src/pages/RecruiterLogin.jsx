@@ -14,14 +14,18 @@ import RecruiterJobsBoard from "../components/Recruiter/RecruiterJobsBoard";
 import RecruiterDashboard from "../components/Recruiter/RecruiterDashboard";
 import RecruiterTasksPanel from "../components/Recruiter/RecruiterTasksPanel";
 import TablePaginationControls from "../components/common/TablePaginationControls";
+import NoteWithAuthor from "../components/common/NoteWithAuthor";
 import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import useTablePagination from "../hooks/useTablePagination";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import {
+  displayNote,
   formatResumeCompanyDisplay,
   formatResumeCityDisplay,
+  getCurrentStatusNote,
+  getWorkflowNoteAuthor,
   normalizeJobData,
   normalizeResumeData,
 } from "../utils/dashboardData";
@@ -33,53 +37,6 @@ import "../styles/reimbursement.css";
 import logo from "../assets/Logo.png";
 
 const formatDateTime = (dateValue) => formatDateTimeInIndia(dateValue, "");
-
-const displayNote = (value) => {
-  const normalized = String(value ?? "").trim();
-  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
-    return "-";
-  }
-  return normalized;
-};
-
-const displayNoteWithAuthor = (value, author) => {
-  const note = displayNote(value);
-  const authorName = String(author || "").trim();
-  if (note === "-" || !authorName) return note;
-  return (
-    <>
-      {note}, <strong>{authorName}</strong>
-    </>
-  );
-};
-
-const getWorkflowNoteAuthor = (resume, value) => {
-  const note = String(value ?? "").trim();
-  const workflowNote = String(resume?.workflowNote ?? "").trim();
-  if (!note || !workflowNote || note !== workflowNote) return "";
-  return resume?.workflowUpdatedByName || "";
-};
-
-const getCurrentStatusNote = (resume) => {
-  const status = String(resume?.workflowStatus || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  const noteByStatus = {
-    verified: resume?.verifiedReason,
-    others: resume?.othersReason,
-    walk_in: resume?.walkInReason,
-    shortlisted: resume?.shortlistedReason || resume?.pendingJoiningReason,
-    pending_joining: resume?.shortlistedReason || resume?.pendingJoiningReason,
-    selected: resume?.selectReason,
-    rejected: resume?.rejectReason,
-    joined: resume?.joiningNote || resume?.joinedReason,
-    dropout: resume?.dropoutReason,
-    billed: resume?.billedReason,
-    left: resume?.leftReason,
-  };
-  return noteByStatus[status] || resume?.workflowNote || "";
-};
 
 const readJsonResponse = async (response, fallbackMessage) => {
   const rawBody = await response.text();
@@ -785,19 +742,22 @@ export default function RecruiterLogin() {
                                 {displayNote(item.submittedReason)}
                               </td>
                               <td className="table-cell-wrap">
-                                {displayNoteWithAuthor(
-                                  item.verifiedReason,
-                                  getWorkflowNoteAuthor(item, item.verifiedReason),
-                                )}
+                                <NoteWithAuthor
+                                  note={item.verifiedReason}
+                                  author={getWorkflowNoteAuthor(
+                                    item,
+                                    item.verifiedReason,
+                                  )}
+                                />
                               </td>
                               <td className="table-cell-wrap">
-                                {displayNoteWithAuthor(
-                                  getCurrentStatusNote(item),
-                                  getWorkflowNoteAuthor(
+                                <NoteWithAuthor
+                                  note={getCurrentStatusNote(item)}
+                                  author={getWorkflowNoteAuthor(
                                     item,
                                     getCurrentStatusNote(item),
-                                  ),
-                                )}
+                                  )}
+                                />
                               </td>
                               <td>
                                 {String(item.workflowStatus || "pending").replace(

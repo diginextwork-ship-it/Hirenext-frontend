@@ -3,6 +3,45 @@ const isPresent = (value) =>
 
 const pickFirst = (...values) => values.find(isPresent);
 
+export const displayNote = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (
+    !normalized ||
+    ["n/a", "na", "not set"].includes(normalized.toLowerCase())
+  ) {
+    return "-";
+  }
+  return normalized;
+};
+
+export const getWorkflowNoteAuthor = (resume, value) => {
+  const note = String(value ?? "").trim();
+  const workflowNote = String(resume?.workflowNote ?? "").trim();
+  if (!note || !workflowNote || note !== workflowNote) return "";
+  return resume?.workflowUpdatedByName || "";
+};
+
+export const getCurrentStatusNote = (resume) => {
+  const status = String(resume?.workflowStatus || resume?.status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const noteByStatus = {
+    verified: resume?.verifiedReason,
+    others: resume?.othersReason,
+    walk_in: resume?.walkInReason,
+    shortlisted: resume?.shortlistedReason || resume?.pendingJoiningReason,
+    pending_joining: resume?.shortlistedReason || resume?.pendingJoiningReason,
+    selected: resume?.selectReason,
+    rejected: resume?.rejectReason,
+    joined: resume?.joiningNote || resume?.joinedReason,
+    dropout: resume?.dropoutReason,
+    billed: resume?.billedReason,
+    left: resume?.leftReason,
+  };
+  return noteByStatus[status] || resume?.workflowNote || "";
+};
+
 const normalizeDisplayText = (value) => {
   if (Array.isArray(value)) {
     const uniqueValues = [];

@@ -9,6 +9,7 @@ import {
 import { useNotification } from "../../context/NotificationContext";
 import {
   buildCandidatePayloadAliases,
+  displayNote,
   formatResumeCompanyDisplay,
   normalizeJobData,
   normalizeResumeData,
@@ -26,13 +27,6 @@ const formatLabel = (value) =>
 const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
 
 const formatDate = (value) => formatDateInIndia(value, "-");
-const displayNote = (value) => {
-  const normalized = String(value ?? "").trim();
-  if (!normalized || ["n/a", "na", "not set"].includes(normalized.toLowerCase())) {
-    return "-";
-  }
-  return normalized;
-};
 const getResumeCompanyName = (resume, selectedJob) =>
   formatResumeCompanyDisplay(resume, selectedJob);
 const getResumeCityName = (resume, selectedJob) =>
