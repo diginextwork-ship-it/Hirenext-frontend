@@ -14,18 +14,15 @@ import RecruiterJobsBoard from "../components/Recruiter/RecruiterJobsBoard";
 import RecruiterDashboard from "../components/Recruiter/RecruiterDashboard";
 import RecruiterTasksPanel from "../components/Recruiter/RecruiterTasksPanel";
 import TablePaginationControls from "../components/common/TablePaginationControls";
-import NoteViewButton from "../components/common/NoteViewButton";
+import SubmittedResumesPanel from "../components/common/SubmittedResumesPanel";
 import TeamLeaderDashboard from "../components/JobAdder/JobAdderDashboard";
 import ReimbursementButton from "../components/ReimbursementButton";
 import PasswordChangeModal from "../components/PasswordChangeModal";
 import useTablePagination from "../hooks/useTablePagination";
 import { fetchMyJobs, fetchRecruitersList } from "../services/jobAccessService";
 import {
-  displayNote,
   formatResumeCompanyDisplay,
   formatResumeCityDisplay,
-  getCurrentStatusNote,
-  getWorkflowNoteAuthor,
   normalizeJobData,
   normalizeResumeData,
 } from "../utils/dashboardData";
@@ -100,6 +97,7 @@ export default function RecruiterLogin() {
   const [recruiter, setRecruiter] = useState(null);
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
+  const [showSubmissionsPanel, setShowSubmissionsPanel] = useState(false);
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -142,14 +140,9 @@ export default function RecruiterLogin() {
   const canViewTasks =
     normalizedRole === "recruiter" || isTeamLeader;
   const canUploadResumes = normalizedRole === "recruiter" || isTeamLeader;
-  const canViewUploadedResumes = normalizedRole === "recruiter";
   const applicationsPagination = useTablePagination(
     applications,
     `${recruiter?.rid || ""}-applications`,
-  );
-  const uploadedResumesPagination = useTablePagination(
-    uploadedResumes,
-    `${recruiter?.rid || ""}-uploaded-resumes`,
   );
   const getAuthHeaders = (extraHeaders = {}) => {
     const token = getAuthSession()?.token || "";
@@ -310,7 +303,7 @@ export default function RecruiterLogin() {
             tasks.push(fetchAvailableRecruiters());
           }
         }
-        if (canViewUploadedResumes) tasks.push(fetchRecruiterResumes(recruiter.rid));
+        if (canUploadResumes) tasks.push(fetchRecruiterResumes(recruiter.rid));
         await Promise.all(tasks);
       } catch {
         // Dashboard sections fetch their own data; keep this page resilient if one list fails.
@@ -318,7 +311,7 @@ export default function RecruiterLogin() {
     };
 
     loadDashboard();
-  }, [recruiter?.rid, canCreateJobs, canManageJobAccess, canViewUploadedResumes]);
+  }, [recruiter?.rid, canCreateJobs, canManageJobAccess, canUploadResumes]);
 
   const handleJobInputChange = (event) => {
     const { name, value } = event.target;
@@ -495,7 +488,7 @@ export default function RecruiterLogin() {
     if (!recruiter?.rid) return;
     setJobMessageType("success");
     setJobMessage("Resume submitted successfully.");
-    if (canViewUploadedResumes) {
+    if (canUploadResumes) {
       await fetchRecruiterResumes(recruiter.rid);
     }
   };
@@ -504,6 +497,7 @@ export default function RecruiterLogin() {
     clearAuthSession();
     setRecruiter(null);
     setShowTasksPanel(false);
+    setShowSubmissionsPanel(false);
     setApplications([]);
     setJobs([]);
     setUploadedResumes([]);
@@ -578,6 +572,19 @@ export default function RecruiterLogin() {
                   {showTasksPanel ? "Hide My Tasks" : "My Tasks"}
                 </button>
               ) : null}
+              {canUploadResumes ? (
+                <button
+                  type="button"
+                  className={`click-here-btn recruiter-tasks-toggle ${
+                    showSubmissionsPanel ? "is-active" : ""
+                  }`}
+                  onClick={() => setShowSubmissionsPanel((prev) => !prev)}
+                >
+                  {showSubmissionsPanel
+                    ? "Hide My Submissions"
+                    : "My Submissions"}
+                </button>
+              ) : null}
             </div>
 
             {canUploadResumes && !canManageJobAccess ? (
@@ -589,6 +596,31 @@ export default function RecruiterLogin() {
 
             {canViewTasks && showTasksPanel ? (
               <RecruiterTasksPanel recruiterId={recruiter.rid} />
+            ) : null}
+
+            {canUploadResumes && showSubmissionsPanel ? (
+              <section className="ui-mt-md">
+                <SubmittedResumesPanel
+                  resumes={uploadedResumes}
+                  title="My Submissions"
+                  subtitle="See resumes submitted by you."
+                  headerActions={
+                    <button
+                      type="button"
+                      className="admin-refresh-btn"
+                      onClick={() => fetchRecruiterResumes(recruiter.rid)}
+                    >
+                      Refresh
+                    </button>
+                  }
+                  defaultRecruiterName={recruiter.name}
+                  getResumeUrl={(resume) => {
+                    const token = getAuthSession()?.token;
+                    if (!token || !resume?.resId) return "";
+                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiter.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+                  }}
+                />
+              </section>
             ) : null}
 
             {canManageJobAccess ? <TeamLeaderDashboard /> : null}
@@ -684,134 +716,6 @@ export default function RecruiterLogin() {
                   recruiterId={recruiter.rid}
                   onResumeSubmitted={handleResumeSubmitted}
                 />
-
-                {canViewUploadedResumes ? (
-                <div className="ui-table-wrap ui-mt-sm">
-                  <div className="ui-row-between ui-row-wrap">
-                    <h2 className="ui-title-sm">My uploaded resumes</h2>
-                    <button
-                      type="button"
-                      className="click-here-btn"
-                      onClick={() => fetchRecruiterResumes(recruiter.rid)}
-                    >
-                      Refresh
-                    </button>
-                  </div>
-                  {uploadedResumes.length === 0 ? (
-                    <p className="chart-empty">No resumes uploaded yet.</p>
-                  ) : (
-                    <>
-                      <table className="ui-table">
-                        <thead>
-                          <tr>
-                            <th>Resume ID</th>
-                            <th>Job</th>
-                            <th>Candidate Name</th>
-                            <th>Phone Number</th>
-                            <th>ATS Score</th>
-                            <th>Submitted Note</th>
-                            <th>Verified / Team Leader Note</th>
-                            <th>Status Note</th>
-                            <th>Status</th>
-                            <th>Uploaded At</th>
-                            <th>File</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {uploadedResumesPagination.paginatedItems.map((item) => (
-                            <tr key={item.resId}>
-                              <td>{item.resId}</td>
-                              <td>
-                                <div>{item.jobJid ? `#${item.jobJid}` : "N/A"}</div>
-                                <div className="admin-muted">
-                                  {formatResumeCompanyDisplay(item)}
-                                </div>
-                                <div className="admin-muted">
-                                  {formatResumeCityDisplay(item)}
-                                </div>
-                              </td>
-                              <td>{item.candidateName || item.applicantName || "N/A"}</td>
-                              <td>{item.phone || item.mobile || item.candidatePhone || "N/A"}</td>
-                              <td>
-                                {item.atsScore === null ||
-                                item.atsScore === undefined
-                                  ? "N/A"
-                                  : `${item.atsScore}%`}
-                              </td>
-                              <td className="table-cell-wrap">
-                                <NoteViewButton
-                                  note={item.submittedReason}
-                                  candidateName={
-                                    item.candidateName ||
-                                    item.applicantName ||
-                                    "-"
-                                  }
-                                  authorName={item.recruiterName || recruiter.name}
-                                />
-                              </td>
-                              <td className="table-cell-wrap">
-                                <NoteViewButton
-                                  note={item.verifiedReason}
-                                  candidateName={
-                                    item.candidateName ||
-                                    item.applicantName ||
-                                    "-"
-                                  }
-                                  authorName={getWorkflowNoteAuthor(
-                                    item,
-                                    item.verifiedReason,
-                                  )}
-                                />
-                              </td>
-                              <td className="table-cell-wrap">
-                                <NoteViewButton
-                                  note={getCurrentStatusNote(item)}
-                                  candidateName={
-                                    item.candidateName ||
-                                    item.applicantName ||
-                                    "-"
-                                  }
-                                  authorName={getWorkflowNoteAuthor(
-                                    item,
-                                    getCurrentStatusNote(item),
-                                  )}
-                                />
-                              </td>
-                              <td>
-                                {String(item.workflowStatus || "pending").replace(
-                                  /_/g,
-                                  " ",
-                                )}
-                              </td>
-                              <td>{formatDateTime(item.uploadedAt)}</td>
-                              <td>
-                                <a
-                                  href={`${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    const token = getAuthSession()?.token;
-                                    if (!token) return;
-                                    window.open(
-                                      `${API_BASE_URL}/api/recruiters/${recruiter.rid}/resumes/${item.resId}/file?token=${encodeURIComponent(token)}`,
-                                      "_blank",
-                                      "noopener,noreferrer",
-                                    );
-                                  }}
-                                >
-                                  View
-                                </a>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <TablePaginationControls {...uploadedResumesPagination} />
-                    </>
-                  )}
-                </div>
-                ) : null}
               </div>
             ) : null}
             {canCreateJobs ? (
