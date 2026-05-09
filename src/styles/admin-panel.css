@@ -2553,6 +2553,22 @@
   flex-wrap: wrap;
 }
 
+.admin-candidate-export-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-candidate-export-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: #15803d;
+  color: #fff;
+}
+
+.admin-candidate-export-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
 .admin-candidate-resumes-table th,
 .admin-candidate-resumes-table td {
   word-break: normal;

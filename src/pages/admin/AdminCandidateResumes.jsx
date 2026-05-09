@@ -53,6 +53,37 @@ const normalizeStatusValue = (value) =>
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
 
+const EXCEL_EXPORT_COLUMNS = [
+  "Recruiter Name",
+  "Candidate Name",
+  "Phone",
+  "Email",
+  "Job Company Name",
+  "Role",
+  "City",
+  "Education",
+  "Age",
+  "ATS Score",
+  "Latest Status",
+  "Recruiter Note",
+  "Submitted At",
+  "Resume File",
+];
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const sanitizeExcelValue = (value) => {
+  const resolved = String(value ?? "").trim();
+  if (!resolved) return "N/A";
+  return /^[=+\-@]/.test(resolved) ? `'${resolved}` : resolved;
+};
+
 const formatDateInputInIndia = (value) => {
   const parsed = parseDateTimeValue(value);
   if (!parsed) return "";
@@ -72,6 +103,92 @@ const SOURCE_FILTERS = {
   ALL: "all",
   CANDIDATE: "candidate",
   RECRUITER: "recruiter",
+};
+
+const formatEducationDisplay = (resume) =>
+  [
+    resume.latestEducationLevel,
+    resume.boardUniversity,
+    resume.institutionName,
+  ]
+    .filter(Boolean)
+    .join(" / ") || "N/A";
+
+const buildResumeFileUrl = (resId, token) => {
+  if (!resId || !token) return "";
+  return `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`;
+};
+
+const buildExcelExportRows = (resumes, token) =>
+  resumes.map((resume) => ({
+    recruiterName:
+      resume._source === "recruiter" ? resume._recruiterName || "N/A" : "N/A",
+    candidateName:
+      resume.applicantName || resume.candidateName || "Name not found",
+    phone: resume.applicantPhone || resume.candidatePhone || "N/A",
+    email: resume.applicantEmail || resume.candidateEmail || "N/A",
+    companyName: formatResumeCompanyDisplay(resume) || "N/A",
+    role: resume.job?.roleName || resume.roleName || "N/A",
+    city: resume.city || resume.job?.city || "N/A",
+    education: formatEducationDisplay(resume),
+    age: resume.age ?? "N/A",
+    atsScore: formatPercent(resume.atsScore),
+    latestStatus: formatStatusLabel(resume.workflowStatus || resume.status),
+    recruiterNote: displayNote(resume.submittedReason),
+    submittedAt: formatDateTime(resume.uploadedAt) || "N/A",
+    resumeFileUrl: buildResumeFileUrl(resume.resId, token) || "N/A",
+  }));
+
+const downloadExcelFile = (rows) => {
+  const tableRows = rows
+    .map(
+      (row) => `
+        <tr>
+          <td>${escapeHtml(sanitizeExcelValue(row.recruiterName))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.candidateName))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.phone))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.email))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.companyName))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.role))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.city))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.education))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.age))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.atsScore))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.latestStatus))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.recruiterNote))}</td>
+          <td>${escapeHtml(sanitizeExcelValue(row.submittedAt))}</td>
+          <td>${row.resumeFileUrl !== "N/A" ? `<a href="${escapeHtml(row.resumeFileUrl)}">${escapeHtml(row.resumeFileUrl)}</a>` : "N/A"}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <table border="1">
+      <thead>
+        <tr>${EXCEL_EXPORT_COLUMNS.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  </body>
+</html>`;
+
+  const blob = new Blob(["\ufeff", html], {
+    type: "application/vnd.ms-excel;charset=utf-8;",
+  });
+  const fileDate = new Date().toISOString().slice(0, 10);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `submitted-resumes-${fileDate}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 export default function AdminCandidateResumes({ setCurrentPage }) {
@@ -248,6 +365,28 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const handleClearAdvancedFilters = () => {
     setDraftFilters(EMPTY_ADVANCED_FILTERS);
     setAppliedFilters(EMPTY_ADVANCED_FILTERS);
+  };
+
+  const handleDownloadAsExcel = () => {
+    try {
+      const token = getAuthSession()?.token || "";
+      const exportRows = buildExcelExportRows(advancedFilteredResumes, token);
+
+      if (!exportRows.length) {
+        setSuccessMessage("");
+        setErrorMessage("No resumes available to download.");
+        return;
+      }
+
+      downloadExcelFile(exportRows);
+      setErrorMessage("");
+      setSuccessMessage(
+        `Downloaded ${exportRows.length} submitted resume${exportRows.length === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      setSuccessMessage("");
+      setErrorMessage(error.message || "Failed to download Excel file.");
+    }
   };
 
   const handleResumeOpen = (resId) => {
@@ -446,6 +585,16 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
               Apply
             </button>
           </div>
+          <div className="admin-candidate-export-wrap">
+            <button
+              type="button"
+              className="admin-refresh-btn admin-candidate-export-btn"
+              onClick={handleDownloadAsExcel}
+              disabled={advancedFilteredResumes.length === 0}
+            >
+              Download as Excel
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -502,15 +651,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
                     <td>{formatResumeCompanyDisplay(resume) || "N/A"}</td>
                     <td>{resume.job?.roleName || resume.roleName || "N/A"}</td>
                     <td>{resume.city || resume.job?.city || "N/A"}</td>
-                    <td>
-                      {[
-                        resume.latestEducationLevel,
-                        resume.boardUniversity,
-                        resume.institutionName,
-                      ]
-                        .filter(Boolean)
-                        .join(" / ") || "N/A"}
-                    </td>
+                    <td>{formatEducationDisplay(resume)}</td>
                     <td>{resume.age ?? "N/A"}</td>
                     <td>
                       <span className="admin-stat-pill">
