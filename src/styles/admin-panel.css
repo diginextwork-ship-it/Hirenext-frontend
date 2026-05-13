@@ -3203,12 +3203,14 @@
 
 .admin-candidate-filter-panel {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
   margin-bottom: 20px;
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid #dbe3f0;
+  align-items: end;
 }
 
 .admin-filter-row {
@@ -3217,10 +3219,19 @@
   gap: 16px;
 }
 
+.admin-candidate-filter-panel > .admin-filter-row:nth-of-type(-n + 3) {
+  display: contents;
+}
+
 .admin-filter-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.admin-candidate-filter-panel > .admin-filter-row:nth-of-type(3) .admin-filter-group:first-child {
+  grid-column: span 2;
 }
 
 .admin-filter-label {
@@ -3255,7 +3266,8 @@
 }
 
 .admin-date-range {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
@@ -3271,11 +3283,15 @@
   gap: 12px;
   justify-content: flex-end;
   padding-top: 4px;
+  grid-column: 2 / 3;
+  align-self: end;
 }
 
 .admin-filter-export {
   display: flex;
   justify-content: flex-end;
+  grid-column: 3 / 4;
+  align-self: end;
 }
 
 .admin-filter-action-btn {
@@ -3313,21 +3329,40 @@
 }
 
 .admin-filter-export {
+  background: transparent;
+  border-color: transparent;
+  color: inherit;
+}
+
+.admin-filter-export .admin-filter-action-btn {
+  min-width: 220px;
   background: #16a34a;
   border-color: #16a34a;
   color: #ffffff;
+  font-size: 0;
+  line-height: 0;
 }
 
-.admin-filter-export:hover:not(:disabled) {
+.admin-filter-export .admin-filter-action-btn::after {
+  content: "Download as Excel";
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.admin-filter-export .admin-filter-action-btn:hover:not(:disabled) {
   background: #15803d;
   border-color: #15803d;
 }
 
-.admin-filter-export:disabled {
+.admin-filter-export .admin-filter-action-btn:disabled {
   background: #e5e7eb;
   border-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+.admin-filter-toggle-icon {
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -3336,12 +3371,26 @@
     flex-wrap: wrap;
   }
 
+  .admin-candidate-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
   .admin-filter-row {
     grid-template-columns: 1fr;
   }
 
+  .admin-candidate-filter-panel > .admin-filter-row:nth-of-type(-n + 3) {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-candidate-filter-panel > .admin-filter-row:nth-of-type(3) .admin-filter-group:first-child {
+    grid-column: auto;
+  }
+
   .admin-date-range {
     flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 
@@ -3352,9 +3401,18 @@
 
   .admin-filter-actions {
     flex-direction: column;
+    grid-column: auto;
   }
 
   .admin-filter-action-btn {
     width: 100%;
+  }
+
+  .admin-filter-export {
+    grid-column: auto;
+  }
+
+  .admin-filter-export .admin-filter-action-btn {
+    min-width: 0;
   }
 }
