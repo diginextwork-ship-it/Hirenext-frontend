@@ -3127,47 +3127,38 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e2e8f0;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .admin-filter-toggle-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border: 1px solid #d1d5db;
+  padding: 10px 18px;
+  border: 1px solid #111827;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #374151;
-  font-weight: 600;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 500;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .admin-filter-toggle-btn:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-color: #c62828;
-  color: #c62828;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(198, 40, 40, 0.15);
+  border-color: #374151;
+  color: #374151;
 }
 
 .admin-filter-toggle-btn.has-filters {
-  background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
-  color: #ffffff;
-  border-color: #c62828;
+  border-color: #111827;
+  color: #111827;
 }
 
 .admin-filter-toggle-btn.has-filters:hover {
-  background: linear-gradient(135deg, #b71c1c 0%, #a71a1a 100%);
-  box-shadow: 0 4px 8px rgba(198, 40, 40, 0.25);
+  border-color: #374151;
+  color: #374151;
 }
 
 .admin-filter-toggle-icon {
@@ -3182,14 +3173,14 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #f3f4f6;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .admin-filter-toggle-btn.has-filters .admin-filter-count {
-  background: rgba(255, 255, 255, 0.9);
-  color: #c62828;
+  background: #f3f4f6;
+  color: #111827;
 }
 
 .admin-clear-filters-btn {
@@ -3201,48 +3192,35 @@
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .admin-clear-filters-btn:hover {
-  border-color: #c62828;
-  color: #c62828;
-  background: #fef2f2;
+  border-color: #9ca3af;
+  color: #374151;
+  background: #ffffff;
 }
 
 .admin-candidate-filter-panel {
   display: grid;
-  gap: 20px;
-  margin-bottom: 24px;
-  padding: 24px;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 20px;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
-  border: 1px solid #e2e8f0;
-  animation: admin-filter-slide-down 0.3s ease;
-}
-
-@keyframes admin-filter-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  border: 1px solid #dbe3f0;
 }
 
 .admin-filter-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .admin-filter-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .admin-filter-label {
@@ -3254,20 +3232,22 @@
 
 .admin-filter-input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid #c9d7eb;
   border-radius: 8px;
   font-size: 0.95rem;
   color: #1f2937;
   background: #ffffff;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .admin-filter-input:focus {
   outline: none;
-  border-color: #c62828;
-  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.1);
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.16);
 }
 
 .admin-filter-input::placeholder {
@@ -3290,8 +3270,7 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  padding-top: 4px;
 }
 
 .admin-filter-export {
@@ -3302,79 +3281,80 @@
 .admin-filter-action-btn {
   padding: 10px 20px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  border: 1px solid #d1d5db;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  background: #ffffff;
+  color: #111827;
 }
 
 .admin-filter-clear {
-  background: #f8fafc;
   color: #6b7280;
-  border: 1px solid #d1d5db;
 }
 
 .admin-filter-clear:hover {
-  background: #f1f5f9;
   border-color: #9ca3af;
   color: #374151;
+  background: #ffffff;
 }
 
 .admin-filter-apply {
-  background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
-  color: #ffffff;
+  border-color: #d1d5db;
 }
 
 .admin-filter-apply:hover {
-  background: linear-gradient(135deg, #b71c1c 0%, #a71a1a 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(198, 40, 40, 0.25);
+  border-color: #9ca3af;
+  background: #ffffff;
 }
 
 .admin-filter-export {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #16a34a;
+  border-color: #16a34a;
   color: #ffffff;
 }
 
 .admin-filter-export:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.25);
+  background: #15803d;
+  border-color: #15803d;
 }
 
 .admin-filter-export:disabled {
   background: #e5e7eb;
+  border-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 @media (max-width: 768px) {
+  .admin-candidate-resumes-toolbar {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
   .admin-filter-row {
     grid-template-columns: 1fr;
   }
-  
+
   .admin-date-range {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .admin-date-range-separator {
     text-align: center;
     padding: 4px 0;
   }
-  
+
   .admin-filter-actions {
     flex-direction: column;
   }
-  
+
   .admin-filter-action-btn {
     width: 100%;
-    justify-content: center;
   }
 }
