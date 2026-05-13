@@ -13,7 +13,8 @@ import "../../styles/admin-panel.css";
 const EMPTY_ADVANCED_FILTERS = {
   company: "",
   city: "",
-  submittedDate: "",
+  startDate: "",
+  endDate: "",
   status: "",
 };
 
@@ -260,18 +261,41 @@ export default function SubmittedResumesPanel({
     const companyQuery = appliedFilters.company.trim().toLowerCase();
     const cityQuery = appliedFilters.city.trim().toLowerCase();
     const statusQuery = normalizeStatusValue(appliedFilters.status);
-    const submittedDateQuery = appliedFilters.submittedDate.trim();
+    const startDateQuery = appliedFilters.startDate.trim();
+    const endDateQuery = appliedFilters.endDate.trim();
 
     const company = String(formatResumeCompanyDisplay(resume) || "").toLowerCase();
     const city = String(resume.city || resume.job?.city || "").toLowerCase();
     const status = normalizeStatusValue(resume.workflowStatus || resume.status);
     const submittedDate = formatDateInputInIndia(resume.uploadedAt);
+    
+    // Date range validation
+    let isWithinDateRange = true;
+    if (startDateQuery || endDateQuery) {
+      if (!submittedDate) {
+        isWithinDateRange = false;
+      } else {
+        const resumeDate = new Date(submittedDate);
+        
+        if (startDateQuery) {
+          const startDate = new Date(startDateQuery);
+          isWithinDateRange = isWithinDateRange && resumeDate >= startDate;
+        }
+        
+        if (endDateQuery) {
+          const endDate = new Date(endDateQuery);
+          // Set to end of day for end date
+          endDate.setHours(23, 59, 59, 999);
+          isWithinDateRange = isWithinDateRange && resumeDate <= endDate;
+        }
+      }
+    }
 
     return (
       (!companyQuery || company.includes(companyQuery)) &&
       (!cityQuery || city.includes(cityQuery)) &&
       (!appliedFilters.status || status === statusQuery) &&
-      (!submittedDateQuery || submittedDate === submittedDateQuery)
+      isWithinDateRange
     );
   });
 
@@ -367,107 +391,149 @@ export default function SubmittedResumesPanel({
       ) : null}
 
       <div className="admin-candidate-resumes-toolbar">
-        <label className="admin-candidate-resumes-search">
-          <span>Search by candidate phone</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="Enter phone number"
-            value={phoneSearch}
-            onChange={(event) => setPhoneSearch(event.target.value)}
-          />
-        </label>
         <button
           type="button"
-          className={`admin-refresh-btn admin-candidate-filter-btn${hasAppliedAdvancedFilters ? " is-active" : ""}`}
+          className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() ? " has-filters" : ""}`}
           onClick={() => setShowAdvancedFilters((prev) => !prev)}
         >
-          Filter
+          <span className="admin-filter-toggle-icon">⚙️</span>
+          Filters
+          {(hasAppliedAdvancedFilters || phoneSearch.trim()) && (
+            <span className="admin-filter-count">
+              {[
+                appliedFilters.company,
+                appliedFilters.city,
+                appliedFilters.startDate,
+                appliedFilters.endDate,
+                appliedFilters.status,
+                phoneSearch,
+              ].filter((v) => String(v || "").trim()).length}
+            </span>
+          )}
         </button>
-        {phoneSearch.trim() || hasAppliedAdvancedFilters ? (
+        {(phoneSearch.trim() || hasAppliedAdvancedFilters) && (
           <button
             type="button"
-            className="admin-back-btn admin-candidate-resumes-clear"
+            className="admin-clear-filters-btn"
             onClick={() => {
               setPhoneSearch("");
               handleClearAdvancedFilters();
             }}
           >
-            Clear
+            Clear All
           </button>
-        ) : null}
+        )}
       </div>
 
       {showAdvancedFilters ? (
         <div className="admin-candidate-filter-panel">
-          <label>
-            <span>Company</span>
-            <input
-              name="company"
-              type="text"
-              placeholder="Company name"
-              value={draftFilters.company}
-              onChange={handleDraftFilterChange}
-            />
-          </label>
-          <label>
-            <span>City</span>
-            <input
-              name="city"
-              type="text"
-              placeholder="City"
-              value={draftFilters.city}
-              onChange={handleDraftFilterChange}
-            />
-          </label>
-          <label>
-            <span>Submission date</span>
-            <input
-              name="submittedDate"
-              type="date"
-              value={draftFilters.submittedDate}
-              onChange={handleDraftFilterChange}
-            />
-          </label>
-          <label>
-            <span>Current status</span>
-            <select
-              name="status"
-              value={draftFilters.status}
-              onChange={handleDraftFilterChange}
-            >
-              <option value="">Any status</option>
-              {statusOptions.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="admin-candidate-filter-actions">
+          <div className="admin-filter-row">
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Search by Phone</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Enter phone number"
+                value={phoneSearch}
+                onChange={(event) => setPhoneSearch(event.target.value)}
+                className="admin-filter-input"
+              />
+            </label>
+          </div>
+          
+          <div className="admin-filter-row">
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Company</span>
+              <input
+                name="company"
+                type="text"
+                placeholder="Company name"
+                value={draftFilters.company}
+                onChange={handleDraftFilterChange}
+                className="admin-filter-input"
+              />
+            </label>
+            
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">City</span>
+              <input
+                name="city"
+                type="text"
+                placeholder="City"
+                value={draftFilters.city}
+                onChange={handleDraftFilterChange}
+                className="admin-filter-input"
+              />
+            </label>
+          </div>
+          
+          <div className="admin-filter-row">
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Date Range</span>
+              <div className="admin-date-range">
+                <input
+                  name="startDate"
+                  type="date"
+                  placeholder="From"
+                  value={draftFilters.startDate}
+                  onChange={handleDraftFilterChange}
+                  className="admin-filter-input"
+                />
+                <span className="admin-date-range-separator">to</span>
+                <input
+                  name="endDate"
+                  type="date"
+                  placeholder="To"
+                  value={draftFilters.endDate}
+                  onChange={handleDraftFilterChange}
+                  className="admin-filter-input"
+                />
+              </div>
+            </label>
+            
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Current Status</span>
+              <select
+                name="status"
+                value={draftFilters.status}
+                onChange={handleDraftFilterChange}
+                className="admin-filter-input"
+              >
+                <option value="">Any status</option>
+                {statusOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          
+          <div className="admin-filter-actions">
             <button
               type="button"
-              className="admin-back-btn"
+              className="admin-filter-action-btn admin-filter-clear"
               onClick={handleClearAdvancedFilters}
             >
-              Clear filters
+              Clear Filters
             </button>
             <button
               type="button"
-              className="admin-refresh-btn"
+              className="admin-filter-action-btn admin-filter-apply"
               onClick={handleApplyAdvancedFilters}
             >
-              Apply
+              Apply Filters
             </button>
           </div>
-          <div className="admin-candidate-export-wrap">
+          
+          <div className="admin-filter-export">
             <button
               type="button"
-              className="admin-refresh-btn admin-candidate-export-btn"
+              className="admin-filter-action-btn admin-filter-export"
               onClick={handleDownloadAsExcel}
               disabled={advancedFilteredResumes.length === 0}
             >
-              Download as Excel
+              📊 Download as Excel
             </button>
           </div>
         </div>
