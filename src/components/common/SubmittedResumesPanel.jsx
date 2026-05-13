@@ -551,6 +551,25 @@ export default function SubmittedResumesPanel({
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-table admin-table-wide admin-candidate-resumes-table">
+              <colgroup>
+                <col className="submitted-resumes-col-recruiter" />
+                <col className="submitted-resumes-col-candidate" />
+                <col className="submitted-resumes-col-phone" />
+                <col className="submitted-resumes-col-email" />
+                <col className="submitted-resumes-col-company" />
+                <col className="submitted-resumes-col-role" />
+                <col className="submitted-resumes-col-city" />
+                <col className="submitted-resumes-col-education" />
+                <col className="submitted-resumes-col-age" />
+                <col className="submitted-resumes-col-ats" />
+                <col className="submitted-resumes-col-status" />
+                <col className="submitted-resumes-col-note" />
+                <col className="submitted-resumes-col-submitted" />
+                <col className="submitted-resumes-col-file" />
+                {showActionsColumn ? (
+                  <col className="submitted-resumes-col-actions" />
+                ) : null}
+              </colgroup>
               <thead>
                 <tr>
                   <th>Recruiter Name</th>

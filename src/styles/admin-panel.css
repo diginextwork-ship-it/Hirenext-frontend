@@ -2575,6 +2575,71 @@
   overflow-wrap: anywhere;
 }
 
+.admin-candidate-resumes-table {
+  table-layout: fixed;
+  width: max-content;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-recruiter {
+  width: 130px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-candidate {
+  width: 170px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-phone {
+  width: 125px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-email {
+  width: 210px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-company {
+  width: 170px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-role {
+  width: 160px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-city {
+  width: 110px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-education {
+  width: 190px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-age {
+  width: 64px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-ats {
+  width: 112px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-status {
+  width: 145px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-note {
+  width: 160px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-submitted {
+  width: 180px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-file {
+  width: 215px;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-col-actions {
+  width: 155px;
+}
+
 .admin-candidate-resumes-table th {
   white-space: nowrap;
 }
@@ -2593,7 +2658,8 @@
 
 .admin-candidate-resumes-table th:nth-child(3),
 .admin-candidate-resumes-table td:nth-child(3) {
-  min-width: 220px;
+  min-width: 125px;
+  white-space: nowrap;
 }
 
 .admin-candidate-resumes-table th:nth-child(6),
@@ -2612,6 +2678,33 @@
 .admin-candidate-resumes-table th:nth-child(9),
 .admin-candidate-resumes-table td:nth-child(9) {
   min-width: 150px;
+}
+
+.admin-candidate-resumes-table th,
+.admin-candidate-resumes-table td {
+  min-width: 0;
+  max-width: none;
+  text-align: left;
+  font-family: inherit;
+}
+
+.admin-candidate-resumes-table th:nth-child(1),
+.admin-candidate-resumes-table td:nth-child(1),
+.admin-candidate-resumes-table th:nth-child(2),
+.admin-candidate-resumes-table td:nth-child(2),
+.admin-candidate-resumes-table th:nth-child(3),
+.admin-candidate-resumes-table td:nth-child(3),
+.admin-candidate-resumes-table th:nth-child(6),
+.admin-candidate-resumes-table td:nth-child(6),
+.admin-candidate-resumes-table th:nth-child(7),
+.admin-candidate-resumes-table td:nth-child(7),
+.admin-candidate-resumes-table th:nth-child(10),
+.admin-candidate-resumes-table td:nth-child(10),
+.admin-candidate-resumes-table th:nth-child(11),
+.admin-candidate-resumes-table td:nth-child(11),
+.admin-candidate-resumes-table th:nth-child(13),
+.admin-candidate-resumes-table td:nth-child(13) {
+  white-space: nowrap;
 }
 
 .admin-candidate-status-badge {
