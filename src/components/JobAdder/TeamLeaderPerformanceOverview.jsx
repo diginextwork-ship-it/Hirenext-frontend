@@ -204,25 +204,37 @@ const getCandidateDisplayName = (item) => {
   );
 };
 
-const getLatestNote = (item) =>
-  item?.latestNote ||
-  item?.note ||
-  item?.selectionNote ||
-  item?.submittedReason ||
-  item?.verifiedReason ||
-  item?.othersReason ||
-  item?.walkInReason ||
-  item?.shortlistedReason ||
-  item?.selectReason ||
-  item?.joiningNote ||
-  item?.joinedReason ||
-  item?.dropoutReason ||
-  item?.rejectReason ||
-  item?.billedReason ||
-  item?.leftReason;
+const getNoteForStatus = (item, statusValue) => {
+  const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
+  const byStatus = {
+    submitted: item?.submittedReason,
+    verified: item?.verifiedReason || item?.selectionNote,
+    others: item?.othersReason || item?.selectionNote,
+    walk_in: item?.walkInReason || item?.selectionNote,
+    shortlisted: item?.shortlistedReason || item?.selectionNote,
+    selected: item?.selectReason || item?.selectionNote,
+    joined: item?.joiningNote || item?.joinedReason || item?.selectionNote,
+    dropout: item?.dropoutReason || item?.selectionNote,
+    rejected: item?.rejectReason || item?.selectionNote,
+    billed: item?.billedReason || item?.selectionNote,
+    left: item?.leftReason || item?.selectionNote,
+  };
 
-const getNoteAuthor = (item) =>
-  item?.statusActorName || item?.teamLeaderName || item?.recruiterName || "Team Leader";
+  return byStatus[status] || item?.latestNote || item?.note || item?.selectionNote;
+};
+
+const getNoteAuthor = (item, statusValue) => {
+  const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
+  if (status === "submitted") return item?.recruiterName || "Recruiter";
+  const selectedBy = String(item?.selectedByAdmin || "").trim();
+  return (
+    item?.statusActorName ||
+    (selectedBy === "admin-panel" ? "Admin" : selectedBy) ||
+    item?.teamLeaderName ||
+    item?.recruiterName ||
+    "Team Leader"
+  );
+};
 
 const matchesCandidateSearch = (item, searchValue) => {
   const normalizedSearch = normalizeLookupKey(searchValue);
@@ -844,9 +856,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                     ) : null}
                     <td>
                       <NoteViewButton
-                        note={getLatestNote(item)}
+                        note={getNoteForStatus(item, selectedStatusKey)}
                         candidateName={getCandidateDisplayName(item)}
-                        authorName={getNoteAuthor(item)}
+                        authorName={getNoteAuthor(item, selectedStatusKey)}
                       />
                     </td>
                     {hasAnyRowActions ? (

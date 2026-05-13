@@ -362,8 +362,8 @@ function getCandidateDisplayName(item) {
   );
 }
 
-function getLatestPerformanceNote(item) {
-  const status = normalizeStatus(item?.currentStatus || item?.status);
+function getPerformanceNoteForStatus(item, statusValue) {
+  const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
   const byStatus = {
     submitted: item?.submittedReason,
     verified: item?.verifiedReason || item?.selectionNote,
@@ -387,11 +387,16 @@ function getLatestPerformanceNote(item) {
 
 const normalizeNoteText = (value) => String(value ?? "").trim();
 
-function resolveNoteAuthor(item, noteValue) {
+function getLatestPerformanceNote(item) {
+  return getPerformanceNoteForStatus(item);
+}
+
+function resolveNoteAuthor(item, noteValue, statusValue) {
   const note = normalizeNoteText(noteValue);
   if (!note) return "-";
+  const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
 
-  if (note === normalizeNoteText(item?.submittedReason)) {
+  if (status === "submitted" || note === normalizeNoteText(item?.submittedReason)) {
     return item?.recruiterName || "Recruiter";
   }
 
@@ -1589,12 +1594,12 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
-  const renderNoteButton = (item, noteValue) => {
+  const renderNoteButton = (item, noteValue, statusValue) => {
     return (
       <NoteViewButton
         note={noteValue}
         candidateName={getCandidateDisplayName(item)}
-        authorName={resolveNoteAuthor(item, noteValue)}
+        authorName={resolveNoteAuthor(item, noteValue, statusValue)}
       />
     );
   };
@@ -1755,7 +1760,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         {selectedStatusKey === "walk_in" && (
                           <td>
                             {item.walkInReason
-                              ? renderNoteButton(item, item.walkInReason)
+                              ? renderNoteButton(item, item.walkInReason, "walk_in")
                               : formatDate(item.walkInDate)}
                           </td>
                         )}
@@ -1771,6 +1776,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               renderNoteButton(
                                 item,
                                 item.dropoutReason || item.reason,
+                                "dropout",
                               )
                             ) : selectedStatusKey === "selected" ? (
                               formatDate(item.joiningDate)
@@ -1790,6 +1796,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                                     {renderNoteButton(
                                       item,
                                       item.joiningNote || item.joinedReason,
+                                      "joined",
                                     )}
                                   </div>
                                 ) : null}
@@ -2118,7 +2125,11 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
                         )}
                         <td>
-                          {renderNoteButton(item, getLatestPerformanceNote(item))}
+                          {renderNoteButton(
+                            item,
+                            getPerformanceNoteForStatus(item, selectedStatusKey),
+                            selectedStatusKey,
+                          )}
                         </td>
                         {hasAnyRowActions && (
                           <td>
