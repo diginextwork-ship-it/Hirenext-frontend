@@ -429,7 +429,7 @@ export default function SubmittedResumesPanel({
         <div className="admin-candidate-filter-panel">
           <div className="admin-filter-row">
             <label className="admin-filter-group">
-              <span className="admin-filter-label">Search by Phone</span>
+              <span className="admin-filter-label">Candidate phone</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -469,7 +469,7 @@ export default function SubmittedResumesPanel({
           
           <div className="admin-filter-row">
             <label className="admin-filter-group">
-              <span className="admin-filter-label">Date Range</span>
+              <span className="admin-filter-label">Submission date range</span>
               <div className="admin-date-range">
                 <input
                   name="startDate"
