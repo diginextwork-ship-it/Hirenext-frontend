@@ -38,6 +38,14 @@ const EXCEL_EXPORT_COLUMNS = [
 const pickFirstValue = (...values) =>
   values.find((value) => value !== null && value !== undefined && value !== "");
 
+const truncateDisplayName = (value, maxLength = 22) => {
+  const resolved = String(value || "").trim();
+  if (!resolved) return "Name not found";
+  return resolved.length > maxLength
+    ? `${resolved.slice(0, maxLength).trimEnd()}...`
+    : resolved;
+};
+
 const formatDateTime = (value) => formatDateTimeInIndia(value);
 
 const formatPercent = (value) => {
@@ -550,7 +558,9 @@ export default function SubmittedResumesPanel({
           </p>
         ) : (
           <div className="admin-table-wrap">
-            <table className="admin-table admin-table-wide admin-candidate-resumes-table">
+            <table
+              className={`admin-table admin-table-wide admin-candidate-resumes-table${showActionsColumn ? "" : " submitted-resumes-table-no-actions"}`}
+            >
               <colgroup>
                 <col className="submitted-resumes-col-recruiter" />
                 <col className="submitted-resumes-col-candidate" />
@@ -590,13 +600,17 @@ export default function SubmittedResumesPanel({
                 </tr>
               </thead>
               <tbody>
-                {advancedFilteredResumes.map((resume) => (
+                {advancedFilteredResumes.map((resume) => {
+                  const candidateName =
+                    resume.applicantName ||
+                    resume.candidateName ||
+                    "Name not found";
+
+                  return (
                   <tr key={`${resume._source || "resume"}-${resume.resId}`}>
                     <td>{getRecruiterDisplayName(resume, defaultRecruiterName)}</td>
-                    <td>
-                      {resume.applicantName ||
-                        resume.candidateName ||
-                        "Name not found"}
+                    <td className="submitted-resumes-candidate-name" title={candidateName}>
+                      {truncateDisplayName(candidateName)}
                     </td>
                     <td>
                       {resume.applicantPhone || resume.candidatePhone || "N/A"}
@@ -657,7 +671,8 @@ export default function SubmittedResumesPanel({
                       </td>
                     ) : null}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

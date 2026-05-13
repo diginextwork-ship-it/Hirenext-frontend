@@ -2577,7 +2577,15 @@
 
 .admin-candidate-resumes-table {
   table-layout: fixed;
-  width: max-content;
+  width: 2296px;
+  min-width: 2296px;
+  max-width: 2296px;
+}
+
+.admin-candidate-resumes-table.submitted-resumes-table-no-actions {
+  width: 2141px;
+  min-width: 2141px;
+  max-width: 2141px;
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-recruiter {
@@ -2692,8 +2700,6 @@
 .admin-candidate-resumes-table td:nth-child(1),
 .admin-candidate-resumes-table th:nth-child(2),
 .admin-candidate-resumes-table td:nth-child(2),
-.admin-candidate-resumes-table th:nth-child(3),
-.admin-candidate-resumes-table td:nth-child(3),
 .admin-candidate-resumes-table th:nth-child(6),
 .admin-candidate-resumes-table td:nth-child(6),
 .admin-candidate-resumes-table th:nth-child(7),
@@ -2704,6 +2710,12 @@
 .admin-candidate-resumes-table td:nth-child(11),
 .admin-candidate-resumes-table th:nth-child(13),
 .admin-candidate-resumes-table td:nth-child(13) {
+  white-space: nowrap;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-candidate-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
