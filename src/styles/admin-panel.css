@@ -2577,15 +2577,15 @@
 
 .admin-candidate-resumes-table {
   table-layout: fixed;
-  width: 2296px;
-  min-width: 2296px;
-  max-width: 2296px;
+  width: 2386px;
+  min-width: 2386px;
+  max-width: 2386px;
 }
 
 .admin-candidate-resumes-table.submitted-resumes-table-no-actions {
-  width: 2141px;
-  min-width: 2141px;
-  max-width: 2141px;
+  width: 2231px;
+  min-width: 2231px;
+  max-width: 2231px;
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-recruiter {
@@ -2593,7 +2593,7 @@
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-candidate {
-  width: 170px;
+  width: 215px;
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-phone {
@@ -2609,7 +2609,7 @@
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-role {
-  width: 160px;
+  width: 205px;
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-city {
