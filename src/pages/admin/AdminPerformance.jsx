@@ -750,9 +750,17 @@ export default function AdminPerformance({ setCurrentPage }) {
             recruiterName: normalized.recruiterName || "-",
             recruiterRid: normalized.rid || "-",
             teamLeaderRid:
-              item.teamLeaderRid || item.team_leader_rid || null,
+              item.teamLeaderRid ||
+              item.team_leader_rid ||
+              item.jobOwnerTeamLeaderRid ||
+              item.job_owner_team_leader_rid ||
+              null,
             teamLeaderName:
-              item.teamLeaderName || item.team_leader_name || "-",
+              item.teamLeaderName ||
+              item.team_leader_name ||
+              item.jobOwnerTeamLeaderName ||
+              item.job_owner_team_leader_name ||
+              "-",
             candidatePhone: normalized.candidatePhone || null,
             jobJid: normalized.jobJid ?? "-",
             companyName: normalized.companyName || null,
@@ -897,6 +905,8 @@ export default function AdminPerformance({ setCurrentPage }) {
         const teamLeaderName =
           item?.teamLeaderName ||
           item?.team_leader_name ||
+          item?.jobOwnerTeamLeaderName ||
+          item?.job_owner_team_leader_name ||
           normalized?.teamLeaderName;
         const resId =
           item?.resId ??
@@ -926,8 +936,12 @@ export default function AdminPerformance({ setCurrentPage }) {
           teamLeaderRid:
             item?.teamLeaderRid ||
             item?.team_leader_rid ||
+            item?.jobOwnerTeamLeaderRid ||
+            item?.job_owner_team_leader_rid ||
             normalized?.teamLeaderRid ||
             normalized?.team_leader_rid ||
+            normalized?.jobOwnerTeamLeaderRid ||
+            normalized?.job_owner_team_leader_rid ||
             null,
           teamLeaderName,
           resId,
