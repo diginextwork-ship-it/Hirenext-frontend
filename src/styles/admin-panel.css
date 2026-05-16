@@ -2609,7 +2609,7 @@
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-role {
-  width: 205px;
+  width: 240px;
 }
 
 .admin-candidate-resumes-table .submitted-resumes-col-city {
@@ -2671,11 +2671,18 @@
 }
 
 .admin-candidate-resumes-table th:nth-child(6),
-.admin-candidate-resumes-table td:nth-child(6),
 .admin-candidate-resumes-table th:nth-child(7),
 .admin-candidate-resumes-table td:nth-child(7) {
   min-width: 110px;
   white-space: nowrap;
+}
+
+.admin-candidate-resumes-table td:nth-child(6) {
+  min-width: 240px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.45;
 }
 
 .admin-candidate-resumes-table th:nth-child(8),
