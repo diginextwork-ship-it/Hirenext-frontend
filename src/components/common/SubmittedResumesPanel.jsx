@@ -15,7 +15,7 @@ const EMPTY_ADVANCED_FILTERS = {
   city: "",
   startDate: "",
   endDate: "",
-  status: "",
+  statuses: [],
 };
 
 const EXCEL_EXPORT_COLUMNS = [
@@ -77,6 +77,16 @@ const normalizeStatusValue = (value) =>
 const normalizePhoneForSearch = (value) =>
   String(value || "").replace(/\D/g, "");
 
+const uniqueSortedValues = (values) =>
+  Array.from(
+    new Map(
+      values
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .map((value) => [value.toLowerCase(), value]),
+    ).values(),
+  ).sort((a, b) => a.localeCompare(b));
+
 const escapeHtml = (value) =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -116,6 +126,16 @@ const formatEducationDisplay = (resume) =>
   ]
     .filter(Boolean)
     .join(" / ") || "N/A";
+
+const getCompanyFilterValue = (resume) =>
+  String(
+    resume?.companyName ||
+      resume?.company_name ||
+      resume?.job?.companyName ||
+      resume?.job?.company_name ||
+      formatResumeCompanyDisplay(resume) ||
+      "",
+  ).trim();
 
 const getRecruiterDisplayName = (resume, defaultRecruiterName) => {
   if (resume?._source === "candidate") return "N/A";
@@ -246,6 +266,36 @@ export default function SubmittedResumesPanel({
     );
   }, [displayedResumes]);
 
+  const companyOptions = useMemo(
+    () =>
+      uniqueSortedValues(displayedResumes.map((resume) => getCompanyFilterValue(resume))),
+    [displayedResumes],
+  );
+
+  const cityOptions = useMemo(
+    () =>
+      uniqueSortedValues(
+        displayedResumes.map((resume) => resume.city || resume.job?.city),
+      ),
+    [displayedResumes],
+  );
+
+  const companySuggestions = useMemo(() => {
+    const companyQuery = draftFilters.company.trim().toLowerCase();
+    if (!companyQuery) return companyOptions.slice(0, 12);
+    return companyOptions
+      .filter((value) => value.toLowerCase().includes(companyQuery))
+      .slice(0, 12);
+  }, [companyOptions, draftFilters.company]);
+
+  const citySuggestions = useMemo(() => {
+    const cityQuery = draftFilters.city.trim().toLowerCase();
+    if (!cityQuery) return cityOptions.slice(0, 12);
+    return cityOptions
+      .filter((value) => value.toLowerCase().includes(cityQuery))
+      .slice(0, 12);
+  }, [cityOptions, draftFilters.city]);
+
   const filteredResumes = phoneSearch.trim()
     ? displayedResumes.filter((resume) =>
         [
@@ -262,17 +312,21 @@ export default function SubmittedResumesPanel({
     : displayedResumes;
 
   const hasAppliedAdvancedFilters = Object.values(appliedFilters).some((value) =>
-    String(value || "").trim(),
+    Array.isArray(value)
+      ? value.length > 0
+      : String(value || "").trim(),
   );
 
   const advancedFilteredResumes = filteredResumes.filter((resume) => {
     const companyQuery = appliedFilters.company.trim().toLowerCase();
     const cityQuery = appliedFilters.city.trim().toLowerCase();
-    const statusQuery = normalizeStatusValue(appliedFilters.status);
+    const statusQueries = Array.isArray(appliedFilters.statuses)
+      ? appliedFilters.statuses.map((value) => normalizeStatusValue(value))
+      : [];
     const startDateQuery = appliedFilters.startDate.trim();
     const endDateQuery = appliedFilters.endDate.trim();
 
-    const company = String(formatResumeCompanyDisplay(resume) || "").toLowerCase();
+    const company = getCompanyFilterValue(resume).toLowerCase();
     const city = String(resume.city || resume.job?.city || "").toLowerCase();
     const status = normalizeStatusValue(resume.workflowStatus || resume.status);
     const submittedDate = formatDateInputInIndia(resume.uploadedAt);
@@ -302,7 +356,7 @@ export default function SubmittedResumesPanel({
     return (
       (!companyQuery || company.includes(companyQuery)) &&
       (!cityQuery || city.includes(cityQuery)) &&
-      (!appliedFilters.status || status === statusQuery) &&
+      (!statusQueries.length || statusQueries.includes(status)) &&
       isWithinDateRange
     );
   });
@@ -310,6 +364,27 @@ export default function SubmittedResumesPanel({
   const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
     setDraftFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDraftStatusToggle = (statusValue) => {
+    setDraftFilters((prev) => {
+      const nextStatuses = Array.isArray(prev.statuses) ? [...prev.statuses] : [];
+      const normalizedTarget = normalizeStatusValue(statusValue);
+      const existingIndex = nextStatuses.findIndex(
+        (value) => normalizeStatusValue(value) === normalizedTarget,
+      );
+
+      if (existingIndex >= 0) {
+        nextStatuses.splice(existingIndex, 1);
+      } else {
+        nextStatuses.push(statusValue);
+      }
+
+      return {
+        ...prev,
+        statuses: nextStatuses,
+      };
+    });
   };
 
   const handleApplyAdvancedFilters = () => {
@@ -413,7 +488,9 @@ export default function SubmittedResumesPanel({
                 appliedFilters.city,
                 appliedFilters.startDate,
                 appliedFilters.endDate,
-                appliedFilters.status,
+                ...(Array.isArray(appliedFilters.statuses)
+                  ? appliedFilters.statuses
+                  : []),
                 phoneSearch,
               ].filter((v) => String(v || "").trim()).length}
             </span>
@@ -459,7 +536,13 @@ export default function SubmittedResumesPanel({
                 value={draftFilters.company}
                 onChange={handleDraftFilterChange}
                 className="admin-filter-input"
+                list="admin-company-suggestions"
               />
+              <datalist id="admin-company-suggestions">
+                {companySuggestions.map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
             </label>
             
             <label className="admin-filter-group">
@@ -471,7 +554,13 @@ export default function SubmittedResumesPanel({
                 value={draftFilters.city}
                 onChange={handleDraftFilterChange}
                 className="admin-filter-input"
+                list="admin-city-suggestions"
               />
+              <datalist id="admin-city-suggestions">
+                {citySuggestions.map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
             </label>
           </div>
           
@@ -501,19 +590,31 @@ export default function SubmittedResumesPanel({
             
             <label className="admin-filter-group">
               <span className="admin-filter-label">Current Status</span>
-              <select
-                name="status"
-                value={draftFilters.status}
-                onChange={handleDraftFilterChange}
-                className="admin-filter-input"
-              >
-                <option value="">Any status</option>
-                {statusOptions.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <div className="admin-filter-checkbox-list">
+                {statusOptions.length ? (
+                  statusOptions.map(([value, label]) => {
+                    const isChecked = draftFilters.statuses.some(
+                      (selectedValue) =>
+                        normalizeStatusValue(selectedValue) === value,
+                    );
+                    return (
+                      <label
+                        key={value}
+                        className="admin-filter-checkbox-item"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleDraftStatusToggle(value)}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <span className="admin-muted">No status found</span>
+                )}
+              </div>
             </label>
           </div>
           
