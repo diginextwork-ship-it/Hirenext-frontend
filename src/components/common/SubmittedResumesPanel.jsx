@@ -314,42 +314,38 @@ export default function SubmittedResumesPanel({
       )
     : displayedResumes;
 
-  const hasAppliedAdvancedFilters = Object.values(appliedFilters).some((value) =>
-    Array.isArray(value)
-      ? value.length > 0
-      : String(value || "").trim(),
-  );
-
-  const advancedFilteredResumes = filteredResumes.filter((resume) => {
-    const companyQuery = appliedFilters.company.trim().toLowerCase();
-    const cityQuery = appliedFilters.city.trim().toLowerCase();
-    const statusQueries = Array.isArray(appliedFilters.statuses)
-      ? appliedFilters.statuses.map((value) => normalizeStatusValue(value))
+  const matchesAdvancedFilters = (resume, filters) => {
+    const companyQuery = String(filters?.company || "")
+      .trim()
+      .toLowerCase();
+    const cityQuery = String(filters?.city || "")
+      .trim()
+      .toLowerCase();
+    const statusQueries = Array.isArray(filters?.statuses)
+      ? filters.statuses.map((value) => normalizeStatusValue(value))
       : [];
-    const startDateQuery = appliedFilters.startDate.trim();
-    const endDateQuery = appliedFilters.endDate.trim();
+    const startDateQuery = String(filters?.startDate || "").trim();
+    const endDateQuery = String(filters?.endDate || "").trim();
 
     const company = getCompanyFilterValue(resume).toLowerCase();
     const city = String(resume.city || resume.job?.city || "").toLowerCase();
     const status = normalizeStatusValue(resume.workflowStatus || resume.status);
     const submittedDate = formatDateInputInIndia(resume.uploadedAt);
-    
-    // Date range validation
+
     let isWithinDateRange = true;
     if (startDateQuery || endDateQuery) {
       if (!submittedDate) {
         isWithinDateRange = false;
       } else {
         const resumeDate = new Date(submittedDate);
-        
+
         if (startDateQuery) {
           const startDate = new Date(startDateQuery);
           isWithinDateRange = isWithinDateRange && resumeDate >= startDate;
         }
-        
+
         if (endDateQuery) {
           const endDate = new Date(endDateQuery);
-          // Set to end of day for end date
           endDate.setHours(23, 59, 59, 999);
           isWithinDateRange = isWithinDateRange && resumeDate <= endDate;
         }
@@ -362,7 +358,48 @@ export default function SubmittedResumesPanel({
       (!statusQueries.length || statusQueries.includes(status)) &&
       isWithinDateRange
     );
-  });
+  };
+
+  const hasAppliedAdvancedFilters = Object.values(appliedFilters).some((value) =>
+    Array.isArray(value)
+      ? value.length > 0
+      : String(value || "").trim(),
+  );
+
+  const advancedFilteredResumes = filteredResumes.filter((resume) =>
+    matchesAdvancedFilters(resume, appliedFilters),
+  );
+
+  const sourceCounts = useMemo(() => {
+    const resumesAfterTextAndAdvancedFilters = resumes.filter((resume) => {
+      const matchesPhone = phoneSearch.trim()
+        ? [
+            resume.candidatePhone,
+            resume.phone,
+            resume.mobile,
+            resume.applicantPhone,
+          ].some((value) =>
+            normalizePhoneForSearch(value).includes(
+              normalizePhoneForSearch(phoneSearch),
+            ),
+          )
+        : true;
+
+      return matchesPhone && matchesAdvancedFilters(resume, appliedFilters);
+    });
+
+    const counts = resumesAfterTextAndAdvancedFilters.reduce(
+      (accumulator, resume) => {
+        const sourceKey = resume._source === "candidate" ? "candidate" : "recruiter";
+        accumulator.all += 1;
+        accumulator[sourceKey] += 1;
+        return accumulator;
+      },
+      { all: 0, candidate: 0, recruiter: 0 },
+    );
+
+    return counts;
+  }, [appliedFilters, phoneSearch, resumes]);
 
   const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
@@ -470,16 +507,24 @@ export default function SubmittedResumesPanel({
               flexWrap: "wrap",
             }}
           >
-          {sourceOptions.map((filterOption) => (
-            <button
-              key={filterOption.key}
-              type="button"
-              className={`perf-timeline-btn${sourceFilter === filterOption.key ? " perf-timeline-btn-active" : ""}`}
-              onClick={() => setSourceFilter(filterOption.key)}
-            >
-              {filterOption.label} ({filterOption.count})
-            </button>
-          ))}
+            {sourceOptions.map((filterOption) => (
+              <button
+                key={filterOption.key}
+                type="button"
+                className={`perf-timeline-btn${sourceFilter === filterOption.key ? " perf-timeline-btn-active" : ""}`}
+                onClick={() => setSourceFilter(filterOption.key)}
+              >
+                {filterOption.label} (
+                {filterOption.key === "all"
+                  ? sourceCounts.all
+                  : filterOption.key === "candidate"
+                    ? sourceCounts.candidate
+                    : filterOption.key === "recruiter"
+                      ? sourceCounts.recruiter
+                      : filterOption.count}
+                )
+              </button>
+            ))}
           </div>
         ) : null}
 
