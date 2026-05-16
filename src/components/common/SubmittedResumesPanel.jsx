@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { getAuthSession } from "../../auth/session";
 import {
   displayNote,
@@ -235,10 +235,13 @@ export default function SubmittedResumesPanel({
   );
   const [phoneSearch, setPhoneSearch] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showStatusOptions, setShowStatusOptions] = useState(false);
   const [draftFilters, setDraftFilters] = useState(EMPTY_ADVANCED_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_ADVANCED_FILTERS);
   const [downloadMessage, setDownloadMessage] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const deferredCompanyInput = useDeferredValue(draftFilters.company);
+  const deferredCityInput = useDeferredValue(draftFilters.city);
 
   useEffect(() => {
     if (!sourceOptions.length) {
@@ -281,20 +284,20 @@ export default function SubmittedResumesPanel({
   );
 
   const companySuggestions = useMemo(() => {
-    const companyQuery = draftFilters.company.trim().toLowerCase();
+    const companyQuery = deferredCompanyInput.trim().toLowerCase();
     if (!companyQuery) return companyOptions.slice(0, 12);
     return companyOptions
       .filter((value) => value.toLowerCase().includes(companyQuery))
       .slice(0, 12);
-  }, [companyOptions, draftFilters.company]);
+  }, [companyOptions, deferredCompanyInput]);
 
   const citySuggestions = useMemo(() => {
-    const cityQuery = draftFilters.city.trim().toLowerCase();
+    const cityQuery = deferredCityInput.trim().toLowerCase();
     if (!cityQuery) return cityOptions.slice(0, 12);
     return cityOptions
       .filter((value) => value.toLowerCase().includes(cityQuery))
       .slice(0, 12);
-  }, [cityOptions, draftFilters.city]);
+  }, [cityOptions, deferredCityInput]);
 
   const filteredResumes = phoneSearch.trim()
     ? displayedResumes.filter((resume) =>
@@ -389,12 +392,14 @@ export default function SubmittedResumesPanel({
 
   const handleApplyAdvancedFilters = () => {
     setAppliedFilters({ ...draftFilters });
+    setShowStatusOptions(false);
     setShowAdvancedFilters(false);
   };
 
   const handleClearAdvancedFilters = () => {
     setDraftFilters(EMPTY_ADVANCED_FILTERS);
     setAppliedFilters(EMPTY_ADVANCED_FILTERS);
+    setShowStatusOptions(false);
   };
 
   const handleResumeOpen = (resume) => {
@@ -429,6 +434,10 @@ export default function SubmittedResumesPanel({
   };
 
   const showActionsColumn = typeof renderRowActions === "function";
+  const selectedStatusCount = draftFilters.statuses.length;
+  const selectedStatusLabel = selectedStatusCount
+    ? `${selectedStatusCount} selected`
+    : "Any status";
 
   return (
     <>
@@ -451,15 +460,16 @@ export default function SubmittedResumesPanel({
         <div className="admin-alert admin-alert-error">{downloadError}</div>
       ) : null}
 
-      {sourceOptions.length > 1 ? (
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            marginBottom: "16px",
-            flexWrap: "wrap",
-          }}
-        >
+      <div className="admin-resume-filter-stack">
+        {sourceOptions.length > 1 ? (
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              marginBottom: "8px",
+              flexWrap: "wrap",
+            }}
+          >
           {sourceOptions.map((filterOption) => (
             <button
               key={filterOption.key}
@@ -470,10 +480,10 @@ export default function SubmittedResumesPanel({
               {filterOption.label} ({filterOption.count})
             </button>
           ))}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      <div className="admin-candidate-resumes-toolbar">
+        <div className="admin-candidate-resumes-toolbar">
         <button
           type="button"
           className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() ? " has-filters" : ""}`}
@@ -508,6 +518,7 @@ export default function SubmittedResumesPanel({
             Clear All
           </button>
         )}
+      </div>
       </div>
 
       {showAdvancedFilters ? (
@@ -590,30 +601,44 @@ export default function SubmittedResumesPanel({
             
             <label className="admin-filter-group">
               <span className="admin-filter-label">Current Status</span>
-              <div className="admin-filter-checkbox-list">
-                {statusOptions.length ? (
-                  statusOptions.map(([value, label]) => {
-                    const isChecked = draftFilters.statuses.some(
-                      (selectedValue) =>
-                        normalizeStatusValue(selectedValue) === value,
-                    );
-                    return (
-                      <label
-                        key={value}
-                        className="admin-filter-checkbox-item"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleDraftStatusToggle(value)}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    );
-                  })
-                ) : (
-                  <span className="admin-muted">No status found</span>
-                )}
+              <div className="admin-filter-multiselect">
+                <button
+                  type="button"
+                  className="admin-filter-multiselect-btn"
+                  onClick={() => setShowStatusOptions((prev) => !prev)}
+                >
+                  <span>{selectedStatusLabel}</span>
+                  <span className="admin-filter-multiselect-caret">
+                    {showStatusOptions ? "▲" : "▼"}
+                  </span>
+                </button>
+                {showStatusOptions ? (
+                  <div className="admin-filter-checkbox-list">
+                    {statusOptions.length ? (
+                      statusOptions.map(([value, label]) => {
+                        const isChecked = draftFilters.statuses.some(
+                          (selectedValue) =>
+                            normalizeStatusValue(selectedValue) === value,
+                        );
+                        return (
+                          <label
+                            key={value}
+                            className="admin-filter-checkbox-item"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleDraftStatusToggle(value)}
+                            />
+                            <span>{label}</span>
+                          </label>
+                        );
+                      })
+                    ) : (
+                      <span className="admin-muted">No status found</span>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </label>
           </div>
