@@ -192,13 +192,35 @@ export default function AdminRevenue({ setCurrentPage }) {
     return entryTypeFilter === "all" ? true : itemEntryType === entryTypeFilter;
   }), [dateFilteredEntries, entryTypeFilter]);
 
-  const salaryReceivers = useMemo(
-    () =>
-      recruiters.filter(
-        (member) => member?.salaryCreditOwner === true || !member?.salaryCreditTargetRid,
-      ),
-    [recruiters],
-  );
+  const salaryReceivers = useMemo(() => {
+    const normalizeRole = (value) => String(value || "").trim().toLowerCase();
+    const normalizePhone = (value) => String(value || "").replace(/\D/g, "");
+    const getRidNumber = (value) => {
+      const match = String(value || "").match(/(\d+)$/);
+      return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+    };
+    const pickPreferredAccount = (group) =>
+      [...group].sort((left, right) => {
+        const leftRole = normalizeRole(left?.role);
+        const rightRole = normalizeRole(right?.role);
+        const leftWeight = leftRole === "recruiter" ? 0 : 1;
+        const rightWeight = rightRole === "recruiter" ? 0 : 1;
+        if (leftWeight !== rightWeight) return leftWeight - rightWeight;
+        return getRidNumber(left?.rid) - getRidNumber(right?.rid);
+      })[0];
+
+    const grouped = new Map();
+    recruiters.forEach((member) => {
+      const phone = normalizePhone(member?.phone);
+      const key = phone ? `phone:${phone}` : `rid:${member?.rid || ""}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(member);
+    });
+
+    return [...grouped.values()]
+      .map((group) => pickPreferredAccount(group))
+      .filter(Boolean);
+  }, [recruiters]);
 
   const handleEntryTypeCardClick = (nextType) => {
     setEntryTypeFilter((prev) => (prev === nextType ? "all" : nextType));
