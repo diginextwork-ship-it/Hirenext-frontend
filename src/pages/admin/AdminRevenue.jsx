@@ -675,12 +675,24 @@ export default function AdminRevenue({ setCurrentPage }) {
                     <td>{item.entryType === "intake" ? toCurrency(item.companyRev) : "—"}</td>
                     <td>{item.entryType === "expense" ? toCurrency(item.expense) : "—"}</td>
                     <td>
-                      {item.companyName ||
-                        item.company_name ||
-                        item.company ||
-                        item.orgName ||
-                        item.organization ||
-                        "N/A"}
+                      {(() => {
+                        const companyName =
+                          item.companyName ||
+                          item.company_name ||
+                          item.company ||
+                          item.orgName ||
+                          item.organization ||
+                          "";
+                        const candidateName =
+                          item.candidateName ||
+                          item.candidate_name ||
+                          item.name ||
+                          "";
+                        if (companyName && candidateName) {
+                          return `${companyName} (${candidateName})`;
+                        }
+                        return companyName || "N/A";
+                      })()}
                     </td>
                     <td>
                       {item.city ||
