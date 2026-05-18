@@ -1565,7 +1565,7 @@
 .admin-salary-history-header,
 .admin-salary-history-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1.4fr) minmax(140px, 0.8fr);
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1.4fr) minmax(140px, 0.8fr) minmax(160px, 0.9fr);
   gap: 1rem;
   align-items: center;
 }

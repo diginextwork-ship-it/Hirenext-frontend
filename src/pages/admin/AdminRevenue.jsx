@@ -219,7 +219,12 @@ export default function AdminRevenue({ setCurrentPage }) {
 
     return [...grouped.values()]
       .map((group) => pickPreferredAccount(group))
-      .filter(Boolean);
+      .filter(
+        (member) =>
+          member &&
+          String(member.accountStatus || "active").trim().toLowerCase() !==
+            "inactive",
+      );
   }, [recruiters]);
 
   const handleEntryTypeCardClick = (nextType) => {

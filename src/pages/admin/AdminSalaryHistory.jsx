@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
+  adminUpdateRecruiterAccountStatus,
   fetchAdminSalaryHistoryDetail,
   getAdminHeaders,
   readJsonResponse,
@@ -68,8 +69,10 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [accountActionRid, setAccountActionRid] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [formError, setFormError] = useState("");
+  const [confirmDisableTarget, setConfirmDisableTarget] = useState(null);
   const [salaryForm, setSalaryForm] = useState({
     monthlySalary: "",
     effectiveFrom: getTodayValue(),
@@ -190,6 +193,30 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
     });
   };
 
+  const closeDisableModal = () => {
+    if (accountActionRid) return;
+    setConfirmDisableTarget(null);
+  };
+
+  const handleDisableAccount = async () => {
+    if (!confirmDisableTarget?.rid) return;
+    setAccountActionRid(confirmDisableTarget.rid);
+    setFormMessage("");
+    setFormError("");
+    try {
+      await adminUpdateRecruiterAccountStatus(confirmDisableTarget.rid, "inactive");
+      setConfirmDisableTarget(null);
+      if (selectedStaff?.rid === confirmDisableTarget.rid) {
+        closeSalaryCard();
+      }
+      await loadStaff();
+    } catch (error) {
+      setFormError(error.message || "Failed to disable account.");
+    } finally {
+      setAccountActionRid("");
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!selectedStaff?.rid) return;
@@ -267,6 +294,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
           <span>Name</span>
           <span>Email</span>
           <span>Current Salary</span>
+          <span>Action</span>
         </div>
 
         {isLoading ? (
@@ -280,11 +308,18 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
         ) : (
           <div className="admin-salary-history-list">
             {filteredStaff.map((member) => (
-              <button
+              <div
                 key={member.rid}
-                type="button"
                 className="admin-salary-history-row admin-salary-history-row-btn"
                 onClick={() => openSalaryCard(member)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openSalaryCard(member);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div className="admin-salary-history-name">
                   <strong>{member.name || "Unknown"}</strong>
@@ -294,6 +329,11 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                     {!member.salaryCreditOwner && member.salaryCreditTargetRid
                       ? ` | Salary to ${member.salaryCreditTargetRid}`
                       : ""}
+                    {String(member.accountStatus || "active")
+                      .trim()
+                      .toLowerCase() === "inactive"
+                      ? " | Disabled"
+                      : ""}
                   </span>
                 </div>
                 <div className="admin-salary-history-email">
@@ -302,7 +342,37 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                 <div className="admin-salary-history-amount">
                   {formatCurrency(member.currentSalary)}
                 </div>
-              </button>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    className="admin-back-btn"
+                    style={{
+                      backgroundColor: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      padding: "8px 12px",
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setConfirmDisableTarget(member);
+                    }}
+                    disabled={
+                      accountActionRid === member.rid ||
+                      String(member.accountStatus || "active")
+                        .trim()
+                        .toLowerCase() === "inactive"
+                    }
+                  >
+                    {String(member.accountStatus || "active")
+                      .trim()
+                      .toLowerCase() === "inactive"
+                      ? "Disabled"
+                      : accountActionRid === member.rid
+                        ? "Disabling..."
+                        : "Disable Account"}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -493,6 +563,49 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmDisableTarget ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDisableModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#dc2626" }}>Disable account</h3>
+            <p style={{ margin: "0 0 10px" }}>
+              Disable login for <strong>{confirmDisableTarget.name || "Unknown"}</strong>{" "}
+              ({confirmDisableTarget.rid})?
+            </p>
+            <p className="admin-muted" style={{ margin: "0 0 14px" }}>
+              This account will not be able to log in and it will be removed from
+              the salary revenue list.
+            </p>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeDisableModal}
+                disabled={Boolean(accountActionRid)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                style={{ backgroundColor: "#dc2626", border: "none" }}
+                onClick={handleDisableAccount}
+                disabled={Boolean(accountActionRid)}
+              >
+                {accountActionRid ? "Disabling..." : "Confirm Disable"}
+              </button>
             </div>
           </div>
         </div>
