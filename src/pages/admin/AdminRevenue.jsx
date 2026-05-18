@@ -192,6 +192,14 @@ export default function AdminRevenue({ setCurrentPage }) {
     return entryTypeFilter === "all" ? true : itemEntryType === entryTypeFilter;
   }), [dateFilteredEntries, entryTypeFilter]);
 
+  const salaryReceivers = useMemo(
+    () =>
+      recruiters.filter(
+        (member) => member?.salaryCreditOwner === true || !member?.salaryCreditTargetRid,
+      ),
+    [recruiters],
+  );
+
   const handleEntryTypeCardClick = (nextType) => {
     setEntryTypeFilter((prev) => (prev === nextType ? "all" : nextType));
   };
@@ -445,10 +453,15 @@ export default function AdminRevenue({ setCurrentPage }) {
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="">Select recruiter</option>
-                  {recruiters.map((recruiter) => (
+                  <option value="">Select salary receiving account</option>
+                  {salaryReceivers.map((recruiter) => (
                     <option key={recruiter.rid} value={recruiter.rid}>
-                      {recruiter.rid} - {recruiter.name || "Unknown"}{recruiter.role ? ` (${recruiter.role})` : ""}
+                      {recruiter.rid} - {recruiter.name || "Unknown"}
+                      {recruiter.role ? ` (${recruiter.role})` : ""}
+                      {recruiter.phone ? ` - ${recruiter.phone}` : ""}
+                      {Number(recruiter.linkedAccountCount) > 1
+                        ? " | salary receiver"
+                        : ""}
                     </option>
                   ))}
                 </select>

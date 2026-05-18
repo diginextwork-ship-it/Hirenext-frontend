@@ -309,6 +309,15 @@ export default function AdminAttendance({ setCurrentPage }) {
                     <td>{member.name || "Unknown"}</td>
                     <td style={{ textTransform: "capitalize" }}>
                       {member.role}
+                      {!member.salaryCreditOwner &&
+                      Number(member.linkedAccountCount) > 1 ? (
+                        <div className="admin-muted" style={{ marginTop: "4px" }}>
+                          Salary to {member.salaryCreditTargetRid}
+                          {member.salaryCreditTargetName
+                            ? ` (${member.salaryCreditTargetName})`
+                            : ""}
+                        </div>
+                      ) : null}
                     </td>
                     <td>{toCurrency(member.dailySalary)}</td>
                     <td>
@@ -337,7 +346,17 @@ export default function AdminAttendance({ setCurrentPage }) {
                               onClick={() =>
                                 handleMarkAttendance(member.rid, option.value)
                               }
-                              disabled={isSaving}
+                              disabled={
+                                isSaving ||
+                                (!member.salaryCreditOwner &&
+                                  Number(member.linkedAccountCount) > 1)
+                              }
+                              title={
+                                !member.salaryCreditOwner &&
+                                Number(member.linkedAccountCount) > 1
+                                  ? `Salary credits are posted on ${member.salaryCreditTargetRid}.`
+                                  : ""
+                              }
                             >
                               {isSaving && isActive
                                 ? "Saving..."

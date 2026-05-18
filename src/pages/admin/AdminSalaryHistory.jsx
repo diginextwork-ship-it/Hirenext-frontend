@@ -73,6 +73,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const [salaryForm, setSalaryForm] = useState({
     monthlySalary: "",
     effectiveFrom: getTodayValue(),
+    salaryCreditTargetRid: "",
   });
 
   const loadStaff = useCallback(async () => {
@@ -117,6 +118,8 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               ? ""
               : String(data.recruiter.currentSalary),
           effectiveFrom: getTodayValue(),
+          salaryCreditTargetRid:
+            data?.recruiter?.salaryCreditTargetRid || data?.recruiter?.rid || "",
         });
       }
     } catch (error) {
@@ -167,6 +170,8 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
           ? ""
           : String(member.currentSalary),
       effectiveFrom: getTodayValue(),
+      salaryCreditTargetRid:
+        member?.salaryCreditTargetRid || member?.rid || "",
     });
     await loadSalaryDetail(member.rid);
   };
@@ -181,6 +186,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
     setSalaryForm({
       monthlySalary: "",
       effectiveFrom: getTodayValue(),
+      salaryCreditTargetRid: "",
     });
   };
 
@@ -196,6 +202,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
       await updateAdminSalaryHistory(selectedStaff.rid, {
         monthlySalary: salaryForm.monthlySalary,
         effectiveFrom: salaryForm.effectiveFrom,
+        salaryCreditTargetRid: salaryForm.salaryCreditTargetRid,
         createdBy: "admin-panel",
       });
       setFormMessage("Salary modification saved.");
@@ -209,6 +216,10 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   };
 
   const recruiter = salaryDetail?.recruiter || selectedStaff;
+  const linkedAccounts = Array.isArray(salaryDetail?.linkedAccounts)
+    ? salaryDetail.linkedAccounts
+    : [];
+  const salaryReceiver = salaryDetail?.salaryReceiver || null;
   const modifications = Array.isArray(salaryDetail?.modifications)
     ? salaryDetail.modifications
     : [];
@@ -277,7 +288,13 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               >
                 <div className="admin-salary-history-name">
                   <strong>{member.name || "Unknown"}</strong>
-                  <span>{toRoleLabel(member.role)}</span>
+                  <span>
+                    {toRoleLabel(member.role)}
+                    {member.phone ? ` | ${member.phone}` : ""}
+                    {!member.salaryCreditOwner && member.salaryCreditTargetRid
+                      ? ` | Salary to ${member.salaryCreditTargetRid}`
+                      : ""}
+                  </span>
                 </div>
                 <div className="admin-salary-history-email">
                   {member.email || "No email available"}
@@ -336,7 +353,50 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               </div>
             </div>
 
+            {linkedAccounts.length > 1 ? (
+              <div
+                className="admin-dashboard-card"
+                style={{ marginBottom: "1rem", padding: "1rem" }}
+              >
+                <p style={{ margin: "0 0 0.5rem", fontWeight: 700 }}>
+                  One salary is shared across this phone-linked account group.
+                </p>
+                <p className="admin-muted" style={{ margin: 0 }}>
+                  Choose the one account that should receive salary credits.
+                  Attendance and manual salary entries will use that account
+                  only.
+                </p>
+              </div>
+            ) : null}
+
             <form className="admin-form admin-salary-form" onSubmit={handleSubmit}>
+              {linkedAccounts.length > 1 ? (
+                <>
+                  <label htmlFor="salaryCreditTargetRid">
+                    Salary receiving account
+                  </label>
+                  <select
+                    id="salaryCreditTargetRid"
+                    value={salaryForm.salaryCreditTargetRid}
+                    onChange={(event) =>
+                      setSalaryForm((current) => ({
+                        ...current,
+                        salaryCreditTargetRid: event.target.value,
+                      }))
+                    }
+                    required
+                  >
+                    {linkedAccounts.map((account) => (
+                      <option key={account.rid} value={account.rid}>
+                        {account.rid} - {account.name || "Unknown"}
+                        {account.role ? ` (${toRoleLabel(account.role)})` : ""}
+                        {account.phone ? ` - ${account.phone}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : null}
+
               <label htmlFor="salaryAmountInput">Modify current salary</label>
               <input
                 id="salaryAmountInput"
@@ -373,6 +433,13 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               ) : null}
               {formError ? (
                 <p className="admin-form-message admin-form-error">{formError}</p>
+              ) : null}
+
+              {salaryReceiver ? (
+                <p className="admin-muted" style={{ marginTop: 0 }}>
+                  Salary history is being saved on {salaryReceiver.rid}
+                  {salaryReceiver.name ? ` (${salaryReceiver.name})` : ""}.
+                </p>
               ) : null}
 
               <div className="admin-modal-actions">
