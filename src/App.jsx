@@ -167,13 +167,19 @@ export default function App() {
     getRouteFromPath(window.location.pathname),
   );
   const currentPage = currentRoute.page;
+  const normalizedAuthRole = String(authSession?.role || "")
+    .trim()
+    .toLowerCase();
   const isAdmin = useMemo(
-    () =>
-      String(authSession?.role || "")
-        .trim()
-        .toLowerCase() === "admin",
-    [authSession?.role],
+    () => normalizedAuthRole === "admin",
+    [normalizedAuthRole],
   );
+  const isRecruiterDashboard =
+    currentPage === "recruiterlogin" &&
+    (normalizedAuthRole === "recruiter" ||
+      normalizedAuthRole === "team leader" ||
+      normalizedAuthRole === "team_leader" ||
+      normalizedAuthRole === "job creator");
   const guardedPage =
     ADMIN_ONLY_PAGES.has(currentPage) && !isAdmin ? "adminlogin" : currentPage;
 
@@ -333,6 +339,9 @@ export default function App() {
           setCurrentPage={setCurrentPage}
           minimal={currentPage !== "home"}
           isAdmin={isAdmin}
+          showDeveloperStrip={
+            !ADMIN_ONLY_PAGES.has(currentPage) && !isRecruiterDashboard
+          }
         />
         <NotificationContainer />
       </div>

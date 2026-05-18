@@ -1,8 +1,23 @@
 import logoImage from "../assets/Logo.png";
 import "../styles/footer.css";
 
-export default function Footer({ setCurrentPage, minimal = false, isAdmin = false }) {
+export default function Footer({
+  setCurrentPage,
+  minimal = false,
+  isAdmin = false,
+  showDeveloperStrip = true,
+}) {
   const currentYear = new Date().getFullYear();
+  const developerStrip = showDeveloperStrip ? (
+    <a
+      className="footer-developer-strip"
+      href="https://www.linkedin.com/in/om-wadhwani/"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Meet the developer
+    </a>
+  ) : null;
 
   if (minimal) {
     return (
@@ -12,6 +27,7 @@ export default function Footer({ setCurrentPage, minimal = false, isAdmin = fals
             <img src={logoImage} alt="hirenext logo" className="footer-brand-logo" />
             <p>&copy; {currentYear} All rights reserved.</p>
           </div>
+          {developerStrip}
         </div>
       </footer>
     );
@@ -56,6 +72,7 @@ export default function Footer({ setCurrentPage, minimal = false, isAdmin = fals
             
           </div>
         </div>
+        {developerStrip}
       </div>
     </footer>
   );

@@ -156,6 +156,43 @@
   gap: var(--spacing-sm);
 }
 
+.footer-developer-strip {
+  display: block;
+  width: 100%;
+  margin-top: var(--spacing-lg);
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-developer-strip::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 1px;
+  margin: 0.38rem auto 0;
+  background: currentColor;
+  transition: width 0.2s ease;
+}
+
+.footer-developer-strip:hover,
+.footer-developer-strip:focus-visible,
+.footer-developer-strip:active {
+  color: #ffffff;
+}
+
+.footer-developer-strip:hover::after,
+.footer-developer-strip:focus-visible::after,
+.footer-developer-strip:active::after {
+  width: 10.5rem;
+}
+
 @media (max-width: 1024px) {
   .footer-main {
     grid-template-columns: 1fr;
