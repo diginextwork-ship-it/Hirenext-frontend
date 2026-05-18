@@ -159,11 +159,12 @@
 .footer-developer-strip {
   display: block;
   width: 100%;
-  margin-top: var(--spacing-lg);
-  padding-top: 0.7rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.84rem;
+  margin-top: 0.7rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(211, 47, 47, 0.95);
+  color: #d32f2f;
+  font-size: 0.8rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
   text-transform: uppercase;
@@ -184,7 +185,7 @@
 .footer-developer-strip:hover,
 .footer-developer-strip:focus-visible,
 .footer-developer-strip:active {
-  color: #ffffff;
+  color: #ef5350;
 }
 
 .footer-developer-strip:hover::after,
