@@ -7,12 +7,14 @@ import "../../styles/admin-panel.css";
 export default function AdminCreateRecruiter({ setCurrentPage }) {
   const nameRef = useRef(null);
   const emailRef = useRef(null);
+  const phoneRef = useRef(null);
   const passwordRef = useRef(null);
   const roleRef = useRef(null);
   const salaryRef = useRef(null);
   const submitRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [monthlySalary, setMonthlySalary] = useState("");
   const [role, setRole] = useState("recruiter");
@@ -21,7 +23,15 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  const focusSequence = [nameRef, emailRef, passwordRef, roleRef, salaryRef, submitRef];
+  const focusSequence = [
+    nameRef,
+    emailRef,
+    phoneRef,
+    passwordRef,
+    roleRef,
+    salaryRef,
+    submitRef,
+  ];
 
   const handleAdvanceOnEnter = (event, currentRef) => {
     if (event.key !== "Enter") return;
@@ -51,6 +61,7 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
         body: JSON.stringify({
           name,
           email,
+          phone,
           password,
           role,
           monthlySalary,
@@ -67,6 +78,7 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
       setMessage(`Recruiter created successfully. Generated RID: ${data.recruiter.rid}`);
       setName("");
       setEmail("");
+      setPhone("");
       setPassword("");
       setMonthlySalary("");
       setRole("recruiter");
@@ -112,6 +124,18 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(event) => handleAdvanceOnEnter(event, emailRef)}
             placeholder="recruiter@company.com"
+            required
+          />
+
+          <label htmlFor="newRecruiterPhone">Phone Number</label>
+          <input
+            ref={phoneRef}
+            id="newRecruiterPhone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(event) => handleAdvanceOnEnter(event, phoneRef)}
+            placeholder="10 digit phone number"
             required
           />
 
