@@ -194,7 +194,32 @@ export default function RecruiterLogin() {
       );
 
       const resumes = Array.isArray(data.resumes)
-        ? data.resumes.map((item) => normalizeResumeData(item))
+        ? data.resumes.map((item) => {
+            const normalized = normalizeResumeData(item);
+            const latestStatus =
+              normalized.workflowStatus ||
+              normalized.workflow_status ||
+              normalized.status ||
+              item?.workflowStatus ||
+              item?.workflow_status ||
+              item?.status ||
+              "submitted";
+
+            return {
+              ...normalized,
+              _source: "recruiter",
+              _recruiterName:
+                normalized.recruiterName ||
+                recruiter?.name ||
+                "N/A",
+              recruiterName:
+                normalized.recruiterName ||
+                recruiter?.name ||
+                "N/A",
+              workflowStatus: latestStatus,
+              status: latestStatus,
+            };
+          })
         : [];
       setUploadedResumes(resumes);
       return resumes;
