@@ -286,6 +286,14 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
   );
   const status = pickFirst(
     pickNested(source, ["workflowStatus", "workflow_status"]),
+    pickNested(source, ["currentStatus", "current_status"]),
+    pickNested(selection, ["status", "selection_status"]),
+    pickNested(source, ["status"]),
+  );
+  const currentStatus = pickFirst(
+    pickNested(source, ["currentStatus", "current_status"]),
+    pickNested(source, ["workflowStatus", "workflow_status"]),
+    pickNested(selection, ["currentStatus", "current_status"]),
     pickNested(selection, ["status", "selection_status"]),
     pickNested(source, ["status"]),
   );
@@ -504,6 +512,7 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     phone: pickFirst(source.phone, candidatePhone),
     mobile: pickFirst(source.mobile, candidatePhone),
     status: pickFirst(status, source.status),
+    currentStatus: pickFirst(source.currentStatus, currentStatus, status),
     workflowStatus: pickFirst(source.workflowStatus, status),
     submittedReason: pickFirst(source.submittedReason, submittedReason),
     verifiedReason: pickFirst(source.verifiedReason, verifiedReason),

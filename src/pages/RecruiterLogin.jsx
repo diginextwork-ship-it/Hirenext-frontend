@@ -197,9 +197,12 @@ export default function RecruiterLogin() {
         ? data.resumes.map((item) => {
             const normalized = normalizeResumeData(item);
             const latestStatus =
+              normalized.currentStatus ||
               normalized.workflowStatus ||
               normalized.workflow_status ||
               normalized.status ||
+              item?.currentStatus ||
+              item?.current_status ||
               item?.workflowStatus ||
               item?.workflow_status ||
               item?.status ||
@@ -216,6 +219,7 @@ export default function RecruiterLogin() {
                 normalized.recruiterName ||
                 recruiter?.name ||
                 "N/A",
+              currentStatus: latestStatus,
               workflowStatus: latestStatus,
               status: latestStatus,
             };

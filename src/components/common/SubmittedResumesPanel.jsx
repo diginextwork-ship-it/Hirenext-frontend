@@ -127,6 +127,9 @@ const formatEducationDisplay = (resume) =>
     .filter(Boolean)
     .join(" / ") || "N/A";
 
+const getLatestResumeStatus = (resume) =>
+  resume?.currentStatus || resume?.workflowStatus || resume?.status;
+
 const getCompanyFilterValue = (resume) =>
   String(
     resume?.companyName ||
@@ -160,7 +163,7 @@ const buildExcelExportRows = (resumes, defaultRecruiterName, getResumeUrl) =>
     education: formatEducationDisplay(resume),
     age: resume.age ?? "N/A",
     atsScore: formatPercent(resume.atsScore),
-    latestStatus: formatStatusLabel(resume.workflowStatus || resume.status),
+    latestStatus: formatStatusLabel(getLatestResumeStatus(resume)),
     recruiterNote: displayNote(resume.submittedReason),
     submittedAt: formatDateTime(resume.uploadedAt) || "N/A",
     resumeFileUrl: getResumeUrl(resume) || "N/A",
@@ -261,7 +264,7 @@ export default function SubmittedResumesPanel({
   const statusOptions = useMemo(() => {
     const statusMap = new Map();
     displayedResumes.forEach((resume) => {
-      const value = normalizeStatusValue(resume.workflowStatus || resume.status);
+      const value = normalizeStatusValue(getLatestResumeStatus(resume));
       statusMap.set(value, formatStatusLabel(value));
     });
     return Array.from(statusMap.entries()).sort((a, b) =>
@@ -329,7 +332,7 @@ export default function SubmittedResumesPanel({
 
     const company = getCompanyFilterValue(resume).toLowerCase();
     const city = String(resume.city || resume.job?.city || "").toLowerCase();
-    const status = normalizeStatusValue(resume.workflowStatus || resume.status);
+    const status = normalizeStatusValue(getLatestResumeStatus(resume));
     const submittedDate = formatDateInputInIndia(resume.uploadedAt);
 
     let isWithinDateRange = true;
@@ -813,9 +816,7 @@ export default function SubmittedResumesPanel({
                     </td>
                     <td>
                       <span className="admin-candidate-status-badge">
-                        {formatStatusLabel(
-                          resume.workflowStatus || resume.status,
-                        )}
+                        {formatStatusLabel(getLatestResumeStatus(resume))}
                       </span>
                     </td>
                     <td>{displayNote(resume.submittedReason)}</td>
