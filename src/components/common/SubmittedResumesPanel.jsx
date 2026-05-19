@@ -369,6 +369,9 @@ export default function SubmittedResumesPanel({
   const advancedFilteredResumes = filteredResumes.filter((resume) =>
     matchesAdvancedFilters(resume, appliedFilters),
   );
+  const filteredResultsLabel = `${advancedFilteredResumes.length} result${
+    advancedFilteredResumes.length === 1 ? "" : "s"
+  }`;
 
   const sourceCounts = useMemo(() => {
     const resumesAfterTextAndAdvancedFilters = resumes.filter((resume) => {
@@ -565,6 +568,15 @@ export default function SubmittedResumesPanel({
         )}
       </div>
       </div>
+
+      <p className="admin-muted" style={{ margin: "0 0 12px" }}>
+        Showing {filteredResultsLabel}
+        {(phoneSearch.trim() || hasAppliedAdvancedFilters || sourceFilter !== "all") &&
+        resumes.length
+          ? ` of ${resumes.length} total resumes`
+          : ""}
+        .
+      </p>
 
       {showAdvancedFilters ? (
         <div className="admin-candidate-filter-panel">

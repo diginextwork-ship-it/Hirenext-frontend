@@ -13,6 +13,44 @@ const INITIAL_FORM = {
   message: "",
 };
 
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.45.55 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11 11 0 0 0 .55 3.45 1 1 0 0 1-.25 1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 21s6-5.33 6-11a6 6 0 1 0-12 0c0 5.67 6 11 6 11Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="10"
+        r="2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 export default function Contact({ setCurrentPage }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,7 +129,16 @@ export default function Contact({ setCurrentPage }) {
             <aside className="contactus-info">
               <p className="contactus-info-label">Reach us directly</p>
               <a href="tel:+919893083853" className="contactus-info-link">
-                +91 9893083853
+                <span className="contactus-info-icon">
+                  <PhoneIcon />
+                </span>
+                <span>+91 9893083853</span>
+              </a>
+              <a href="tel:+917614085424" className="contactus-info-link">
+                <span className="contactus-info-icon">
+                  <PhoneIcon />
+                </span>
+                <span>0761-4085424</span>
               </a>
               <a
                 href="https://maps.app.goo.gl/F7gcbftUCUwLMo1V8"
@@ -99,8 +146,13 @@ export default function Contact({ setCurrentPage }) {
                 rel="noreferrer"
                 className="contactus-info-link"
               >
-                Home Science college road, Napier Town, Jabalpur, Madhya
-                Pradesh
+                <span className="contactus-info-icon">
+                  <LocationIcon />
+                </span>
+                <span>
+                  Home Science college road, Napier Town, Jabalpur, Madhya
+                  Pradesh
+                </span>
               </a>
             </aside>
 
