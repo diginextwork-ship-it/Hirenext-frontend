@@ -128,6 +128,20 @@ export default function Contact({ setCurrentPage }) {
           <div className="contactus-bottom">
             <aside className="contactus-info">
               <p className="contactus-info-label">Reach us directly</p>
+              <a
+                href="https://maps.app.goo.gl/F7gcbftUCUwLMo1V8"
+                target="_blank"
+                rel="noreferrer"
+                className="contactus-info-link contactus-info-link-location"
+              >
+                <span className="contactus-info-icon">
+                  <LocationIcon />
+                </span>
+                <span>
+                  Home Science college road, Napier Town, Jabalpur, Madhya
+                  Pradesh
+                </span>
+              </a>
               <a href="tel:+919893083853" className="contactus-info-link">
                 <span className="contactus-info-icon">
                   <PhoneIcon />
@@ -139,20 +153,6 @@ export default function Contact({ setCurrentPage }) {
                   <PhoneIcon />
                 </span>
                 <span>0761-4085424</span>
-              </a>
-              <a
-                href="https://maps.app.goo.gl/F7gcbftUCUwLMo1V8"
-                target="_blank"
-                rel="noreferrer"
-                className="contactus-info-link"
-              >
-                <span className="contactus-info-icon">
-                  <LocationIcon />
-                </span>
-                <span>
-                  Home Science college road, Napier Town, Jabalpur, Madhya
-                  Pradesh
-                </span>
               </a>
             </aside>
 
