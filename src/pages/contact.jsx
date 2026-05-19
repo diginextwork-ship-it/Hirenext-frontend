@@ -51,11 +51,40 @@ function LocationIcon() {
   );
 }
 
+function EmailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m4 8 8 6 8-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function Contact({ setCurrentPage }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addNotification } = useNotification();
-  const { serviceId, publicKey, contactTemplateId } = getEmailJsConfig();
+  const {
+    serviceId,
+    publicKey,
+    contactServiceId,
+    contactPublicKey,
+    contactTemplateId,
+  } = getEmailJsConfig();
 
   const handleChange = ({ target }) => {
     const { name, value } = target;
@@ -76,7 +105,7 @@ export default function Contact({ setCurrentPage }) {
     setIsSubmitting(true);
 
     try {
-      await emailjs.send(serviceId, contactTemplateId, {
+      await emailjs.send(contactServiceId || serviceId, contactTemplateId, {
         form_type: "Contact Us",
         to_email: "Hirenextindia@gmail.com",
         first_name: formData.firstName,
@@ -85,7 +114,7 @@ export default function Contact({ setCurrentPage }) {
         email: formData.email,
         message: formData.message,
       }, {
-        publicKey,
+        publicKey: contactPublicKey || publicKey,
       });
 
       addNotification(
@@ -153,6 +182,15 @@ export default function Contact({ setCurrentPage }) {
                   <PhoneIcon />
                 </span>
                 <span>0761-4085424</span>
+              </a>
+              <a
+                href="mailto:hr@hirnextindia.com"
+                className="contactus-info-link"
+              >
+                <span className="contactus-info-icon">
+                  <EmailIcon />
+                </span>
+                <span>hr@hirnextindia.com</span>
               </a>
             </aside>
 

@@ -6,8 +6,15 @@ const emailJsConfig = {
     import.meta.env.VITE_EMAILJS_JOB_APPLICATION_TEMPLATE_ID ||
     import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
   contactTemplateId:
+    import.meta.env.VITE_CONTACT_US_EMAILJS_TEMPLATE_ID ||
     import.meta.env.VITE_EMAILJS_CONTACT_TEMPLATE_ID ||
     import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+  contactServiceId:
+    import.meta.env.VITE_CONTACT_US_EMAILJS_SERVICE_ID ||
+    import.meta.env.VITE_EMAILJS_SERVICE_ID,
+  contactPublicKey:
+    import.meta.env.VITE_CONTACT_US_EMAILJS_PUBLIC_KEY ||
+    import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
 };
 
 export const getEmailJsConfig = () => emailJsConfig;
