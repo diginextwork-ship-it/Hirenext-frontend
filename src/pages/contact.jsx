@@ -184,13 +184,13 @@ export default function Contact({ setCurrentPage }) {
                 <span>0761-4085424</span>
               </a>
               <a
-                href="mailto:hr@hirnextindia.com"
+                href="mailto:hirenextindia@gmail.com"
                 className="contactus-info-link"
               >
                 <span className="contactus-info-icon">
                   <EmailIcon />
                 </span>
-                <span>hr@hirnextindia.com</span>
+                <span>hirenextindia@gmail.com</span>
               </a>
             </aside>
 
