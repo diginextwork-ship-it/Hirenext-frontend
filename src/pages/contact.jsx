@@ -171,26 +171,23 @@ export default function Contact({ setCurrentPage }) {
                   Pradesh
                 </span>
               </a>
-              <a href="tel:+919893083853" className="contactus-info-link">
+              <div className="contactus-info-link">
                 <span className="contactus-info-icon">
                   <PhoneIcon />
                 </span>
-                <span>+91 9893083853</span>
-              </a>
-              <a href="tel:+917614085424" className="contactus-info-link">
-                <span className="contactus-info-icon">
-                  <PhoneIcon />
+                <span className="contactus-phone-links">
+                  <a href="tel:+919893083853">+91 9893083853</a>
+                  <a href="tel:+917614085424">0761-4085424</a>
                 </span>
-                <span>0761-4085424</span>
-              </a>
+              </div>
               <a
-                href="mailto:hirenextindia@gmail.com"
+                href="mailto:hr@hirenextindia.com"
                 className="contactus-info-link"
               >
                 <span className="contactus-info-icon">
                   <EmailIcon />
                 </span>
-                <span>hirenextindia@gmail.com</span>
+                <span>hr@hirenextindia.com</span>
               </a>
             </aside>
 
@@ -250,6 +247,16 @@ export default function Contact({ setCurrentPage }) {
                 {isSubmitting ? "Sending..." : "Submit"}
               </button>
             </form>
+          </div>
+
+          <div className="contactus-map-wrap">
+            <iframe
+              title="HireNext India location"
+              className="contactus-map"
+              src="https://www.google.com/maps?q=Home%20Science%20college%20road,%20Napier%20Town,%20Jabalpur,%20Madhya%20Pradesh&z=15&output=embed"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
       </section>

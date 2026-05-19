@@ -148,6 +148,37 @@
   margin-top: 0.9rem;
 }
 
+.contactus-phone-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.contactus-phone-links a {
+  color: var(--white);
+  text-decoration: none;
+}
+
+.contactus-map-wrap {
+  position: relative;
+  z-index: 2;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background: rgba(10, 18, 30, 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.18);
+}
+
+.contactus-map {
+  display: block;
+  width: 100%;
+  height: 320px;
+  border: 0;
+}
+
 .contactus-info-link-location {
   font-size: 1rem;
   font-weight: 500;
@@ -289,6 +320,11 @@
     padding: 0 0 0.9rem;
   }
 
+  .contactus-phone-links {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
   .contactus-form-grid {
     grid-template-columns: 1fr;
     gap: 0;
@@ -297,6 +333,14 @@
   .contactus-form,
   .contactus-info {
     border-radius: 1.2rem;
+  }
+
+  .contactus-map-wrap {
+    border-radius: 1.2rem;
+  }
+
+  .contactus-map {
+    height: 260px;
   }
 
   .contactus-submit {
