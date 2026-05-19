@@ -249,15 +249,6 @@ export default function Contact({ setCurrentPage }) {
             </form>
           </div>
 
-          <div className="contactus-map-wrap">
-            <iframe
-              title="HireNext India location"
-              className="contactus-map"
-              src="https://www.google.com/maps?q=Home%20Science%20college%20road,%20Napier%20Town,%20Jabalpur,%20Madhya%20Pradesh&z=15&output=embed"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
         </div>
       </section>
     </main>
