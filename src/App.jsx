@@ -31,9 +31,6 @@ const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
 const AdminCandidateResumes = lazy(
   () => import("./pages/admin/AdminCandidateResumes"),
 );
-const AdminManualSelection = lazy(
-  () => import("./pages/admin/AdminManualSelection"),
-);
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminAttendance = lazy(() => import("./pages/admin/AdminAttendance"));
 const AdminBilling = lazy(() => import("./pages/admin/AdminBilling"));
@@ -59,7 +56,6 @@ const PAGE_TO_PATH = {
   adminuploads: "/admin-panel/recruiter-uploads",
   adminperformance: "/admin-panel/performance",
   admincandidateresumes: "/admin-panel/candidate-submitted-resumes",
-  adminmanualselection: "/admin-panel/manual-selection",
   adminrevenue: "/admin-panel/revenue",
   adminattendance: "/admin-panel/attendance",
   adminbilling: "/admin-panel/billing",
@@ -73,7 +69,6 @@ const ADMIN_ONLY_PAGES = new Set([
   "adminuploads",
   "adminperformance",
   "admincandidateresumes",
-  "adminmanualselection",
   "adminrevenue",
   "adminattendance",
   "adminbilling",
@@ -130,8 +125,6 @@ const getRouteFromPath = (pathname) => {
     return { page: "adminperformance", params: {} };
   if (normalizedPath === "/admin-panel/candidate-submitted-resumes")
     return { page: "admincandidateresumes", params: {} };
-  if (normalizedPath === "/admin-panel/manual-selection")
-    return { page: "adminmanualselection", params: {} };
   if (normalizedPath === "/admin-panel/revenue")
     return { page: "adminrevenue", params: {} };
   if (normalizedPath === "/admin-panel/attendance")
@@ -298,8 +291,6 @@ export default function App() {
         return <AdminPerformance setCurrentPage={setCurrentPage} />;
       case "admincandidateresumes":
         return <AdminCandidateResumes setCurrentPage={setCurrentPage} />;
-      case "adminmanualselection":
-        return <AdminManualSelection setCurrentPage={setCurrentPage} />;
       case "adminrevenue":
         return <AdminRevenue setCurrentPage={setCurrentPage} />;
       case "adminattendance":

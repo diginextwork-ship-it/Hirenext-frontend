@@ -27,12 +27,6 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
       page: "admincandidateresumes",
     },
     {
-      title: "Manual Resume Selection",
-      description: "Select resumes for each job against open positions.",
-      stat: `${dashboard.totalResumeCount} resumes`,
-      page: "adminmanualselection",
-    },
-    {
       title: "Revenue",
       description:
         "Track intake and expenses (salaries, electricity bills, client payments) with charts and table.",
