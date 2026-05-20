@@ -62,6 +62,7 @@ const toRoleLabel = (value) =>
 export default function AdminSalaryHistory({ setCurrentPage }) {
   const [staff, setStaff] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusView, setStatusView] = useState("active");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -139,8 +140,20 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
 
   const filteredStaff = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normalizedStatusView =
+      String(statusView || "active").trim().toLowerCase() === "inactive"
+        ? "inactive"
+        : "active";
 
     return [...staff]
+      .filter((member) => {
+        const memberStatus =
+          String(member.accountStatus || "active").trim().toLowerCase() ===
+          "inactive"
+            ? "inactive"
+            : "active";
+        return memberStatus === normalizedStatusView;
+      })
       .sort((left, right) => {
         const leftWeight =
           String(left.role || "").trim().toLowerCase() === "team leader" ? 0 : 1;
@@ -160,7 +173,27 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
           ? String(member.name || "").toLowerCase().includes(normalizedSearch)
           : true,
       );
-  }, [searchTerm, staff]);
+  }, [searchTerm, staff, statusView]);
+
+  const activeCount = useMemo(
+    () =>
+      staff.filter(
+        (member) =>
+          String(member.accountStatus || "active").trim().toLowerCase() !==
+          "inactive",
+      ).length,
+    [staff],
+  );
+
+  const inactiveCount = useMemo(
+    () =>
+      staff.filter(
+        (member) =>
+          String(member.accountStatus || "active").trim().toLowerCase() ===
+          "inactive",
+      ).length,
+    [staff],
+  );
 
   const openSalaryCard = async (member) => {
     setSelectedStaff(member);
@@ -204,9 +237,18 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
     setFormMessage("");
     setFormError("");
     try {
-      await adminUpdateRecruiterAccountStatus(confirmDisableTarget.rid, "inactive");
+      const nextStatus =
+        String(confirmDisableTarget.accountStatus || "active")
+          .trim()
+          .toLowerCase() === "inactive"
+          ? "active"
+          : "inactive";
+      await adminUpdateRecruiterAccountStatus(confirmDisableTarget.rid, nextStatus);
       setConfirmDisableTarget(null);
-      if (selectedStaff?.rid === confirmDisableTarget.rid) {
+      if (
+        nextStatus === "inactive" &&
+        selectedStaff?.rid === confirmDisableTarget.rid
+      ) {
         closeSalaryCard();
       }
       await loadStaff();
@@ -250,6 +292,13 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const modifications = Array.isArray(salaryDetail?.modifications)
     ? salaryDetail.modifications
     : [];
+  const isViewingInactive = statusView === "inactive";
+  const confirmActionLabel =
+    String(confirmDisableTarget?.accountStatus || "active")
+      .trim()
+      .toLowerCase() === "inactive"
+      ? "Activate"
+      : "Disable";
 
   return (
     <AdminLayout
@@ -283,8 +332,26 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               placeholder="Type a recruiter or team leader name..."
             />
           </div>
+          <div className="admin-salary-history-status-toggle" role="tablist" aria-label="Recruiter account status views">
+            <button
+              type="button"
+              className={`admin-salary-history-status-btn${!isViewingInactive ? " is-active" : ""}`}
+              onClick={() => setStatusView("active")}
+            >
+              Active ({activeCount})
+            </button>
+            <button
+              type="button"
+              className={`admin-salary-history-status-btn${isViewingInactive ? " is-active" : ""}`}
+              onClick={() => setStatusView("inactive")}
+            >
+              Inactive ({inactiveCount})
+            </button>
+          </div>
           <div className="admin-muted">
-            Click any recruiter or team leader row to open the salary card.
+            {isViewingInactive
+              ? "Open an inactive account to review it, or activate it again."
+              : "Click any active recruiter or team leader row to open the salary card."}
           </div>
         </div>
       </div>
@@ -302,8 +369,8 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
         ) : filteredStaff.length === 0 ? (
           <p className="admin-chart-empty">
             {searchTerm.trim()
-              ? "No recruiter or team leader matches that name."
-              : "No recruiters or team leaders found."}
+              ? `No ${isViewingInactive ? "inactive" : "active"} recruiter or team leader matches that name.`
+              : `No ${isViewingInactive ? "inactive" : "active"} recruiters or team leaders found.`}
           </p>
         ) : (
           <div className="admin-salary-history-list">
@@ -347,7 +414,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                     type="button"
                     className="admin-back-btn"
                     style={{
-                      backgroundColor: "#dc2626",
+                      backgroundColor: isViewingInactive ? "#166534" : "#dc2626",
                       color: "#fff",
                       border: "none",
                       padding: "8px 12px",
@@ -356,19 +423,14 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                       event.stopPropagation();
                       setConfirmDisableTarget(member);
                     }}
-                    disabled={
-                      accountActionRid === member.rid ||
-                      String(member.accountStatus || "active")
-                        .trim()
-                        .toLowerCase() === "inactive"
-                    }
+                    disabled={accountActionRid === member.rid}
                   >
-                    {String(member.accountStatus || "active")
-                      .trim()
-                      .toLowerCase() === "inactive"
-                      ? "Disabled"
-                      : accountActionRid === member.rid
-                        ? "Disabling..."
+                    {accountActionRid === member.rid
+                      ? isViewingInactive
+                        ? "Activating..."
+                        : "Disabling..."
+                      : isViewingInactive
+                        ? "Activate Account"
                         : "Disable Account"}
                   </button>
                 </div>
@@ -573,20 +635,29 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
           className="admin-modal-overlay"
           role="dialog"
           aria-modal="true"
-          onClick={closeDisableModal}
+            onClick={closeDisableModal}
         >
           <div
             className="admin-modal-card"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0, color: "#dc2626" }}>Disable account</h3>
+            <h3
+              style={{
+                marginTop: 0,
+                color: confirmActionLabel === "Activate" ? "#166534" : "#dc2626",
+              }}
+            >
+              {confirmActionLabel} account
+            </h3>
             <p style={{ margin: "0 0 10px" }}>
-              Disable login for <strong>{confirmDisableTarget.name || "Unknown"}</strong>{" "}
-              ({confirmDisableTarget.rid})?
+              {confirmActionLabel} login for{" "}
+              <strong>{confirmDisableTarget.name || "Unknown"}</strong> (
+              {confirmDisableTarget.rid})?
             </p>
             <p className="admin-muted" style={{ margin: "0 0 14px" }}>
-              This account will not be able to log in and it will be removed from
-              the salary revenue list.
+              {confirmActionLabel === "Activate"
+                ? "This account will be able to log in again and will return to the active list."
+                : "This account will not be able to log in and it will be removed from the active salary revenue list."}
             </p>
             <div className="admin-modal-actions">
               <button
@@ -600,11 +671,19 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
               <button
                 type="button"
                 className="admin-refresh-btn"
-                style={{ backgroundColor: "#dc2626", border: "none" }}
+                style={{
+                  backgroundColor:
+                    confirmActionLabel === "Activate" ? "#166534" : "#dc2626",
+                  border: "none",
+                }}
                 onClick={handleDisableAccount}
                 disabled={Boolean(accountActionRid)}
               >
-                {accountActionRid ? "Disabling..." : "Confirm Disable"}
+                {accountActionRid
+                  ? confirmActionLabel === "Activate"
+                    ? "Activating..."
+                    : "Disabling..."
+                  : `Confirm ${confirmActionLabel}`}
               </button>
             </div>
           </div>

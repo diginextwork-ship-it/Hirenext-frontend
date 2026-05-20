@@ -4,6 +4,8 @@ import { API_BASE_URL, getAdminHeaders, readJsonResponse } from "./adminApi";
 import useDailyRefresh from "../../hooks/useDailyRefresh";
 import "../../styles/admin-panel.css";
 
+const SELECT_ALL_RECRUITERS_VALUE = "__all_recruiters__";
+
 const toCurrency = (value) =>
   Number(value || 0).toLocaleString(undefined, {
     style: "currency",
@@ -481,6 +483,9 @@ export default function AdminRevenue({ setCurrentPage }) {
                   required
                 >
                   <option value="">Select salary receiving account</option>
+                  <option value={SELECT_ALL_RECRUITERS_VALUE}>
+                    Select all recruiters
+                  </option>
                   {salaryReceivers.map((recruiter) => (
                     <option key={recruiter.rid} value={recruiter.rid}>
                       {recruiter.rid} - {recruiter.name || "Unknown"}

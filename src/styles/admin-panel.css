@@ -1562,6 +1562,41 @@
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
 }
 
+.admin-salary-history-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-salary-history-status-btn {
+  border: 1px solid #d7dee8;
+  background: #fff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.admin-salary-history-status-btn:hover {
+  border-color: #c62828;
+  color: #c62828;
+  transform: translateY(-1px);
+}
+
+.admin-salary-history-status-btn.is-active {
+  background: linear-gradient(135deg, #c62828, #991b1b);
+  border-color: #991b1b;
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(198, 40, 40, 0.2);
+}
+
+.admin-salary-history-status-btn.is-active:hover {
+  color: #fff;
+}
+
 .admin-salary-history-header,
 .admin-salary-history-row {
   display: grid;
@@ -1753,6 +1788,15 @@
 
   .admin-salary-history-toolbar {
     align-items: stretch;
+  }
+
+  .admin-salary-history-status-toggle {
+    width: 100%;
+  }
+
+  .admin-salary-history-status-btn {
+    flex: 1 1 160px;
+    justify-content: center;
   }
 
   .admin-salary-history-search {
