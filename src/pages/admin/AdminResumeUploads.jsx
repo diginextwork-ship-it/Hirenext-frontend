@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   formatResumeCompanyDisplay,
   formatResumeCityDisplay,
+  normalizeResumeData,
 } from "../../utils/dashboardData";
 import { formatDateTimeInIndia } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
@@ -93,7 +94,10 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                 {dashboard.recruiterResumeUploads.map((rawItem) => {
                   const item = normalizeResumeData(rawItem);
                   return (
-                  <tr key={item.resId}>
+                  <tr
+                    key={item.resId}
+                    className={item.duplicateConflict ? "duplicate-conflict-row" : ""}
+                  >
                     <td>{item.resId}</td>
                     <td>{item.recruiterName}</td>
                     <td>{item.recruiterEmail}</td>

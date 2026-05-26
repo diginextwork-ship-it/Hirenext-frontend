@@ -774,7 +774,10 @@ export default function RecruiterDashboard({ recruiterId }) {
                     }
 
                     return (
-                      <tr key={resume.resId}>
+                      <tr
+                        key={resume.resId}
+                        className={resume.duplicateConflict ? "duplicate-conflict-row" : ""}
+                      >
                         <td>{getResumeCandidateName(resume)}</td>
                         <td>
                           {getResumeCandidatePhone(resume) ? (

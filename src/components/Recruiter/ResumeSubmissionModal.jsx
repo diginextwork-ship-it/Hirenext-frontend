@@ -516,6 +516,11 @@ export default function ResumeSubmissionModal({
         "success",
         5000,
       );
+      if (data?.duplicateConflict) {
+        window.alert(
+          "Likely a similar candidate has already been submitted, contact the admin to resolve the issue",
+        );
+      }
       onSuccess?.(data);
       onClose?.();
     } catch (error) {

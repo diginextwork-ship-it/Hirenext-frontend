@@ -232,6 +232,7 @@ export default function SubmittedResumesPanel({
   getResumeUrl,
   renderRowActions = null,
   deletingResId = "",
+  afterSourceActions = null,
 }) {
   const [sourceFilter, setSourceFilter] = useState(
     sourceOptions[0]?.key || "all",
@@ -531,6 +532,7 @@ export default function SubmittedResumesPanel({
                 )
               </button>
             ))}
+            {afterSourceActions}
           </div>
         ) : null}
 
@@ -793,7 +795,10 @@ export default function SubmittedResumesPanel({
                     "Name not found";
 
                   return (
-                  <tr key={`${resume._source || "resume"}-${resume.resId}`}>
+                  <tr
+                    key={`${resume._source || "resume"}-${resume.resId}`}
+                    className={resume.duplicateConflict ? "duplicate-conflict-row" : ""}
+                  >
                     <td>{getRecruiterDisplayName(resume, defaultRecruiterName)}</td>
                     <td className="submitted-resumes-candidate-name" title={candidateName}>
                       {truncateDisplayName(candidateName)}

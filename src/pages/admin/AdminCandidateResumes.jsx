@@ -3,7 +3,9 @@ import { getAuthSession } from "../../auth/session";
 import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
+  assignDuplicateConflict,
   adminDeleteResume,
+  fetchDuplicateConflicts,
   getAdminHeaders,
   readJsonResponse,
 } from "./adminApi";
@@ -27,6 +29,10 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deletingResId, setDeletingResId] = useState("");
+  const [duplicateConflicts, setDuplicateConflicts] = useState([]);
+  const [showDuplicateConflicts, setShowDuplicateConflicts] = useState(false);
+  const [expandedConflictId, setExpandedConflictId] = useState("");
+  const [assigningConflictResId, setAssigningConflictResId] = useState("");
 
   const loadCandidateResumes = async () => {
     setIsLoading(true);
@@ -111,9 +117,38 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     await Promise.all([loadCandidateResumes(), loadRecruiterResumes()]);
   };
 
+  const loadDuplicateConflicts = async () => {
+    try {
+      const data = await fetchDuplicateConflicts();
+      setDuplicateConflicts(Array.isArray(data?.conflicts) ? data.conflicts : []);
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to fetch duplicate conflicts.");
+    }
+  };
+
   useEffect(() => {
     loadAllResumes();
+    loadDuplicateConflicts();
   }, []);
+
+  const openDuplicateConflicts = async () => {
+    await loadDuplicateConflicts();
+    setShowDuplicateConflicts(true);
+  };
+
+  const handleConflictAssign = async (groupId, entry) => {
+    setAssigningConflictResId(entry.resId);
+    setErrorMessage("");
+    try {
+      await assignDuplicateConflict(groupId, entry.resId, entry.recruiterRid);
+      setSuccessMessage(`Candidate assigned to ${entry.recruiterName}.`);
+      await Promise.all([loadAllResumes(), loadDuplicateConflicts()]);
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to assign duplicate conflict.");
+    } finally {
+      setAssigningConflictResId("");
+    }
+  };
 
   const handleResumeDelete = async (resume) => {
     const resId = String(resume?.resId || "").trim();
@@ -206,6 +241,15 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         sourceOptions={sourceOptions}
         getResumeUrl={getResumeUrl}
         deletingResId={deletingResId}
+        afterSourceActions={
+          <button
+            type="button"
+            className="perf-timeline-btn duplicate-conflicts-btn"
+            onClick={openDuplicateConflicts}
+          >
+            Duplicate Conflicts ({duplicateConflicts.length})
+          </button>
+        }
         renderRowActions={(resume) => (
           <button
             type="button"
@@ -217,6 +261,56 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
           </button>
         )}
       />
+      {showDuplicateConflicts ? (
+        <div className="duplicate-conflicts-overlay" role="presentation">
+          <section className="duplicate-conflicts-modal" role="dialog" aria-modal="true">
+            <div className="duplicate-conflicts-head">
+              <h2>Duplicate Conflicts</h2>
+              <button type="button" className="admin-refresh-btn" onClick={() => setShowDuplicateConflicts(false)}>
+                Close
+              </button>
+            </div>
+            {!duplicateConflicts.length ? <p>No duplicate conflicts found.</p> : null}
+            {duplicateConflicts.map((conflict) => (
+              <div className="duplicate-conflict-card" key={conflict.duplicateGroupId}>
+                <button
+                  type="button"
+                  className="duplicate-conflict-name"
+                  onClick={() =>
+                    setExpandedConflictId((current) =>
+                      current === conflict.duplicateGroupId ? "" : conflict.duplicateGroupId,
+                    )
+                  }
+                >
+                  {conflict.candidateName} ({conflict.entries.length})
+                </button>
+                {expandedConflictId === conflict.duplicateGroupId ? (
+                  <div className="duplicate-conflict-entries">
+                    {conflict.entries.map((entry) => (
+                      <div className="duplicate-conflict-entry" key={entry.resId}>
+                        <div>
+                          <strong>{entry.candidateName}</strong>
+                          <span>{entry.submittedAt || "N/A"} IST</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="admin-refresh-btn"
+                          disabled={assigningConflictResId === entry.resId}
+                          onClick={() => handleConflictAssign(conflict.duplicateGroupId, entry)}
+                        >
+                          {assigningConflictResId === entry.resId
+                            ? "Assigning..."
+                            : entry.recruiterName}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </section>
+        </div>
+      ) : null}
     </AdminLayout>
   );
 }
