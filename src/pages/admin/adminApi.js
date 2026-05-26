@@ -10,6 +10,20 @@ export { API_BASE_URL, readJsonResponse };
 
 export const getAdminHeaders = buildAuthHeaders;
 
+export const fetchAdminCandidateResumes = async () =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/candidate-resumes`,
+    {},
+    "Failed to fetch candidate submitted resumes.",
+  );
+
+export const fetchAdminDashboard = async () =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/dashboard`,
+    {},
+    "Failed to fetch recruiter resume uploads.",
+  );
+
 export const updateTeamLeaderNote = async (resId, verifiedReason) =>
   authFetch(
     `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/verified-reason`,

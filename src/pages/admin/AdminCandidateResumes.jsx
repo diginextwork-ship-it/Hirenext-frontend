@@ -5,9 +5,9 @@ import {
   API_BASE_URL,
   assignDuplicateConflict,
   adminDeleteResume,
+  fetchAdminCandidateResumes,
+  fetchAdminDashboard,
   fetchDuplicateConflicts,
-  getAdminHeaders,
-  readJsonResponse,
 } from "./adminApi";
 import {
   formatResumeCompanyDisplay,
@@ -31,6 +31,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [deletingResId, setDeletingResId] = useState("");
   const [duplicateConflicts, setDuplicateConflicts] = useState([]);
   const [showDuplicateConflicts, setShowDuplicateConflicts] = useState(false);
+  const [loadedDuplicateConflicts, setLoadedDuplicateConflicts] = useState(false);
   const [expandedConflictId, setExpandedConflictId] = useState("");
   const [assigningConflictResId, setAssigningConflictResId] = useState("");
 
@@ -38,21 +39,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/admin/candidate-resumes`,
-        {
-          headers: getAdminHeaders(),
-        },
-      );
-      const data = await readJsonResponse(
-        response,
-        "Check VITE_API_BASE_URL and ensure the admin candidate resumes route is available.",
-      );
-      if (!response.ok) {
-        throw new Error(
-          data?.message || "Failed to fetch candidate submitted resumes.",
-        );
-      }
+      const data = await fetchAdminCandidateResumes();
 
       setResumes(
         (Array.isArray(data?.resumes) ? data.resumes : []).map((resume) => ({
@@ -74,14 +61,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
   const loadRecruiterResumes = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/dashboard`, {
-        headers: getAdminHeaders(),
-      });
-      const data = await readJsonResponse(
-        response,
-        "Failed to fetch recruiter resume uploads.",
-      );
-      if (!response.ok) return;
+      const data = await fetchAdminDashboard();
 
       const uploads = Array.isArray(data?.recruiterResumeUploads)
         ? data.recruiterResumeUploads
@@ -121,6 +101,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     try {
       const data = await fetchDuplicateConflicts();
       setDuplicateConflicts(Array.isArray(data?.conflicts) ? data.conflicts : []);
+      setLoadedDuplicateConflicts(true);
     } catch (error) {
       setErrorMessage(error.message || "Failed to fetch duplicate conflicts.");
     }
@@ -128,7 +109,6 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
   useEffect(() => {
     loadAllResumes();
-    loadDuplicateConflicts();
   }, []);
 
   const openDuplicateConflicts = async () => {
@@ -247,7 +227,8 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
             className="perf-timeline-btn duplicate-conflicts-btn"
             onClick={openDuplicateConflicts}
           >
-            Duplicate Conflicts ({duplicateConflicts.length})
+            Duplicate Conflicts
+            {loadedDuplicateConflicts ? ` (${duplicateConflicts.length})` : ""}
           </button>
         }
         renderRowActions={(resume) => (
