@@ -62,6 +62,7 @@ export default function AdminAttendance({ setCurrentPage }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteDeleting, setDeleteDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [staffSearch, setStaffSearch] = useState("");
 
   const loadAttendance = async (selectedDate = attendanceDate) => {
     setIsLoading(true);
@@ -141,6 +142,23 @@ export default function AdminAttendance({ setCurrentPage }) {
     ],
     [summary],
   );
+
+  const filteredStaff = useMemo(() => {
+    const searchTerm = staffSearch.trim().toLowerCase();
+    if (!searchTerm) return staff;
+
+    return staff.filter((member) =>
+      [
+        member.name,
+        member.rid,
+        member.role,
+        member.salaryCreditTargetName,
+        member.salaryCreditTargetRid,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(searchTerm)),
+    );
+  }, [staff, staffSearch]);
 
   const handleMarkAttendance = async (recruiterRid, status) => {
     if (status === "half_day") {
@@ -282,10 +300,31 @@ export default function AdminAttendance({ setCurrentPage }) {
       </div>
 
       <div className="admin-dashboard-card admin-card-large">
-        <h2 style={{ marginTop: 0 }}>Daily attendance</h2>
+        <div className="admin-attendance-list-head">
+          <div>
+            <h2 style={{ margin: 0 }}>Daily attendance</h2>
+            <p className="admin-muted" style={{ margin: "0.35rem 0 0" }}>
+              Showing {filteredStaff.length} of {staff.length}
+            </p>
+          </div>
+          <div className="admin-attendance-search">
+            <label htmlFor="attendanceStaffSearch">Search staff</label>
+            <input
+              id="attendanceStaffSearch"
+              type="search"
+              value={staffSearch}
+              onChange={(event) => setStaffSearch(event.target.value)}
+              placeholder="Recruiter or team leader name"
+            />
+          </div>
+        </div>
         {staff.length === 0 ? (
           <p className="admin-chart-empty">
             No recruiters or team leaders found.
+          </p>
+        ) : filteredStaff.length === 0 ? (
+          <p className="admin-chart-empty">
+            No matching recruiter or team leader found.
           </p>
         ) : (
           <div className="admin-table-wrap">
@@ -303,7 +342,7 @@ export default function AdminAttendance({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {staff.map((member) => (
+                {filteredStaff.map((member) => (
                   <tr key={member.rid}>
                     <td>{member.rid}</td>
                     <td>{member.name || "Unknown"}</td>
