@@ -40,7 +40,7 @@ export default function Footer({
           <div className="footer-main-left">
             <img src={logoImage} alt="hirenext logo" className="footer-brand-logo" />
             <p className="footer-location">
-              Location: Home Science college road,Napier Town, Jabalpur (Madhya Pradesh)
+              Location: Home Science college road, Napier town jabalpur (Madhya Pradesh)
             </p>
             
             <button

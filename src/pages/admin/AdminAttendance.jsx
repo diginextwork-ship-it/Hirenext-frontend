@@ -4,7 +4,7 @@ import {
   API_BASE_URL,
   getAdminHeaders,
   readJsonResponse,
-  adminDeleteRecruiter,
+  adminUpdateRecruiterAccountStatus,
 } from "./adminApi";
 import "../../styles/admin-panel.css";
 
@@ -59,9 +59,9 @@ export default function AdminAttendance({ setCurrentPage }) {
   const [statusMessage, setStatusMessage] = useState("");
   const [halfDayTarget, setHalfDayTarget] = useState(null);
   const [halfDayHours, setHalfDayHours] = useState("1.0");
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteDeleting, setDeleteDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [disableTarget, setDisableTarget] = useState(null);
+  const [disableSaving, setDisableSaving] = useState(false);
+  const [disableError, setDisableError] = useState("");
   const [staffSearch, setStaffSearch] = useState("");
 
   const loadAttendance = async (selectedDate = attendanceDate) => {
@@ -102,29 +102,29 @@ export default function AdminAttendance({ setCurrentPage }) {
     loadAttendance(attendanceDate);
   }, [attendanceDate]);
 
-  const openDeleteStaffModal = (member) => {
-    setDeleteTarget(member);
-    setDeleteError("");
+  const openDisableStaffModal = (member) => {
+    setDisableTarget(member);
+    setDisableError("");
   };
 
-  const closeDeleteStaffModal = () => {
-    if (deleteDeleting) return;
-    setDeleteTarget(null);
-    setDeleteError("");
+  const closeDisableStaffModal = () => {
+    if (disableSaving) return;
+    setDisableTarget(null);
+    setDisableError("");
   };
 
-  const handleDeleteStaff = async () => {
-    if (!deleteTarget?.rid) return;
-    setDeleteDeleting(true);
-    setDeleteError("");
+  const handleDisableStaff = async () => {
+    if (!disableTarget?.rid) return;
+    setDisableSaving(true);
+    setDisableError("");
     try {
-      await adminDeleteRecruiter(deleteTarget.rid);
-      closeDeleteStaffModal();
+      await adminUpdateRecruiterAccountStatus(disableTarget.rid, "inactive");
+      closeDisableStaffModal();
       await loadAttendance(attendanceDate);
     } catch (err) {
-      setDeleteError(err.message || "Failed to delete staff member.");
+      setDisableError(err.message || "Failed to disable account.");
     } finally {
-      setDeleteDeleting(false);
+      setDisableSaving(false);
     }
   };
 
@@ -413,9 +413,9 @@ export default function AdminAttendance({ setCurrentPage }) {
                             padding: "4px 10px",
                             fontSize: "12px",
                           }}
-                          onClick={() => openDeleteStaffModal(member)}
+                          onClick={() => openDisableStaffModal(member)}
                         >
-                          Delete
+                          Disable
                         </button>
                       </div>
                     </td>
@@ -427,12 +427,12 @@ export default function AdminAttendance({ setCurrentPage }) {
         )}
       </div>
 
-      {deleteTarget ? (
+      {disableTarget ? (
         <div
           className="admin-modal-overlay"
           role="dialog"
           aria-modal="true"
-          onClick={closeDeleteStaffModal}
+          onClick={closeDisableStaffModal}
         >
           <div
             className="admin-modal-card"
@@ -441,18 +441,18 @@ export default function AdminAttendance({ setCurrentPage }) {
             <h3
               style={{ marginTop: 0, marginBottom: "10px", color: "#dc2626" }}
             >
-              Delete{" "}
-              {deleteTarget.role === "team_leader"
+              Disable{" "}
+              {disableTarget.role === "team_leader"
                 ? "Team Leader"
                 : "Recruiter"}
             </h3>
             <p style={{ margin: "0 0 8px" }}>
-              Are you sure you want to permanently delete{" "}
-              <strong>{deleteTarget.name || "Unknown"}</strong> (
-              {deleteTarget.rid})?
+              Disable login for{" "}
+              <strong>{disableTarget.name || "Unknown"}</strong> (
+              {disableTarget.rid})?
             </p>
             <p className="admin-muted" style={{ margin: "0 0 4px" }}>
-              Role: {deleteTarget.role || "N/A"}
+              Role: {disableTarget.role || "N/A"}
             </p>
             <p
               style={{
@@ -461,24 +461,23 @@ export default function AdminAttendance({ setCurrentPage }) {
                 fontWeight: 600,
               }}
             >
-              This will permanently remove this user and all their associated
-              data including resumes, phone numbers, attendance records, and
-              performance history. This action cannot be undone.
+              This account will not be able to log in and it will be removed
+              from active staff lists.
             </p>
-            {deleteError ? (
+            {disableError ? (
               <div
                 className="admin-alert admin-alert-error"
                 style={{ marginBottom: "10px" }}
               >
-                {deleteError}
+                {disableError}
               </div>
             ) : null}
             <div className="admin-modal-actions">
               <button
                 type="button"
                 className="admin-back-btn"
-                onClick={closeDeleteStaffModal}
-                disabled={deleteDeleting}
+                onClick={closeDisableStaffModal}
+                disabled={disableSaving}
               >
                 Cancel
               </button>
@@ -486,10 +485,10 @@ export default function AdminAttendance({ setCurrentPage }) {
                 type="button"
                 className="admin-refresh-btn"
                 style={{ backgroundColor: "#dc2626", border: "none" }}
-                onClick={handleDeleteStaff}
-                disabled={deleteDeleting}
+                onClick={handleDisableStaff}
+                disabled={disableSaving}
               >
-                {deleteDeleting ? "Deleting..." : "Delete Permanently"}
+                {disableSaving ? "Disabling..." : "Confirm Disable"}
               </button>
             </div>
           </div>

@@ -640,6 +640,18 @@ export default function AdminRevenue({ setCurrentPage }) {
             />
           </div>
           <div>
+            <label htmlFor="expenseSearchType">Revenue type</label>
+            <select
+              id="expenseSearchType"
+              value={entryTypeFilter}
+              onChange={(event) => setEntryTypeFilter(event.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="intake">Intake</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+          <div>
             <label htmlFor="expenseSearchReason">Search by reason</label>
             <input
               id="expenseSearchReason"
