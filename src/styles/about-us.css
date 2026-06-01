@@ -30,27 +30,12 @@
 .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
 }
 
-.topbar-logo-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--about-coral);
-  animation: pulse-dot 2.4s ease-in-out infinite;
-}
-
-.topbar-brand-name {
-  font-family: "Playfair Display", serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--about-ink);
-  letter-spacing: -0.02em;
-}
-
-.topbar-brand-name span {
-  color: var(--about-coral);
+.topbar-logo {
+  display: block;
+  width: clamp(118px, 13vw, 168px);
+  height: auto;
 }
 
 .btn-back {

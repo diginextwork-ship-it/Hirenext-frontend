@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import logoImage from "../assets/Logo.png";
 import founderPhoto from "../assets/about/founders_pic.jpeg";
 import directorPhoto from "../assets/about/director.jpeg";
 import "../styles/about-us.css";
@@ -126,10 +127,7 @@ export default function AboutUs({ onBack }) {
     <>
       <nav className="about-topbar">
         <div className="topbar-brand">
-          <div className="topbar-logo-dot" />
-          <span className="topbar-brand-name">
-            Hire<span>NexT</span> India
-          </span>
+          <img src={logoImage} alt="HireNext India" className="topbar-logo" />
         </div>
 
         <button

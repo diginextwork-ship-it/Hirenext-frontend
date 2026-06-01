@@ -3,11 +3,13 @@ import "../styles/gallery.css";
 import PageBackButton from "../components/PageBackButton";
 
 const galleryImageModules = import.meta.glob(
-  "../assets/gallery/*.{png,jpg,jpeg,webp,avif,gif}",
+  "../assets/gallery/*.{png,jpg,jpeg,webp,avif,gif,mp4,webm,mov}",
   { eager: true, import: "default" }
 );
 
-const normalizeImages = (imageModules) =>
+const videoExtensions = /\.(mp4|webm|mov)$/i;
+
+const normalizeMedia = (imageModules) =>
   Object.entries(imageModules)
     .map(([path, src]) => {
       const fileName = String(path).split("/").pop() || "gallery-image";
@@ -15,33 +17,51 @@ const normalizeImages = (imageModules) =>
         .replace(/\.[a-z0-9]+$/i, "")
         .replace(/[-_]+/g, " ")
         .replace(/\b\w/g, (char) => char.toUpperCase());
-      return { src, alt: label, key: fileName };
+      return {
+        src,
+        alt: label,
+        key: fileName,
+        type: videoExtensions.test(fileName) ? "video" : "image",
+      };
     })
     .sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
 
-const allGalleryImages = normalizeImages(galleryImageModules);
+const allGalleryMedia = normalizeMedia(galleryImageModules);
 
-const officeImages = allGalleryImages.filter((image) =>
+const officeMedia = allGalleryMedia.filter((image) =>
   /office/i.test(image.key),
 );
-const campaignImages = allGalleryImages.filter(
+const campaignMedia = allGalleryMedia.filter(
   (image) => !/office/i.test(image.key),
 );
+const recentMedia = [...allGalleryMedia].reverse();
+
+const mediaLabel = (items) =>
+  `${items.filter((item) => item.type === "image").length} photos${
+    items.some((item) => item.type === "video") ? `, ${items.filter((item) => item.type === "video").length} videos` : ""
+  }`;
 
 const categoryCards = [
   {
     key: "office",
     title: "Office",
     description: "Inside our workplace, team culture, and daily operations.",
-    preview: officeImages[0]?.src || null,
-    count: officeImages.length,
+    preview: officeMedia[0] || null,
+    count: mediaLabel(officeMedia),
   },
   {
     key: "campaign",
     title: "Campaign",
     description: "Hiring drives, outreach campaigns, and event highlights.",
-    preview: campaignImages[0]?.src || null,
-    count: campaignImages.length,
+    preview: campaignMedia[0] || null,
+    count: mediaLabel(campaignMedia),
+  },
+  {
+    key: "recent",
+    title: "Recently Added",
+    description: "Fresh photos and videos from the latest team moments.",
+    preview: recentMedia[0] || null,
+    count: mediaLabel(recentMedia),
   },
 ];
 
@@ -49,8 +69,9 @@ export default function Gallery({ setCurrentPage }) {
   const [activeCategory, setActiveCategory] = useState(null);
 
   const activeImages = useMemo(() => {
-    if (activeCategory === "office") return officeImages;
-    if (activeCategory === "campaign") return campaignImages;
+    if (activeCategory === "office") return officeMedia;
+    if (activeCategory === "campaign") return campaignMedia;
+    if (activeCategory === "recent") return recentMedia;
     return [];
   }, [activeCategory]);
 
@@ -59,6 +80,8 @@ export default function Gallery({ setCurrentPage }) {
       ? "Office"
       : activeCategory === "campaign"
       ? "Campaign"
+      : activeCategory === "recent"
+      ? "Recently Added"
       : "";
 
   return (
@@ -87,12 +110,16 @@ export default function Gallery({ setCurrentPage }) {
                 onClick={() => setActiveCategory(category.key)}
               >
                 <div className="gallery-category-preview">
-                  {category.preview ? <img src={category.preview} alt={category.title} /> : null}
+                  {category.preview?.type === "video" ? (
+                    <video src={category.preview.src} aria-label={category.title} muted playsInline />
+                  ) : category.preview ? (
+                    <img src={category.preview.src} alt={category.title} />
+                  ) : null}
                 </div>
                 <div className="gallery-category-content">
                   <h2>{category.title}</h2>
                   <p>{category.description}</p>
-                  <span>{category.count} photos</span>
+                  <span>{category.count}</span>
                 </div>
               </button>
             ))}
@@ -115,7 +142,11 @@ export default function Gallery({ setCurrentPage }) {
                     key={image.key}
                     style={{ "--gallery-delay": `${Math.min(index * 70, 700)}ms` }}
                   >
-                    <img src={image.src} alt={image.alt} loading="lazy" />
+                    {image.type === "video" ? (
+                      <video src={image.src} controls preload="metadata" playsInline />
+                    ) : (
+                      <img src={image.src} alt={image.alt} loading="lazy" />
+                    )}
                     <div className="gallery-card-overlay">{image.alt}</div>
                   </article>
                 ))}
