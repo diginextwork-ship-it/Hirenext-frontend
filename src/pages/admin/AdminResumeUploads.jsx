@@ -112,7 +112,9 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                     <td>{Number(item.pointsPerJoining) || 0}</td>
                     <td>{item.isAccepted ? "accepted" : "pending"}</td>
                     <td>
-                      {formatDateTimeInIndia(item.uploadedAt)}
+                      {formatDateTimeInIndia(item.uploadedAt, "N/A", {
+                        treatAsWallTime: true,
+                      })}
                     </td>
                     <td>
                       <button

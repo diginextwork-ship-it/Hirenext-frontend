@@ -514,7 +514,8 @@ export default function RecruiterDashboard({ recruiterId }) {
   const cappedPoints = Math.max(0, Math.min(100, totalPoints));
   const progressWidth = totalPoints > 100 ? 100 : cappedPoints;
   const pointsProgressColor = getPointsProgressColor(totalPoints);
-  const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
+  const formatDateTime = (value) =>
+    formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
 
   return (
     <section className="recruiter-performance-dashboard">
@@ -922,7 +923,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                                 : "Rollback"}
                             </button>
                           ) : null}
-                          {activeStatus === "submitted" ? (
+                          {activeStatus &&
+                          activeStatus !== "verified" &&
+                          activeStatus !== "rejected" ? (
                             <button
                               type="button"
                               className="action-btn action-btn-primary"

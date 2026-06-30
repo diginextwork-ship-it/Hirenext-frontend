@@ -165,7 +165,8 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString();
 };
 
-const formatDateTime = (value) => formatDateTimeInIndia(value);
+const formatDateTime = (value) =>
+  formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
 
 const normalizeStatus = (value) => {
   const normalized = String(value || "")
@@ -345,7 +346,6 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   }, [fetchPerformance, refreshKey]);
 
   const statusDrilldown = data?.statusDrilldown || {};
-  const summary = data?.summary || {};
 
   const latestStatusByResId = useMemo(() => {
     const map = new Map();
@@ -931,7 +931,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                                 Rollback
                               </button>
                             ) : null}
-                            {selectedStatusKey === "submitted" ? (
+                            {selectedStatusKey !== "verified" &&
+                            selectedStatusKey !== "rejected" ? (
                               <button
                                 type="button"
                                 className="admin-refresh-btn"

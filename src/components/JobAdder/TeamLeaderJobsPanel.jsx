@@ -186,7 +186,7 @@ export default function TeamLeaderJobsPanel() {
                   </button>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="click-here-btn"
                     onClick={() => openEditModal(job)}
                   >
                     Edit

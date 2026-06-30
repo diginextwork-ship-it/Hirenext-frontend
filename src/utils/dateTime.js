@@ -20,7 +20,7 @@ export const parseDateTimeValue = (value) => {
     /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/,
   );
 
-  if (sqlDateTimeMatch && !/[zZ]|[+\-]\d{2}:\d{2}$/.test(normalized)) {
+  if (sqlDateTimeMatch && !/[zZ]|[+-]\d{2}:\d{2}$/.test(normalized)) {
     const [
       ,
       year,
@@ -51,10 +51,22 @@ export const parseDateTimeValue = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-export const formatDateTimeInIndia = (value, fallback = "N/A") => {
+const stripTimeZoneSuffix = (value) =>
+  String(value || "").replace(/([zZ]|[+-]\d{2}:\d{2})$/, "");
+
+export const formatDateTimeInIndia = (
+  value,
+  fallback = "N/A",
+  options = {},
+) => {
   if (!value) return fallback;
 
-  const parsed = parseDateTimeValue(value);
+  const normalizedValue =
+    options?.treatAsWallTime && typeof value === "string"
+      ? stripTimeZoneSuffix(value)
+      : value;
+
+  const parsed = parseDateTimeValue(normalizedValue);
   if (!parsed) return String(value);
 
   return parsed.toLocaleString(INDIA_LOCALE, {

@@ -16,7 +16,6 @@ import {
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
-  displayNote,
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -338,7 +337,7 @@ function formatDate(value) {
 }
 
 function formatDateTime(value) {
-  return formatDateTimeInIndia(value, "-");
+  return formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
 }
 
 function displayValue(value) {
@@ -386,10 +385,6 @@ function getPerformanceNoteForStatus(item, statusValue) {
 }
 
 const normalizeNoteText = (value) => String(value ?? "").trim();
-
-function getLatestPerformanceNote(item) {
-  return getPerformanceNoteForStatus(item);
-}
 
 function resolveNoteAuthor(item, noteValue, statusValue) {
   const note = normalizeNoteText(noteValue);

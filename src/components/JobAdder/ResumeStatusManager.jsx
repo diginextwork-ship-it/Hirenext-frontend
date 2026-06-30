@@ -25,7 +25,8 @@ const formatLabel = (value) =>
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const formatDateTime = (value) => formatDateTimeInIndia(value, "-");
+const formatDateTime = (value) =>
+  formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
 
 const formatDate = (value) => formatDateInIndia(value, "-");
 const getResumeCompanyName = (resume, selectedJob) =>

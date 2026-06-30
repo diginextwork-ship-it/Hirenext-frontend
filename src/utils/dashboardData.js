@@ -327,24 +327,56 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     pickNested(source, ["joiningNote", "joining_note"]),
     pickNested(selection, ["joiningNote", "joining_note"]),
   );
+  const workflowUpdatedAt = pickFirst(
+    pickNested(source, ["workflowUpdatedAt", "workflow_updated_at"]),
+    pickNested(selection, ["workflowUpdatedAt", "workflow_updated_at"]),
+  );
+  const updatedAt = pickFirst(
+    pickNested(source, ["updatedAt", "updated_at"]),
+    pickNested(selection, ["updatedAt", "updated_at"]),
+  );
+  const createdAt = pickFirst(
+    pickNested(source, ["createdAt", "created_at"]),
+    pickNested(selection, ["createdAt", "created_at"]),
+  );
   const submittedReason = pickFirst(
     pickNested(source, ["submittedReason", "submitted_reason"]),
     pickNested(selection, ["submittedReason", "submitted_reason"]),
+  );
+  const submittedAt = pickFirst(
+    pickNested(source, ["submittedAt", "submitted_at"]),
+    pickNested(selection, ["submittedAt", "submitted_at"]),
+  );
+  const uploadedAt = pickFirst(
+    pickNested(source, ["uploadedAt", "uploaded_at"]),
+    pickNested(selection, ["uploadedAt", "uploaded_at"]),
   );
   const verifiedReason = pickFirst(
     pickNested(source, ["verifiedReason", "verified_reason"]),
     pickNested(selection, ["verifiedReason", "verified_reason"]),
     status === "verified" ? genericReason : null,
   );
+  const verifiedAt = pickFirst(
+    pickNested(source, ["verifiedAt", "verified_at"]),
+    pickNested(selection, ["verifiedAt", "verified_at"]),
+  );
   const othersReason = pickFirst(
     pickNested(source, ["othersReason", "others_reason"]),
     pickNested(selection, ["othersReason", "others_reason"]),
     status === "others" ? genericReason : null,
   );
+  const othersAt = pickFirst(
+    pickNested(source, ["othersAt", "others_at"]),
+    pickNested(selection, ["othersAt", "others_at"]),
+  );
   const walkInReason = pickFirst(
     pickNested(source, ["walkInReason", "walk_in_reason"]),
     pickNested(selection, ["walkInReason", "walk_in_reason"]),
     status === "walk_in" ? genericReason : null,
+  );
+  const walkInAt = pickFirst(
+    pickNested(source, ["walkInAt", "walk_in_at"]),
+    pickNested(selection, ["walkInAt", "walk_in_at"]),
   );
   const selectReason = pickFirst(
     pickNested(source, [
@@ -361,10 +393,18 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     ]),
     status === "selected" ? genericReason : null,
   );
+  const selectedAt = pickFirst(
+    pickNested(source, ["selectedAt", "selected_at"]),
+    pickNested(selection, ["selectedAt", "selected_at"]),
+  );
   const rejectReason = pickFirst(
     pickNested(source, ["rejectReason", "reject_reason"]),
     pickNested(selection, ["rejectReason", "reject_reason"]),
     status === "rejected" ? genericReason : null,
+  );
+  const rejectedAt = pickFirst(
+    pickNested(source, ["rejectedAt", "rejected_at"]),
+    pickNested(selection, ["rejectedAt", "rejected_at"]),
   );
   const shortlistedReason = pickFirst(
     pickNested(source, [
@@ -388,25 +428,45 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       ? genericReason
       : null,
   );
+  const shortlistedAt = pickFirst(
+    pickNested(source, ["shortlistedAt", "shortlisted_at"]),
+    pickNested(selection, ["shortlistedAt", "shortlisted_at"]),
+  );
   const joinedReason = pickFirst(
     pickNested(source, ["joinedReason", "joined_reason"]),
     pickNested(selection, ["joinedReason", "joined_reason"]),
     status === "joined" ? genericReason : null,
+  );
+  const joinedAt = pickFirst(
+    pickNested(source, ["joinedAt", "joined_at"]),
+    pickNested(selection, ["joinedAt", "joined_at"]),
   );
   const dropoutReason = pickFirst(
     pickNested(source, ["dropoutReason", "dropout_reason", "reason"]),
     pickNested(selection, ["dropoutReason", "dropout_reason", "reason"]),
     status === "dropout" ? genericReason : null,
   );
+  const dropoutAt = pickFirst(
+    pickNested(source, ["dropoutAt", "dropout_at"]),
+    pickNested(selection, ["dropoutAt", "dropout_at"]),
+  );
   const billedReason = pickFirst(
     pickNested(source, ["billedReason", "billed_reason"]),
     pickNested(selection, ["billedReason", "billed_reason"]),
     status === "billed" ? genericReason : null,
   );
+  const billedAt = pickFirst(
+    pickNested(source, ["billedAt", "billed_at"]),
+    pickNested(selection, ["billedAt", "billed_at"]),
+  );
   const leftReason = pickFirst(
     pickNested(source, ["leftReason", "left_reason"]),
     pickNested(selection, ["leftReason", "left_reason"]),
     status === "left" ? genericReason : null,
+  );
+  const leftAt = pickFirst(
+    pickNested(source, ["leftAt", "left_at"]),
+    pickNested(selection, ["leftAt", "left_at"]),
   );
   const jobJid = pickFirst(
     pickNested(source, [
@@ -515,12 +575,23 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     currentStatus: pickFirst(source.currentStatus, currentStatus, status),
     workflowStatus: pickFirst(source.workflowStatus, status),
     submittedReason: pickFirst(source.submittedReason, submittedReason),
+    submittedAt: pickFirst(source.submittedAt, submittedAt),
+    uploadedAt: pickFirst(source.uploadedAt, uploadedAt),
+    workflowUpdatedAt: pickFirst(source.workflowUpdatedAt, workflowUpdatedAt),
+    updatedAt: pickFirst(source.updatedAt, updatedAt),
+    createdAt: pickFirst(source.createdAt, createdAt),
     verifiedReason: pickFirst(source.verifiedReason, verifiedReason),
+    verifiedAt: pickFirst(source.verifiedAt, verifiedAt),
     othersReason: pickFirst(source.othersReason, othersReason),
+    othersAt: pickFirst(source.othersAt, othersAt),
     walkInReason: pickFirst(source.walkInReason, walkInReason),
+    walkInAt: pickFirst(source.walkInAt, walkInAt),
     selectReason: pickFirst(source.selectReason, selectReason),
+    selectedAt: pickFirst(source.selectedAt, selectedAt),
     rejectReason: pickFirst(source.rejectReason, rejectReason),
+    rejectedAt: pickFirst(source.rejectedAt, rejectedAt),
     shortlistedReason: pickFirst(source.shortlistedReason, shortlistedReason),
+    shortlistedAt: pickFirst(source.shortlistedAt, shortlistedAt),
     pendingJoiningReason: pickFirst(
       source.pendingJoiningReason,
       shortlistedReason,
@@ -529,9 +600,13 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     joiningDate: pickFirst(source.joiningDate, joiningDate),
     joiningNote: pickFirst(source.joiningNote, joiningNote),
     joinedReason: pickFirst(source.joinedReason, joinedReason),
+    joinedAt: pickFirst(source.joinedAt, joinedAt),
     dropoutReason: pickFirst(source.dropoutReason, dropoutReason),
+    dropoutAt: pickFirst(source.dropoutAt, dropoutAt),
     billedReason: pickFirst(source.billedReason, billedReason),
+    billedAt: pickFirst(source.billedAt, billedAt),
     leftReason: pickFirst(source.leftReason, leftReason),
+    leftAt: pickFirst(source.leftAt, leftAt),
     jobJid: pickFirst(source.jobJid, jobJid),
     companyName: pickFirst(source.companyName, companyName),
     company_name: pickFirst(source.company_name, companyName),

@@ -1,5 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { getAuthSession } from "../../auth/session";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   displayNote,
   formatResumeCompanyDisplay,
@@ -46,7 +45,8 @@ const truncateDisplayName = (value, maxLength = 22) => {
     : resolved;
 };
 
-const formatDateTime = (value) => formatDateTimeInIndia(value);
+const formatDateTime = (value) =>
+  formatDateTimeInIndia(value, "N/A", { treatAsWallTime: true });
 
 const formatPercent = (value) => {
   const resolved = pickFirstValue(value);
@@ -165,7 +165,7 @@ const buildExcelExportRows = (resumes, defaultRecruiterName, getResumeUrl) =>
     atsScore: formatPercent(resume.atsScore),
     latestStatus: formatStatusLabel(getLatestResumeStatus(resume)),
     recruiterNote: displayNote(resume.submittedReason),
-    submittedAt: formatDateTime(resume.uploadedAt) || "N/A",
+    submittedAt: formatDateTime(resume.submittedAt || resume.uploadedAt) || "N/A",
     resumeFileUrl: getResumeUrl(resume) || "N/A",
   }));
 
@@ -238,6 +238,7 @@ export default function SubmittedResumesPanel({
     sourceOptions[0]?.key || "all",
   );
   const [phoneSearch, setPhoneSearch] = useState("");
+  const [candidateSearch, setCandidateSearch] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showStatusOptions, setShowStatusOptions] = useState(false);
   const [draftFilters, setDraftFilters] = useState(EMPTY_ADVANCED_FILTERS);
@@ -247,20 +248,15 @@ export default function SubmittedResumesPanel({
   const deferredCompanyInput = useDeferredValue(draftFilters.company);
   const deferredCityInput = useDeferredValue(draftFilters.city);
 
-  useEffect(() => {
-    if (!sourceOptions.length) {
-      setSourceFilter("all");
-      return;
-    }
-    if (!sourceOptions.some((option) => option.key === sourceFilter)) {
-      setSourceFilter(sourceOptions[0].key);
-    }
-  }, [sourceFilter, sourceOptions]);
+  const activeSourceFilter =
+    sourceOptions.length && sourceOptions.some((option) => option.key === sourceFilter)
+      ? sourceFilter
+      : sourceOptions[0]?.key || "all";
 
   const displayedResumes = useMemo(() => {
-    if (!sourceOptions.length || sourceFilter === "all") return resumes;
-    return resumes.filter((resume) => resume._source === sourceFilter);
-  }, [resumes, sourceFilter, sourceOptions.length]);
+    if (!sourceOptions.length || activeSourceFilter === "all") return resumes;
+    return resumes.filter((resume) => resume._source === activeSourceFilter);
+  }, [resumes, activeSourceFilter, sourceOptions.length]);
 
   const statusOptions = useMemo(() => {
     const statusMap = new Map();
@@ -318,6 +314,16 @@ export default function SubmittedResumesPanel({
       )
     : displayedResumes;
 
+  const candidateFilteredResumes = candidateSearch.trim()
+    ? filteredResumes.filter((resume) =>
+        String(
+          resume.candidateName || resume.applicantName || resume.name || "",
+        )
+          .toLowerCase()
+          .includes(candidateSearch.trim().toLowerCase()),
+      )
+    : filteredResumes;
+
   const matchesAdvancedFilters = (resume, filters) => {
     const companyQuery = String(filters?.company || "")
       .trim()
@@ -334,7 +340,7 @@ export default function SubmittedResumesPanel({
     const company = getCompanyFilterValue(resume).toLowerCase();
     const city = String(resume.city || resume.job?.city || "").toLowerCase();
     const status = normalizeStatusValue(getLatestResumeStatus(resume));
-    const submittedDate = formatDateInputInIndia(resume.uploadedAt);
+    const submittedDate = formatDateInputInIndia(resume.submittedAt || resume.uploadedAt);
 
     let isWithinDateRange = true;
     if (startDateQuery || endDateQuery) {
@@ -370,7 +376,7 @@ export default function SubmittedResumesPanel({
       : String(value || "").trim(),
   );
 
-  const advancedFilteredResumes = filteredResumes.filter((resume) =>
+  const advancedFilteredResumes = candidateFilteredResumes.filter((resume) =>
     matchesAdvancedFilters(resume, appliedFilters),
   );
   const filteredResultsLabel = `${advancedFilteredResumes.length} result${
@@ -387,12 +393,23 @@ export default function SubmittedResumesPanel({
             resume.applicantPhone,
           ].some((value) =>
             normalizePhoneForSearch(value).includes(
-              normalizePhoneForSearch(phoneSearch),
-            ),
+            normalizePhoneForSearch(phoneSearch),
+          ),
+        )
+        : true;
+      const matchesCandidate = candidateSearch.trim()
+        ? String(
+            resume.candidateName || resume.applicantName || resume.name || "",
           )
+            .toLowerCase()
+            .includes(candidateSearch.trim().toLowerCase())
         : true;
 
-      return matchesPhone && matchesAdvancedFilters(resume, appliedFilters);
+      return (
+        matchesPhone &&
+        matchesCandidate &&
+        matchesAdvancedFilters(resume, appliedFilters)
+      );
     });
 
     const counts = resumesAfterTextAndAdvancedFilters.reduce(
@@ -406,7 +423,7 @@ export default function SubmittedResumesPanel({
     );
 
     return counts;
-  }, [appliedFilters, phoneSearch, resumes]);
+  }, [appliedFilters, candidateSearch, phoneSearch, resumes]);
 
   const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
@@ -518,7 +535,7 @@ export default function SubmittedResumesPanel({
               <button
                 key={filterOption.key}
                 type="button"
-                className={`perf-timeline-btn${sourceFilter === filterOption.key ? " perf-timeline-btn-active" : ""}`}
+                className={`perf-timeline-btn${activeSourceFilter === filterOption.key ? " perf-timeline-btn-active" : ""}`}
                 onClick={() => setSourceFilter(filterOption.key)}
               >
                 {filterOption.label} (
@@ -539,12 +556,12 @@ export default function SubmittedResumesPanel({
         <div className="admin-candidate-resumes-toolbar">
         <button
           type="button"
-          className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() ? " has-filters" : ""}`}
+          className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim() ? " has-filters" : ""}`}
           onClick={() => setShowAdvancedFilters((prev) => !prev)}
         >
           <span className="admin-filter-toggle-icon">⚙️</span>
           Filters
-          {(hasAppliedAdvancedFilters || phoneSearch.trim()) && (
+          {(hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim()) && (
             <span className="admin-filter-count">
               {[
                 appliedFilters.company,
@@ -555,16 +572,18 @@ export default function SubmittedResumesPanel({
                   ? appliedFilters.statuses
                   : []),
                 phoneSearch,
+                candidateSearch,
               ].filter((v) => String(v || "").trim()).length}
             </span>
           )}
         </button>
-        {(phoneSearch.trim() || hasAppliedAdvancedFilters) && (
+        {(phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters) && (
           <button
             type="button"
             className="admin-clear-filters-btn"
             onClick={() => {
               setPhoneSearch("");
+              setCandidateSearch("");
               handleClearAdvancedFilters();
             }}
           >
@@ -576,7 +595,7 @@ export default function SubmittedResumesPanel({
 
       <p className="admin-muted" style={{ margin: "0 0 12px" }}>
         Showing {filteredResultsLabel}
-        {(phoneSearch.trim() || hasAppliedAdvancedFilters || sourceFilter !== "all") &&
+        {(phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters || activeSourceFilter !== "all") &&
         resumes.length
           ? ` of ${resumes.length} total resumes`
           : ""}
@@ -594,6 +613,16 @@ export default function SubmittedResumesPanel({
                 placeholder="Enter phone number"
                 value={phoneSearch}
                 onChange={(event) => setPhoneSearch(event.target.value)}
+                className="admin-filter-input"
+              />
+            </label>
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Candidate name</span>
+              <input
+                type="text"
+                placeholder="Enter candidate name"
+                value={candidateSearch}
+                onChange={(event) => setCandidateSearch(event.target.value)}
                 className="admin-filter-input"
               />
             </label>
@@ -740,7 +769,7 @@ export default function SubmittedResumesPanel({
           <p className="admin-chart-empty">
             {isLoading
               ? "Loading resumes..."
-              : phoneSearch.trim() || hasAppliedAdvancedFilters
+              : phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters
                 ? "No resumes found for the current search."
                 : "No resumes found for this filter."}
           </p>
@@ -822,7 +851,7 @@ export default function SubmittedResumesPanel({
                       </span>
                     </td>
                     <td>{displayNote(resume.submittedReason)}</td>
-                    <td>{formatDateTime(resume.uploadedAt)}</td>
+                    <td>{formatDateTime(resume.submittedAt || resume.uploadedAt)}</td>
                     <td>
                       {resume.resId ? (
                         <div className="admin-resume-file-cell">
