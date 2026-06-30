@@ -12,6 +12,7 @@ import {
   rollbackJobResumeStatus,
   updateJobResumeStatus,
 } from "../../services/performanceService";
+import { updateRecruiterResumeCandidate } from "../../services/jobAccessService";
 import "../../styles/admin-panel.css";
 
 const PRESETS = {
@@ -57,6 +58,7 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
   shortlisted: [
     { value: "selected", label: "Selected", color: "#16a34a" },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
     { value: "joined", label: "Joined", color: "#16a34a" },
@@ -203,6 +205,8 @@ const getCandidateDisplayName = (item) => {
     "N/A"
   );
 };
+const getCandidateEmail = (item) =>
+  item?.candidateEmail || item?.candidate_email || item?.email || "";
 
 const getNoteForStatus = (item, statusValue) => {
   const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
@@ -300,6 +304,14 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [editingCandidateItem, setEditingCandidateItem] = useState(null);
+  const [editCandidateForm, setEditCandidateForm] = useState({
+    candidateName: "",
+    candidateEmail: "",
+    candidatePhone: "",
+  });
+  const [editCandidateSubmitting, setEditCandidateSubmitting] = useState(false);
+  const [editCandidateError, setEditCandidateError] = useState("");
 
   const dateRange = useMemo(() => {
     if (timelinePreset === PRESETS.CUSTOM) {
@@ -550,7 +562,11 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     () =>
       filteredSelectedStatusItems.some((item) => {
         const rowActionState = getRowActionState(item);
-        return rowActionState.availableActions.length > 0 || rowActionState.canRollback;
+        return (
+          rowActionState.availableActions.length > 0 ||
+          rowActionState.canRollback ||
+          Boolean(item?.resId)
+        );
       }),
     [filteredSelectedStatusItems, getRowActionState],
   );
@@ -634,6 +650,22 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     } catch (error) {
       window.alert(error.message || "Failed to rollback resume status.");
     }
+  };
+
+  const openEditCandidateModal = (item) => {
+    setEditingCandidateItem(item);
+    setEditCandidateForm({
+      candidateName: getCandidateDisplayName(item) === "N/A" ? "" : getCandidateDisplayName(item),
+      candidateEmail: getCandidateEmail(item),
+      candidatePhone: item?.candidatePhone || item?.phone || "",
+    });
+    setEditCandidateError("");
+  };
+
+  const closeEditCandidateModal = () => {
+    if (editCandidateSubmitting) return;
+    setEditingCandidateItem(null);
+    setEditCandidateError("");
   };
 
   return (
@@ -808,7 +840,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   const rowActionState = getRowActionState(item);
                   const rowHasActions =
                     rowActionState.availableActions.length > 0 ||
-                    rowActionState.canRollback;
+                    rowActionState.canRollback ||
+                    Boolean(item?.resId);
 
                   return (
                   <tr key={`${selectedStatusKey}-${item.resId}`}>
@@ -898,6 +931,13 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                                 Rollback
                               </button>
                             ) : null}
+                            <button
+                              type="button"
+                              className="admin-refresh-btn"
+                              onClick={() => openEditCandidateModal(item)}
+                            >
+                              Edit
+                            </button>
                           </div>
                         ) : null}
                       </td>
@@ -1116,6 +1156,112 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 {actionSubmitting
                   ? "Updating..."
                   : `Confirm ${formatStatusLabel(actionTarget)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingCandidateItem ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeEditCandidateModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Edit Candidate</h3>
+            <div className="job-field">
+              <label htmlFor="teamleader-edit-candidate-name">Name</label>
+              <input
+                id="teamleader-edit-candidate-name"
+                value={editCandidateForm.candidateName}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidateName: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            <div className="job-field">
+              <label htmlFor="teamleader-edit-candidate-email">Email</label>
+              <input
+                id="teamleader-edit-candidate-email"
+                type="email"
+                value={editCandidateForm.candidateEmail}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidateEmail: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            <div className="job-field">
+              <label htmlFor="teamleader-edit-candidate-phone">Phone</label>
+              <input
+                id="teamleader-edit-candidate-phone"
+                value={editCandidateForm.candidatePhone}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidatePhone: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            {editCandidateError ? (
+              <p className="job-message job-message-error">{editCandidateError}</p>
+            ) : null}
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeEditCandidateModal}
+                disabled={editCandidateSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={editCandidateSubmitting}
+                onClick={async () => {
+                  const recruiterRid =
+                    editingCandidateItem?.recruiterRid || editingCandidateItem?.rid;
+                  if (!recruiterRid || !editingCandidateItem?.resId) {
+                    setEditCandidateError("Recruiter ID is missing for this resume.");
+                    return;
+                  }
+                  setEditCandidateSubmitting(true);
+                  setEditCandidateError("");
+                  try {
+                    await updateRecruiterResumeCandidate(recruiterRid, editingCandidateItem.resId, {
+                      candidateName: editCandidateForm.candidateName.trim(),
+                      candidateEmail: editCandidateForm.candidateEmail.trim(),
+                      candidatePhone: editCandidateForm.candidatePhone.trim(),
+                    });
+                    setEditingCandidateItem(null);
+                    await fetchPerformance();
+                  } catch (error) {
+                    setEditCandidateError(
+                      error.message || "Failed to update candidate details.",
+                    );
+                  } finally {
+                    setEditCandidateSubmitting(false);
+                  }
+                }}
+              >
+                {editCandidateSubmitting ? "Saving..." : "Confirm"}
               </button>
             </div>
           </div>

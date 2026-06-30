@@ -62,6 +62,9 @@ export default function ResumeStatusActionModal({
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
+    if (normalized === "shortlisted") {
+      return [{ value: "rejected", label: "Reject", color: "danger" }];
+    }
     if (normalized === "rejected") {
       return [{ value: "joined", label: "Joined", color: "success" }];
     }

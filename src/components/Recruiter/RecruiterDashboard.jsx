@@ -7,6 +7,7 @@ import {
   fetchRecruiterDashboard,
   markResumeLeft,
 } from "../../services/performanceService";
+import { updateRecruiterResumeCandidate } from "../../services/jobAccessService";
 import { authFetch } from "../../auth/authFetch";
 import { API_BASE_URL } from "../../config/api";
 import useTablePagination from "../../hooks/useTablePagination";
@@ -43,6 +44,10 @@ const getResumeCandidateName = (resume) =>
   normalizeResumeData(resume).candidateName || "N/A";
 const getResumeCandidatePhone = (resume) =>
   normalizeResumeData(resume).candidatePhone || null;
+const getResumeCandidateEmail = (resume) =>
+  normalizeResumeData(resume).candidateEmail ||
+  normalizeResumeData(resume).email ||
+  "";
 const getNoteAuthor = (resume, note) => {
   const workflowAuthor = getWorkflowNoteAuthor(resume, note);
   return workflowAuthor || resume?.teamLeaderName || resume?.recruiterName || "-";
@@ -222,6 +227,14 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [leftSubmitting, setLeftSubmitting] = useState(false);
   const [leftError, setLeftError] = useState("");
   const [rollbackSubmittingResId, setRollbackSubmittingResId] = useState("");
+  const [editingResume, setEditingResume] = useState(null);
+  const [editCandidateForm, setEditCandidateForm] = useState({
+    candidateName: "",
+    candidateEmail: "",
+    candidatePhone: "",
+  });
+  const [editCandidateSubmitting, setEditCandidateSubmitting] = useState(false);
+  const [editCandidateError, setEditCandidateError] = useState("");
 
   const appliedFilters = useMemo(() => {
     if (timelinePreset === PRESETS.CUSTOM) {
@@ -317,6 +330,22 @@ export default function RecruiterDashboard({ recruiterId }) {
     } finally {
       setRollbackSubmittingResId("");
     }
+  };
+
+  const openEditCandidateModal = (resume) => {
+    setEditingResume(resume);
+    setEditCandidateForm({
+      candidateName: getResumeCandidateName(resume) === "N/A" ? "" : getResumeCandidateName(resume),
+      candidateEmail: getResumeCandidateEmail(resume),
+      candidatePhone: getResumeCandidatePhone(resume) || "",
+    });
+    setEditCandidateError("");
+  };
+
+  const closeEditCandidateModal = () => {
+    if (editCandidateSubmitting) return;
+    setEditingResume(null);
+    setEditCandidateError("");
   };
 
   const activeStatusLabel = useMemo(() => {
@@ -896,6 +925,14 @@ export default function RecruiterDashboard({ recruiterId }) {
                                 : "Rollback"}
                             </button>
                           ) : null}
+                          <button
+                            type="button"
+                            className="action-btn action-btn-primary"
+                            style={{ marginLeft: 6 }}
+                            onClick={() => openEditCandidateModal(resume)}
+                          >
+                            Edit
+                          </button>
                           {normalizeStatusValue(resume.workflowStatus) ===
                           "billed" ? (
                             <button
@@ -969,6 +1006,109 @@ export default function RecruiterDashboard({ recruiterId }) {
           refreshDashboardStats();
         }}
       />
+
+      {editingResume ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeEditCandidateModal}
+        >
+          <div
+            className="admin-modal-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Edit Candidate</h3>
+            <div className="job-field">
+              <label htmlFor="recruiter-edit-candidate-name">Name</label>
+              <input
+                id="recruiter-edit-candidate-name"
+                value={editCandidateForm.candidateName}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidateName: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            <div className="job-field">
+              <label htmlFor="recruiter-edit-candidate-email">Email</label>
+              <input
+                id="recruiter-edit-candidate-email"
+                type="email"
+                value={editCandidateForm.candidateEmail}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidateEmail: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            <div className="job-field">
+              <label htmlFor="recruiter-edit-candidate-phone">Phone</label>
+              <input
+                id="recruiter-edit-candidate-phone"
+                value={editCandidateForm.candidatePhone}
+                onChange={(event) =>
+                  setEditCandidateForm((prev) => ({
+                    ...prev,
+                    candidatePhone: event.target.value,
+                  }))
+                }
+                disabled={editCandidateSubmitting}
+              />
+            </div>
+            {editCandidateError ? (
+              <p className="job-message job-message-error">{editCandidateError}</p>
+            ) : null}
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeEditCandidateModal}
+                disabled={editCandidateSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={editCandidateSubmitting}
+                onClick={async () => {
+                  setEditCandidateSubmitting(true);
+                  setEditCandidateError("");
+                  try {
+                    await updateRecruiterResumeCandidate(recruiterId, editingResume.resId, {
+                      candidateName: editCandidateForm.candidateName.trim(),
+                      candidateEmail: editCandidateForm.candidateEmail.trim(),
+                      candidatePhone: editCandidateForm.candidatePhone.trim(),
+                    });
+                    setEditingResume(null);
+                    setEditCandidateError("");
+                    const resumes = await fetchRecruiterResumes();
+                    setStatusResumes(resumes);
+                    refreshDashboardStats();
+                  } catch (error) {
+                    setEditCandidateError(
+                      error.message || "Failed to update candidate details.",
+                    );
+                  } finally {
+                    setEditCandidateSubmitting(false);
+                  }
+                }}
+              >
+                {editCandidateSubmitting ? "Saving..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {leftModalOpen && leftModalResume ? (
         <div

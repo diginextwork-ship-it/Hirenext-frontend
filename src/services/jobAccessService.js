@@ -40,6 +40,17 @@ export const updateJobAccessMode = (jobId, accessMode) =>
     "Failed to update access mode.",
   );
 
+export const updateJobDetails = (jobId, payload) =>
+  authFetch(
+    `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    },
+    "Failed to update job.",
+  );
+
 export const fetchRecruitersList = (search = "") => {
   const query = String(search || "").trim();
   const suffix = query ? `?search=${encodeURIComponent(query)}` : "";
@@ -85,4 +96,15 @@ export const submitRecruiterResume = async (formData) =>
     `${API_BASE_URL}/api/resumes/submit`,
     formData,
     "Failed to submit resume.",
+  );
+
+export const updateRecruiterResumeCandidate = (recruiterId, resId, payload) =>
+  authFetch(
+    `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterId)}/resumes/${encodeURIComponent(resId)}/candidate`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    },
+    "Failed to update candidate details.",
   );

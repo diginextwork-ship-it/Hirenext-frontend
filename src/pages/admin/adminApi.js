@@ -91,24 +91,6 @@ export const adminDeleteResume = async (resId) =>
     "Failed to delete resume.",
   );
 
-export const fetchDuplicateConflicts = async () =>
-  authFetch(
-    `${API_BASE_URL}/api/admin/duplicate-conflicts`,
-    {},
-    "Failed to fetch duplicate conflicts.",
-  );
-
-export const assignDuplicateConflict = async (groupId, resId, recruiterRid) =>
-  authFetch(
-    `${API_BASE_URL}/api/admin/duplicate-conflicts/${encodeURIComponent(groupId)}/assign`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resId, recruiterRid }),
-    },
-    "Failed to assign duplicate conflict.",
-  );
-
 export const fetchAdminSalaryHistoryDetail = async (rid) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/salary-history`,

@@ -2,6 +2,7 @@ import { useState } from "react";
 import RecruiterPerformanceTable from "./RecruiterPerformanceTable";
 import ResumeStatusManager from "./ResumeStatusManager";
 import TeamLeaderPerformanceOverview from "./TeamLeaderPerformanceOverview";
+import TeamLeaderJobsPanel from "./TeamLeaderJobsPanel";
 
 export default function TeamLeaderDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -28,7 +29,10 @@ export default function TeamLeaderDashboard() {
       </div>
 
       {activeTab === "overview" ? (
-        <TeamLeaderPerformanceOverview refreshKey={overviewRefreshKey} />
+        <>
+          <TeamLeaderPerformanceOverview refreshKey={overviewRefreshKey} />
+          <TeamLeaderJobsPanel />
+        </>
       ) : null}
 
       {activeTab === "performance" ? (
