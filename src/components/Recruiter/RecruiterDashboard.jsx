@@ -925,14 +925,17 @@ export default function RecruiterDashboard({ recruiterId }) {
                                 : "Rollback"}
                             </button>
                           ) : null}
-                          <button
-                            type="button"
-                            className="action-btn action-btn-primary"
-                            style={{ marginLeft: 6 }}
-                            onClick={() => openEditCandidateModal(resume)}
-                          >
-                            Edit
-                          </button>
+                          {normalizeStatusValue(resume.workflowStatus) ===
+                          "submitted" ? (
+                            <button
+                              type="button"
+                              className="action-btn action-btn-primary"
+                              style={{ marginLeft: 6 }}
+                              onClick={() => openEditCandidateModal(resume)}
+                            >
+                              Edit
+                            </button>
+                          ) : null}
                           {normalizeStatusValue(resume.workflowStatus) ===
                           "billed" ? (
                             <button

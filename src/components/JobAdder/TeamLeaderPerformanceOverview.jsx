@@ -931,13 +931,17 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                                 Rollback
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              className="admin-refresh-btn"
-                              onClick={() => openEditCandidateModal(item)}
-                            >
-                              Edit
-                            </button>
+                            {normalizeStatusValue(
+                              item.currentStatus || item.status,
+                            ) === "submitted" ? (
+                              <button
+                                type="button"
+                                className="admin-refresh-btn"
+                                onClick={() => openEditCandidateModal(item)}
+                              >
+                                Edit
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
                       </td>

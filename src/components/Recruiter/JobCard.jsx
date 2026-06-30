@@ -14,7 +14,7 @@ const toDisplayText = (value) => {
   return normalized ? normalized : "";
 };
 
-export default function JobCard({ job, onViewDetails }) {
+export default function JobCard({ job, onViewDetails, onEditDetails }) {
   const roleName = toDisplayText(job.role_name) || "Untitled Role";
   const companyName = toDisplayText(job.company_name) || "Unknown company";
   const city = toDisplayText(job.city);
@@ -55,6 +55,15 @@ export default function JobCard({ job, onViewDetails }) {
         >
           View Details
         </button>
+        {onEditDetails ? (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onEditDetails(job)}
+          >
+            Edit Job Details
+          </button>
+        ) : null}
       </div>
 
       {formattedDate ? <footer className="job-footer">Posted {formattedDate}</footer> : null}

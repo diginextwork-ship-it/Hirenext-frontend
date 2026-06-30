@@ -744,6 +744,7 @@ export default function RecruiterLogin() {
                 <RecruiterJobsBoard
                   recruiterId={recruiter.rid}
                   onResumeSubmitted={handleResumeSubmitted}
+                  canEditJobs={canCreateJobs}
                 />
               </div>
             ) : null}
