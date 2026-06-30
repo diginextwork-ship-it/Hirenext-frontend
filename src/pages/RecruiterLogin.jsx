@@ -739,12 +739,12 @@ export default function RecruiterLogin() {
                 )}
               </div>
             ) : null}
-            {canUploadResumes && !canManageJobAccess ? (
+            {canUploadResumes ? (
               <div className="chart-card ui-mt-md">
                 <RecruiterJobsBoard
                   recruiterId={recruiter.rid}
                   onResumeSubmitted={handleResumeSubmitted}
-                  canEditJobs={canCreateJobs}
+                  canEditJobs={false}
                 />
               </div>
             ) : null}
