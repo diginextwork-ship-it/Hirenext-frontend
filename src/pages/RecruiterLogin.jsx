@@ -739,7 +739,7 @@ export default function RecruiterLogin() {
                 )}
               </div>
             ) : null}
-            {canUploadResumes ? (
+            {canUploadResumes && !canManageJobAccess ? (
               <div className="chart-card ui-mt-md">
                 <RecruiterJobsBoard
                   recruiterId={recruiter.rid}
