@@ -94,10 +94,7 @@ export default function AdminResumeUploads({ setCurrentPage }) {
                 {dashboard.recruiterResumeUploads.map((rawItem) => {
                   const item = normalizeResumeData(rawItem);
                   return (
-                  <tr
-                    key={item.resId}
-                    className={item.duplicateConflict ? "duplicate-conflict-row" : ""}
-                  >
+                  <tr key={item.resId}>
                     <td>{item.resId}</td>
                     <td>{item.recruiterName}</td>
                     <td>{item.recruiterEmail}</td>

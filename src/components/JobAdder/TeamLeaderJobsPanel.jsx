@@ -170,13 +170,6 @@ export default function TeamLeaderJobsPanel() {
                       {job.company_name || "Company"}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="click-here-btn"
-                    onClick={() => openEditModal(job)}
-                  >
-                    Edit
-                  </button>
                 </div>
                 <div className="ui-mt-sm">
                   <p className="admin-muted" style={{ margin: "0 0 6px" }}>
@@ -189,6 +182,13 @@ export default function TeamLeaderJobsPanel() {
                     Positions: {Number(job.positions_open) || 1}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  className="click-here-btn ui-mt-sm"
+                  onClick={() => openEditModal(job)}
+                >
+                  Edit
+                </button>
               </article>
             );
           })}

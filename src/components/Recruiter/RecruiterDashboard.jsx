@@ -804,10 +804,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                     }
 
                     return (
-                      <tr
-                        key={resume.resId}
-                        className={resume.duplicateConflict ? "duplicate-conflict-row" : ""}
-                      >
+                      <tr key={resume.resId}>
                         <td>{getResumeCandidateName(resume)}</td>
                         <td>
                           {getResumeCandidatePhone(resume) ? (
@@ -925,8 +922,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                                 : "Rollback"}
                             </button>
                           ) : null}
-                          {normalizeStatusValue(resume.workflowStatus) ===
-                          "submitted" ? (
+                          {activeStatus === "submitted" ? (
                             <button
                               type="button"
                               className="action-btn action-btn-primary"

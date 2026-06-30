@@ -795,10 +795,7 @@ export default function SubmittedResumesPanel({
                     "Name not found";
 
                   return (
-                  <tr
-                    key={`${resume._source || "resume"}-${resume.resId}`}
-                    className={resume.duplicateConflict ? "duplicate-conflict-row" : ""}
-                  >
+                  <tr key={`${resume._source || "resume"}-${resume.resId}`}>
                     <td>{getRecruiterDisplayName(resume, defaultRecruiterName)}</td>
                     <td className="submitted-resumes-candidate-name" title={candidateName}>
                       {truncateDisplayName(candidateName)}

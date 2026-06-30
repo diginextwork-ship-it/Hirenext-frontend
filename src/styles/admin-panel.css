@@ -530,11 +530,6 @@
   background: #fafcff;
 }
 
-.admin-table tbody tr.duplicate-conflict-row,
-.admin-table tbody tr.duplicate-conflict-row:hover {
-  background: #fef3c7;
-}
-
 .admin-table tbody tr:last-child td {
   border-bottom: none;
 }

@@ -931,9 +931,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                                 Rollback
                               </button>
                             ) : null}
-                            {normalizeStatusValue(
-                              item.currentStatus || item.status,
-                            ) === "submitted" ? (
+                            {selectedStatusKey === "submitted" ? (
                               <button
                                 type="button"
                                 className="admin-refresh-btn"

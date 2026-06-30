@@ -366,10 +366,7 @@ export default function ResumeStatusManager({ onStatusUpdated }) {
             </thead>
             <tbody>
               {resumes.map((resume) => (
-                <tr
-                  key={resume.resId}
-                  className={resume.duplicateConflict ? "duplicate-conflict-row" : ""}
-                >
+                <tr key={resume.resId}>
                   <td>{resume.resId}</td>
                   <td>{resume.rid}</td>
                   <td>{resume.recruiterName || "N/A"}</td>
