@@ -739,6 +739,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                                     : "Current Reason"}
                     </th>
                     <th>Status</th>
+                    <th>Submitted At</th>
                     <th>Updated</th>
                     {activeStatus === "walk_in" && <th>Walk-in Date</th>}
                     {(activeStatus === "selected" ||
@@ -825,6 +826,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                               </span>
                             </span>
                           ) : null}
+                        </td>
+                        <td>
+                          {formatDateTime(resume.submittedAt || resume.uploadedAt)}
                         </td>
                         <td>
                           {formatDateTime(

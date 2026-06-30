@@ -794,7 +794,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>City</th>
                   <th>Resume File</th>
                   <th>Status</th>
-                  {selectedStatusKey === "submitted" ? <th>Submitted At</th> : null}
+                  <th>Submitted At</th>
                   {selectedStatusKey === "walk_in" ? <th>Walk-in Date</th> : null}
                   {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
                     <th>Joining Date</th>
@@ -845,9 +845,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       </button>
                     </td>
                     <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                    {selectedStatusKey === "submitted" ? (
-                      <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
-                    ) : null}
+                    <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                     {selectedStatusKey === "walk_in" ? (
                       <td>{formatDate(item.walkInDate)}</td>
                     ) : null}
