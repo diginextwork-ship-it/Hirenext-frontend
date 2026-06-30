@@ -2,6 +2,122 @@
   margin-top: 16px;
 }
 
+.team-leader-jobs-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 16px;
+}
+
+.team-leader-job-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 250px;
+  padding: 20px;
+}
+
+.team-leader-job-id {
+  color: #64748b;
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+}
+
+.team-leader-job-title {
+  color: #0f172a;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.team-leader-job-company {
+  color: #475569;
+  font-size: 0.92rem;
+  margin: 10px 0 0;
+}
+
+.team-leader-job-meta {
+  color: #334155;
+  display: grid;
+  font-size: 0.9rem;
+  gap: 8px;
+}
+
+.team-leader-job-meta p {
+  margin: 0;
+}
+
+.team-leader-job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.team-leader-job-actions .click-here-btn,
+.team-leader-job-actions .btn-secondary {
+  min-height: 40px;
+}
+
+.team-leader-job-modal-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.team-leader-job-modal-head h3 {
+  color: #0f172a;
+  font-size: 1.4rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.team-leader-job-modal-head p {
+  color: #475569;
+  margin: 8px 0 0;
+}
+
+.team-leader-job-detail-grid {
+  display: grid;
+  gap: 10px 16px;
+  grid-template-columns: minmax(120px, 0.45fr) 1fr;
+  margin-top: 18px;
+}
+
+.team-leader-job-detail-grid span {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.team-leader-job-detail-grid strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.team-leader-job-description {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.team-leader-job-description h4 {
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.team-leader-job-description p {
+  color: #334155;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .dashboard-tabs {
   display: flex;
   flex-wrap: wrap;

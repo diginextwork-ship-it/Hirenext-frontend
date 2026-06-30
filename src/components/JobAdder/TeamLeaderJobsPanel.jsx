@@ -55,6 +55,7 @@ export default function TeamLeaderJobsPanel() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [viewingJob, setViewingJob] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const [form, setForm] = useState(createEmptyForm());
   const [allRecruiters, setAllRecruiters] = useState([]);
@@ -147,51 +148,110 @@ export default function TeamLeaderJobsPanel() {
       ) : null}
 
       {!loading && jobs.length > 0 ? (
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            marginTop: 16,
-          }}
-        >
+        <div className="team-leader-jobs-grid">
           {jobs.map((job) => {
             const location =
               [job.city, job.state, job.pincode].filter(Boolean).join(", ") || "N/A";
             return (
-              <article key={job.jid} className="chart-card">
-                <div className="ui-row-between ui-row-wrap" style={{ gap: 10 }}>
+              <article key={job.jid} className="team-leader-job-card">
+                <div className="team-leader-job-card-head">
                   <div>
-                    <div className="admin-muted">#{job.jid}</div>
-                    <h3 style={{ margin: "4px 0 6px" }}>
+                    <div className="team-leader-job-id">#{job.jid}</div>
+                    <h3 className="team-leader-job-title">
                       {job.role_name || "Role"}
                     </h3>
-                    <p className="admin-muted" style={{ margin: 0 }}>
+                    <p className="team-leader-job-company">
                       {job.company_name || "Company"}
                     </p>
                   </div>
                 </div>
-                <div className="ui-mt-sm">
-                  <p className="admin-muted" style={{ margin: "0 0 6px" }}>
+                <div className="team-leader-job-meta">
+                  <p>
                     Location: {location}
                   </p>
-                  <p className="admin-muted" style={{ margin: "0 0 6px" }}>
+                  <p>
                     Access: {job.access_mode === "restricted" ? "Restricted" : "Open"}
                   </p>
-                  <p className="admin-muted" style={{ margin: 0 }}>
+                  <p>
                     Positions: {Number(job.positions_open) || 1}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="click-here-btn ui-mt-sm"
-                  onClick={() => openEditModal(job)}
-                >
-                  Edit
-                </button>
+                <div className="team-leader-job-actions">
+                  <button
+                    type="button"
+                    className="click-here-btn"
+                    onClick={() => setViewingJob(job)}
+                  >
+                    View Details
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => openEditModal(job)}
+                  >
+                    Edit
+                  </button>
+                </div>
               </article>
             );
           })}
+        </div>
+      ) : null}
+
+      {viewingJob ? (
+        <div
+          className="admin-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setViewingJob(null)}
+        >
+          <div
+            className="admin-modal-card"
+            style={{ width: "min(720px, 92vw)" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="team-leader-job-modal-head">
+              <div>
+                <h3>{viewingJob.role_name || "Role"}</h3>
+                <p>{viewingJob.company_name || "Company"}</p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setViewingJob(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="team-leader-job-detail-grid">
+              <span>Job ID</span>
+              <strong>{viewingJob.jid}</strong>
+              <span>Location</span>
+              <strong>
+                {[viewingJob.city, viewingJob.state, viewingJob.pincode]
+                  .filter(Boolean)
+                  .join(", ") || "N/A"}
+              </strong>
+              <span>Access</span>
+              <strong>
+                {viewingJob.access_mode === "restricted" ? "Restricted" : "Open"}
+              </strong>
+              <span>Positions</span>
+              <strong>{Number(viewingJob.positions_open) || 1}</strong>
+              <span>Salary</span>
+              <strong>{viewingJob.salary || "N/A"}</strong>
+              <span>Experience</span>
+              <strong>{viewingJob.experience || "N/A"}</strong>
+              <span>Qualification</span>
+              <strong>{viewingJob.qualification || "N/A"}</strong>
+              <span>Skills</span>
+              <strong>{viewingJob.skills || "N/A"}</strong>
+            </div>
+            <div className="team-leader-job-description">
+              <h4>Job Description</h4>
+              <p>{viewingJob.job_description || "N/A"}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 
