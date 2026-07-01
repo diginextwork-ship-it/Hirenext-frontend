@@ -855,7 +855,13 @@ export default function RecruiterDashboard({ recruiterId }) {
                           ) : null}
                         </td>
                         <td>
-                          {formatDateTime(resume.submittedAt || resume.uploadedAt)}
+                          {formatDateTime(
+                            resume.submittedAt ||
+                              resume.uploadedAt ||
+                              resume.createdAt ||
+                              resume.workflowUpdatedAt ||
+                              resume.eventAt,
+                          )}
                         </td>
                         <td>
                           {formatDateTime(

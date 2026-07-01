@@ -878,7 +878,14 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       </button>
                     </td>
                     <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                    <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                    <td>
+                      {formatDateTime(
+                        item.submittedAt ||
+                          item.uploadedAt ||
+                          item.createdAt ||
+                          item.eventAt,
+                      )}
+                    </td>
                     {selectedStatusKey === "walk_in" ? (
                       <td>{formatDate(item.walkInDate)}</td>
                     ) : null}
