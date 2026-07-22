@@ -1,4 +1,4 @@
-const FALLBACK_API_BASE_URL = "http://localhost:5000";
+const FALLBACK_API_BASE_URL = "http://localhost:5001";
 
 const normalizeApiBaseUrl = (rawBaseUrl) => {
   const trimmed = String(rawBaseUrl || "").trim();
