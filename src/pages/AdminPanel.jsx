@@ -1,4 +1,5 @@
 import useAdminDashboard from "./admin/useAdminDashboard";
+import { UserPlus, BarChart3, FileText, IndianRupee, CalendarCheck, CheckSquare, History, LogOut, RefreshCw, ArrowUpRight } from "lucide-react";
 import "../styles/admin-panel.css";
 import logo from "../assets/Logo.png";
 
@@ -9,107 +10,127 @@ export default function AdminPanel({ setCurrentPage, onLogout }) {
   const cards = [
     {
       title: "Create Recruiter",
-      description: "Add a new recruiter account and assign a role.",
-      stat: "Access management",
+      description: "Add new recruiter accounts, set credentials, and assign roles.",
+      stat: "Access Control",
       page: "admincreate",
+      icon: UserPlus,
+      variant: "card-coral",
     },
     {
       title: "Performance Dashboard",
-      description:
-        "Track recruiter and team leader performance across all metrics.",
-      stat: "All metrics",
+      description: "Track recruiter activity, interview counts, and team performance.",
+      stat: "Live Metrics",
       page: "adminperformance",
+      icon: BarChart3,
+      variant: "card-indigo",
     },
     {
-      title: "All Submitted Resumes",
-      description: "Review resumes submitted by candidates and recruiters.",
-      stat: `${dashboard.candidateResumeCount} candidate + ${dashboard.recruiterResumeUploads.length} recruiter uploads`,
+      title: "Candidate Resumes",
+      description: "Review all resumes submitted by candidates and recruiters.",
+      stat: `${dashboard.candidateResumeCount || 0} candidate + ${(dashboard.recruiterResumeUploads || []).length} recruiter uploads`,
       page: "admincandidateresumes",
+      icon: FileText,
+      variant: "card-emerald",
     },
     {
-      title: "Revenue",
-      description:
-        "Track intake and expenses (salaries, electricity bills, client payments) with charts and table.",
-      stat: "Finance tracking",
+      title: "Revenue & Finance",
+      description: "Track intake, salary expenses, operating costs, and client payments.",
+      stat: "Finance Hub",
       page: "adminrevenue",
+      icon: IndianRupee,
+      variant: "card-amber",
     },
     {
-      title: "Attendance system",
-      description:
-        "Mark team leaders and recruiters daily, and sync salary expense into the finance ledger.",
-      stat: "Present, absent, half day",
+      title: "Attendance System",
+      description: "Mark daily attendance for team leaders and recruiters.",
+      stat: "Daily Sync",
       page: "adminattendance",
+      icon: CalendarCheck,
+      variant: "card-teal",
     },
     {
-      title: "Tasks and Assignments",
-      description:
-        "Create recruiter tasks, assign work, and monitor completed, rejected, or timed out statuses.",
-      stat: "Daily task tracking",
+      title: "Tasks & Assignments",
+      description: "Create work assignments, set deadlines, and track completed tasks.",
+      stat: "Task Workflow",
       page: "admintasks",
+      icon: CheckSquare,
+      variant: "card-purple",
     },
     {
       title: "Salary History",
-      description:
-        "View recruiters and team leaders with their current salary amount.",
-      stat: "Search by name",
+      description: "View recruiter salary structures, pay history, and salary tiers.",
+      stat: "Salary Audit",
       page: "adminsalaryhistory",
+      icon: History,
+      variant: "card-blue",
     },
   ];
 
   return (
     <main className="admin-page admin-panel-page">
-      <section className="admin-hero">
-        <div>
-          <p className="admin-kicker">Admin Control Center</p>
-          <h1>Admin dashboard</h1>
+      <section className="admin-hero glass-card">
+        <div className="admin-hero-left">
+          <div className="admin-kicker-pill">Admin Control Center</div>
+          <h1>Platform Control Dashboard</h1>
           <p className="admin-hero-subtitle">
-            Organize recruiter access, track resume activity, and manage core
-            admin workflows.
+            Manage team access, monitor recruitment pipelines, and review operational metrics across all routes.
           </p>
         </div>
         <div className="admin-page-actions">
-          <img
-            src={logo}
-            alt="HireNext logo"
-            className="admin-dashboard-logo"
-          />
-          <button type="button" className="admin-back-btn" onClick={onLogout}>
-            Logout
-          </button>
-          <button
-            type="button"
-            className="admin-refresh-btn"
-            onClick={refreshDashboard}
-            disabled={isLoadingDashboard}
-          >
-            {isLoadingDashboard ? "Refreshing..." : "Refresh data"}
-          </button>
+          <img src={logo} alt="HireNext logo" className="admin-dashboard-logo" />
+          <div className="admin-action-buttons">
+            <button
+              type="button"
+              className="btn-secondary admin-refresh-btn"
+              onClick={refreshDashboard}
+              disabled={isLoadingDashboard}
+            >
+              <RefreshCw size={16} className={isLoadingDashboard ? "spin-icon" : ""} />
+              <span>{isLoadingDashboard ? "Refreshing..." : "Refresh Data"}</span>
+            </button>
+            <button type="button" className="btn-secondary admin-logout-btn" onClick={onLogout}>
+              <LogOut size={16} />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {errorMessage ? (
+      {errorMessage && (
         <div className="admin-alert admin-alert-error">{errorMessage}</div>
-      ) : null}
+      )}
 
       <section className="admin-cards-grid">
-        {cards.map((card) => (
-          <button
-            key={card.title}
-            type="button"
-            className="admin-card-link"
-            onClick={() => setCurrentPage(card.page)}
-          >
-            <div className="admin-card">
-              <div className="admin-card-top">
-                <h2>{card.title}</h2>
-                <span className="admin-card-stat">{card.stat}</span>
+        {cards.map((card) => {
+          const CardIcon = card.icon;
+          return (
+            <button
+              key={card.title}
+              type="button"
+              className="admin-card-link"
+              onClick={() => setCurrentPage(card.page)}
+            >
+              <div className={`admin-card glass-card ${card.variant}`}>
+                <div className="admin-card-header">
+                  <div className="admin-card-icon">
+                    <CardIcon size={22} />
+                  </div>
+                  <span className="admin-card-stat">{card.stat}</span>
+                </div>
+                <div className="admin-card-body">
+                  <h2>{card.title}</h2>
+                  <p>{card.description}</p>
+                </div>
+                <div className="admin-card-footer">
+                  <span className="admin-card-action">Open Module</span>
+                  <ArrowUpRight size={16} />
+                </div>
               </div>
-              <p>{card.description}</p>
-              <span className="admin-card-action">Open</span>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </section>
     </main>
   );
 }
+

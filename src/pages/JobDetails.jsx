@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import { Building, MapPin, IndianRupee, Briefcase, Calendar, Users, CheckCircle2, ArrowRight, Sparkles, Share2, Award, Zap } from "lucide-react";
 import PageBackButton from "../components/PageBackButton";
 import "../styles/job-details.css";
 import { fetchJobsFromApi, readStoredJob, storeSelectedJob } from "../utils/jobSearch";
+
+const formatSalaryText = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return "";
+  if (normalized.includes("$")) {
+    return normalized.replace(/\$/g, "₹");
+  }
+  if (/^\d+(\.\d+)?$/.test(normalized)) {
+    return `₹${Number(normalized).toLocaleString("en-IN")}`;
+  }
+  return normalized;
+};
 
 const formatPostedLabel = (postedAt) => {
   if (!postedAt) return "Recently posted";
@@ -20,6 +33,7 @@ export default function JobDetails({ setCurrentPage, routeJobId }) {
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -70,6 +84,14 @@ export default function JobDetails({ setCurrentPage, routeJobId }) {
     setCurrentPage("applyjob", { jobId: selectedJob.id });
   };
 
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <main className="job-details-page ui-page">
       <section className="job-details-shell ui-shell">
@@ -78,121 +100,147 @@ export default function JobDetails({ setCurrentPage, routeJobId }) {
         </div>
 
         {isLoading ? (
-          <section className="job-details-state-card">
-            <h1>Loading job details...</h1>
-            <p>Please wait while we fetch the role information.</p>
+          <section className="job-details-state-card glass-card">
+            <div className="loading-spinner" />
+            <h1>Fetching Role Information...</h1>
           </section>
         ) : loadError ? (
-          <section className="job-details-state-card">
-            <h1>Unable to load this job</h1>
+          <section className="job-details-state-card glass-card error">
+            <h1>Unable to load job details</h1>
             <p>{loadError}</p>
           </section>
         ) : !selectedJob ? (
-          <section className="job-details-state-card">
-            <h1>Job not found</h1>
-            <p>This role may have been removed or the link is incomplete.</p>
+          <section className="job-details-state-card glass-card">
+            <h1>Job Posting Not Found</h1>
+            <p>This posting may have expired or been removed by the recruiter.</p>
           </section>
         ) : (
           <>
-            <section className="job-details-hero">
+            {/* Header Hero Banner */}
+            <section className="job-details-hero glass-card">
               <div className="job-details-hero-main">
-                <span className="job-details-company-chip">{selectedJob.company}</span>
+                <div className="hero-company-row">
+                  <div className="company-logo-box">
+                    <Building size={24} />
+                  </div>
+                  <span className="job-details-company-chip">{selectedJob.company}</span>
+                </div>
                 <h1>{selectedJob.title}</h1>
-                <p className="job-details-location">{selectedJob.location}</p>
+
                 <div className="job-details-meta-row">
-                  <span>{selectedJob.salary}</span>
-                  <span>{selectedJob.experience}</span>
-                  <span>{selectedJob.type}</span>
-                  <span>{selectedJob.positionsOpen} openings</span>
+                  <span className="meta-badge"><MapPin size={15} /> {selectedJob.location}</span>
+                  <span className="meta-badge salary"><IndianRupee size={15} /> {formatSalaryText(selectedJob.salary)}</span>
+                  <span className="meta-badge"><Briefcase size={15} /> {selectedJob.experience}</span>
+                  <span className="meta-badge"><Users size={15} /> {selectedJob.positionsOpen} Openings</span>
                 </div>
               </div>
 
               <aside className="job-details-hero-side">
-                <p className="job-details-posted">{formatPostedLabel(selectedJob.postedAt)}</p>
-                <button
-                  type="button"
-                  className="job-details-apply-btn ui-btn-primary"
-                  onClick={handleApplyNow}
-                >
-                  Apply now
-                </button>
+                <span className="job-details-posted">
+                  <Calendar size={14} />
+                  {formatPostedLabel(selectedJob.postedAt)}
+                </span>
+                <div className="action-buttons-group">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-hero-apply"
+                    onClick={handleApplyNow}
+                  >
+                    <span>Apply Now</span>
+                    <ArrowRight size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-share"
+                    onClick={handleShare}
+                    title="Copy Job Link"
+                  >
+                    <Share2 size={18} />
+                    {copied && <span className="tooltip-copied">Copied!</span>}
+                  </button>
+                </div>
               </aside>
             </section>
 
             <section className="job-details-content">
+              {/* Main Content Details */}
               <div className="job-details-main">
-                <article className="job-details-panel">
-                  <h2>Job description</h2>
-                  <p>{selectedJob.description}</p>
+                <article className="job-details-panel glass-card">
+                  <h2><Sparkles size={20} className="section-title-icon" /> Role Overview & Description</h2>
+                  <p className="description-text">{selectedJob.description}</p>
                 </article>
 
-                <article className="job-details-panel">
-                  <h2>Key skills</h2>
+                <article className="job-details-panel glass-card">
+                  <h2><Zap size={20} className="section-title-icon" /> Required Key Skills</h2>
                   {selectedJob.tags.length ? (
                     <div className="job-details-tag-list">
                       {selectedJob.tags.map((tag) => (
-                        <span key={tag}>{tag}</span>
+                        <span key={tag} className="tag-chip">{tag}</span>
                       ))}
                     </div>
                   ) : (
-                    <p>No skills listed for this job yet.</p>
+                    <p className="muted-text">No specific skill keywords listed.</p>
                   )}
                 </article>
 
-                <article className="job-details-panel">
-                  <h2>Benefits and extras</h2>
+                <article className="job-details-panel glass-card">
+                  <h2><Award size={20} className="section-title-icon" /> Compensation & Benefits</h2>
                   {selectedJob.benefits.length ? (
                     <div className="job-details-bullet-list">
                       {selectedJob.benefits.map((benefit) => (
-                        <span key={benefit}>{benefit}</span>
+                        <div key={benefit} className="benefit-item">
+                          <CheckCircle2 size={16} className="check-icon" />
+                          <span>{benefit}</span>
+                        </div>
                       ))}
                     </div>
                   ) : (
-                    <p>Benefits have not been specified for this role.</p>
+                    <p className="muted-text">Standard employer benefits apply.</p>
                   )}
                 </article>
               </div>
 
+              {/* Sidebar Snapshot */}
               <aside className="job-details-sidebar">
-                <article className="job-details-panel">
-                  <h2>Role overview</h2>
+                <article className="job-details-panel glass-card">
+                  <h3>Job Specifications</h3>
                   <div className="job-details-overview-grid">
-                    <div>
-                      <span>Company</span>
+                    <div className="overview-item">
+                      <span>Employer</span>
                       <strong>{selectedJob.company}</strong>
                     </div>
-                    <div>
+                    <div className="overview-item">
                       <span>Location</span>
                       <strong>{selectedJob.location}</strong>
                     </div>
-                    <div>
+                    <div className="overview-item">
                       <span>Experience</span>
                       <strong>{selectedJob.experience}</strong>
                     </div>
-                    <div>
-                      <span>Qualification</span>
+                    <div className="overview-item">
+                      <span>Employment Type</span>
                       <strong>{selectedJob.type}</strong>
                     </div>
-                    <div>
-                      <span>Salary</span>
-                      <strong>{selectedJob.salary}</strong>
+                    <div className="overview-item">
+                      <span>Offered CTC</span>
+                      <strong className="salary-highlight">{selectedJob.salary}</strong>
                     </div>
-                    <div>
-                      <span>Openings</span>
-                      <strong>{selectedJob.positionsOpen}</strong>
+                    <div className="overview-item">
+                      <span>Open Positions</span>
+                      <strong>{selectedJob.positionsOpen} seat(s)</strong>
                     </div>
                   </div>
                 </article>
 
-                <article className="job-details-panel job-details-cta-panel">
-                  <h2>Interested in this role?</h2>
-                  <p>Complete the application form and share your resume to continue.</p>
+                <article className="job-details-panel glass-card cta-box">
+                  <h3>Ready to Take the Next Step?</h3>
+                  <p>Submit your profile directly to the hiring manager and get instant application tracking.</p>
                   <button
                     type="button"
-                    className="job-details-apply-btn ui-btn-primary"
+                    className="btn btn-primary w-full"
                     onClick={handleApplyNow}
                   >
-                    Apply now
+                    Submit Application
                   </button>
                 </article>
               </aside>
@@ -203,3 +251,4 @@ export default function JobDetails({ setCurrentPage, routeJobId }) {
     </main>
   );
 }
+

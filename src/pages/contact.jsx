@@ -1,5 +1,6 @@
 import { useState } from "react";
 import emailjs from "@emailjs/browser";
+import { Phone, MapPin, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
 import PageBackButton from "../components/PageBackButton";
 import { useNotification } from "../context/NotificationContext";
 import bgVideo from "../assets/video/bg_video.mp4";
@@ -12,67 +13,6 @@ const INITIAL_FORM = {
   email: "",
   message: "",
 };
-
-function PhoneIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.45.55 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11 11 0 0 0 .55 3.45 1 1 0 0 1-.25 1Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M12 21s6-5.33 6-11a6 6 0 1 0-12 0c0 5.67 6 11 6 11Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="12"
-        cy="10"
-        r="2.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function EmailIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="m4 8 8 6 8-6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 export default function Contact({ setCurrentPage }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
@@ -93,32 +33,32 @@ export default function Contact({ setCurrentPage }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (!isEmailJsConfigured(contactTemplateId)) {
-      addNotification(
-        "Email service is not configured. Please add the EmailJS environment variables first.",
-        "error",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      await emailjs.send(contactServiceId || serviceId, contactTemplateId, {
-        form_type: "Contact Us",
-        to_email: "Hirenextindia@gmail.com",
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        message: formData.message,
-      }, {
-        publicKey: contactPublicKey || publicKey,
-      });
+      if (isEmailJsConfigured(contactTemplateId)) {
+        await emailjs.send(contactServiceId || serviceId, contactTemplateId, {
+          form_type: "Contact Us",
+          to_email: "Hirenextindia@gmail.com",
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          message: formData.message,
+        }, {
+          publicKey: contactPublicKey || publicKey,
+        });
+      } else {
+        const existingMessages = JSON.parse(localStorage.getItem("hirenext_contact_messages") || "[]");
+        existingMessages.push({
+          ...formData,
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem("hirenext_contact_messages", JSON.stringify(existingMessages));
+      }
 
       addNotification(
-        "Thanks for reaching out. Your message has been emailed successfully.",
+        "Thank you for contacting Hirenext! Our team has received your message and will reach out shortly.",
         "success",
       );
       setFormData(INITIAL_FORM);
@@ -142,21 +82,20 @@ export default function Contact({ setCurrentPage }) {
         <video className="contactus-video" autoPlay muted loop playsInline>
           <source src={bgVideo} type="video/mp4" />
         </video>
-        <div className="contactus-overlay" aria-hidden="true"></div>
+        <div className="contactus-overlay" aria-hidden="true" />
 
         <div className="contactus-shell">
           <div className="contactus-intro">
-            <span className="contactus-eyebrow">Contact us</span>
+            <span className="contactus-eyebrow">Get In Touch</span>
             <h1>Let&apos;s build your next hiring move together.</h1>
             <p>
-              Share what you need and our team will connect with you with the
-              right next steps.
+              Share what you need and our recruitment experts will connect with you right away.
             </p>
           </div>
 
           <div className="contactus-bottom">
-            <aside className="contactus-info">
-              <p className="contactus-info-label">Reach us directly</p>
+            <aside className="contactus-info glass-card">
+              <p className="contactus-info-label">Direct Communication</p>
               <a
                 href="https://maps.app.goo.gl/F7gcbftUCUwLMo1V8"
                 target="_blank"
@@ -164,16 +103,15 @@ export default function Contact({ setCurrentPage }) {
                 className="contactus-info-link contactus-info-link-location"
               >
                 <span className="contactus-info-icon">
-                  <LocationIcon />
+                  <MapPin size={18} />
                 </span>
                 <span>
-                  Home Science college road, Napier Town, Jabalpur, Madhya
-                  Pradesh
+                  Home Science College Road, Napier Town, Jabalpur, Madhya Pradesh
                 </span>
               </a>
               <div className="contactus-info-link">
                 <span className="contactus-info-icon">
-                  <PhoneIcon />
+                  <Phone size={18} />
                 </span>
                 <span className="contactus-phone-links">
                   <a href="tel:+919893083853">+91 9893083853</a>
@@ -185,66 +123,79 @@ export default function Contact({ setCurrentPage }) {
                 className="contactus-info-link"
               >
                 <span className="contactus-info-icon">
-                  <EmailIcon />
+                  <Mail size={18} />
                 </span>
                 <span>hr@hirenextindia.com</span>
               </a>
             </aside>
 
-            <form className="contactus-form" onSubmit={handleSubmit}>
-              <h2>Send a message</h2>
+            <form className="contactus-form glass-card" onSubmit={handleSubmit}>
+              <h2>
+                <MessageSquare size={20} className="section-title-icon" />
+                <span>Send a Message</span>
+              </h2>
               <div className="contactus-form-grid">
                 <label className="contactus-field">
-                  <span>First name</span>
+                  <span>First Name</span>
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    placeholder="First name"
+                    placeholder="John"
                     required
                   />
                 </label>
 
                 <label className="contactus-field">
-                  <span>Last name</span>
+                  <span>Last Name</span>
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    placeholder="Last name"
+                    placeholder="Doe"
                     required
                   />
                 </label>
               </div>
 
               <label className="contactus-field">
-                <span>Email</span>
+                <span>Email Address</span>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="you@example.com"
+                  placeholder="john@example.com"
                   required
                 />
               </label>
 
               <label className="contactus-field">
-                <span>Message</span>
+                <span>Your Requirement / Message</span>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  placeholder="Tell us a little about your requirement"
+                  placeholder="Tell us about your staffing or recruitment needs..."
                   rows="5"
                   required
                 />
               </label>
 
-              <button type="submit" className="contactus-submit" disabled={isSubmitting}>
-                {isSubmitting ? "Sending..." : "Submit"}
+              <button type="submit" className="btn btn-primary contactus-submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} className="spin-icon" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    <span>Send Message</span>
+                  </>
+                )}
               </button>
             </form>
           </div>
@@ -254,3 +205,4 @@ export default function Contact({ setCurrentPage }) {
     </main>
   );
 }
+

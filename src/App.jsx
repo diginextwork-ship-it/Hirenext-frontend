@@ -168,11 +168,11 @@ export default function App() {
     [normalizedAuthRole],
   );
   const isRecruiterDashboard =
-    currentPage === "recruiterlogin" &&
-    (normalizedAuthRole === "recruiter" ||
-      normalizedAuthRole === "team leader" ||
-      normalizedAuthRole === "team_leader" ||
-      normalizedAuthRole === "job creator");
+    currentPage === "recruiterlogin" && Boolean(authSession?.token);
+  const hideHeaderAndFooter =
+    ADMIN_ONLY_PAGES.has(currentPage) ||
+    currentPage === "adminlogin" ||
+    currentPage === "recruiterlogin";
   const guardedPage =
     ADMIN_ONLY_PAGES.has(currentPage) && !isAdmin ? "adminlogin" : currentPage;
 
@@ -260,7 +260,7 @@ export default function App() {
       case "schedulecall":
         return <ScheduleCall setCurrentPage={setCurrentPage} />;
       case "recruiterlogin":
-        return <RecruiterLogin />;
+        return <RecruiterLogin setCurrentPage={setCurrentPage} />;
       case "adminlogin":
         return (
           <AdminLogin
@@ -322,18 +322,18 @@ export default function App() {
   return (
     <NotificationProvider>
       <div className="app">
-        {currentPage === "home" ? (
+        {!hideHeaderAndFooter ? (
           <Navbar setCurrentPage={setCurrentPage} currentPage={currentPage} />
         ) : null}
         <Suspense fallback={<PageFallback />}>{renderPage()}</Suspense>
-        <Footer
-          setCurrentPage={setCurrentPage}
-          minimal={currentPage !== "home"}
-          isAdmin={isAdmin}
-          showDeveloperStrip={
-            !ADMIN_ONLY_PAGES.has(currentPage) && !isRecruiterDashboard
-          }
-        />
+        {!hideHeaderAndFooter ? (
+          <Footer
+            setCurrentPage={setCurrentPage}
+            minimal={false}
+            isAdmin={isAdmin}
+            showDeveloperStrip={true}
+          />
+        ) : null}
         <NotificationContainer />
       </div>
     </NotificationProvider>

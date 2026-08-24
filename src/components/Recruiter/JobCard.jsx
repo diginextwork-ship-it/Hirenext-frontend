@@ -14,12 +14,24 @@ const toDisplayText = (value) => {
   return normalized ? normalized : "";
 };
 
+const formatSalaryText = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return "";
+  if (normalized.includes("$")) {
+    return normalized.replace(/\$/g, "₹");
+  }
+  if (/^\d+(\.\d+)?$/.test(normalized)) {
+    return `₹${Number(normalized).toLocaleString("en-IN")}`;
+  }
+  return normalized;
+};
+
 export default function JobCard({ job, onViewDetails, onEditDetails }) {
   const roleName = toDisplayText(job.role_name) || "Untitled Role";
   const companyName = toDisplayText(job.company_name) || "Unknown company";
   const city = toDisplayText(job.city);
   const state = toDisplayText(job.state);
-  const salary = toDisplayText(job.salary);
+  const salary = formatSalaryText(job.salary);
   const location = [city, state].filter(Boolean).join(", ");
   const positionsOpen = Number(job.positions_open) || 0;
   const formattedDate = formatDate(job.created_at);

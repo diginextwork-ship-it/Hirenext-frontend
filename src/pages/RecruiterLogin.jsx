@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Briefcase, Mail, Lock, Eye, EyeOff, LogIn, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import "../styles/recruiter-login.css";
 import {
   clearAuthSession,
@@ -86,7 +87,7 @@ const isTeamLeaderRole = (role) => {
   );
 };
 
-export default function RecruiterLogin() {
+export default function RecruiterLogin({ setCurrentPage }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -128,6 +129,7 @@ export default function RecruiterLogin() {
   const [isParsingJD, setIsParsingJD] = useState(false);
   const [jdParseMessage, setJdParseMessage] = useState("");
   const [jdParseMessageType, setJdParseMessageType] = useState("");
+  const [jobsRefreshKey, setJobsRefreshKey] = useState(0);
   const normalizedRole = String(recruiter?.role || "")
     .trim()
     .toLowerCase();
@@ -497,6 +499,7 @@ export default function RecruiterLogin() {
       });
       try {
         await fetchAllJobs();
+        setJobsRefreshKey((prev) => prev + 1);
       } catch {
         // Keep create success visible even if list refresh fails on older schemas.
       }
@@ -745,6 +748,7 @@ export default function RecruiterLogin() {
                   recruiterId={recruiter.rid}
                   onResumeSubmitted={handleResumeSubmitted}
                   canEditJobs={false}
+                  refreshKey={jobsRefreshKey}
                 />
               </div>
             ) : null}
@@ -1061,7 +1065,7 @@ export default function RecruiterLogin() {
     <main className="recruiter-login-page ui-page">
       <section className="recruiter-login-shell ui-shell">
         <div className="recruiter-login-card">
-          <h1>recruiter login</h1>
+          <h1>Recruiter Login</h1>
           <p>Sign in to manage openings and candidate pipelines.</p>
 
           <form onSubmit={handleLoginSubmit}>
@@ -1091,62 +1095,7 @@ export default function RecruiterLogin() {
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? (
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 3l18 18"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9.88 5.08A10.9 10.9 0 0 1 12 4.9c5.25 0 8.85 3.97 10 7.1a12.64 12.64 0 0 1-3.12 4.49M6.6 6.6A13.4 13.4 0 0 0 2 12c1.15 3.13 4.75 7.1 10 7.1 1.87 0 3.5-.5 4.94-1.27"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 12s3.6-7.1 10-7.1S22 12 22 12s-3.6 7.1-10 7.1S2 12 2 12z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                  </svg>
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
@@ -1163,7 +1112,6 @@ export default function RecruiterLogin() {
           </form>
         </div>
       </section>
-
     </main>
   );
 }

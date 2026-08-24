@@ -1,9 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Briefcase, Info, Image as GalleryIcon, PhoneCall, Calendar, Menu, X, Sparkles } from "lucide-react";
 import logoImage from "../assets/Logo.png";
 import "../styles/navbar.css";
 
 export default function Navbar({ setCurrentPage, currentPage }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+
+      if (currentScrollY > lastScrollY && currentScrollY > 100 && !isMenuOpen) {
+        // Scrolling DOWN -> Hide navbar
+        setIsNavVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling UP -> Show navbar instantly
+        setIsNavVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isMenuOpen]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -15,83 +45,88 @@ export default function Navbar({ setCurrentPage, currentPage }) {
   };
 
   return (
-    <nav className={`navbar ${currentPage === "home" ? "navbar-home" : ""}`}>
+    <header className={`navbar ${isScrolled ? "navbar-scrolled" : ""} ${!isNavVisible ? "navbar-hidden" : ""} ${currentPage === "home" ? "navbar-home" : ""}`}>
       <div className="navbar-container">
         <div className="navbar-brand">
-          <div className="logo" onClick={() => handleNavClick("home")}>
-            <img src={logoImage} alt="hirenext logo" className="logo-image" />
+          <div className="logo" onClick={() => handleNavClick("home")} role="button" tabIndex={0}>
+            <div className="logo-badge-wrapper">
+              <img src={logoImage} alt="Hirenext Logo" className="logo-image" />
+            </div>
+            <span className="logo-brand-name">
+              Hire<span className="brand-accent">next</span>
+            </span>
           </div>
         </div>
 
         <button
           className={`hamburger ${isMenuOpen ? "open" : ""}`}
           onClick={toggleMenu}
+          aria-label="Toggle navigation menu"
         >
-          <span></span>
-          <span></span>
-          <span></span>
+          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
         <div className={`navbar-menu ${isMenuOpen ? "open" : ""}`}>
           <div className="navbar-links">
-            <a
-              href="#"
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick("jobs");
-              }}
+            <button
+              type="button"
+              className={`nav-link ${currentPage === "jobs" ? "active" : ""}`}
+              onClick={() => handleNavClick("jobs")}
             >
-              Search all jobs
-            </a>
+              <Briefcase size={16} />
+              <span>Explore Jobs</span>
+            </button>
 
-            <a
-              href="/about-us"
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick("aboutus");
-              }}
+            <button
+              type="button"
+              className={`nav-link ${currentPage === "aboutus" ? "active" : ""}`}
+              onClick={() => handleNavClick("aboutus")}
             >
-              About Us
-            </a>
+              <Info size={16} />
+              <span>About Us</span>
+            </button>
 
-            <a
-              href="/gallery"
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick("gallery");
-              }}
+            <button
+              type="button"
+              className={`nav-link ${currentPage === "gallery" ? "active" : ""}`}
+              onClick={() => handleNavClick("gallery")}
             >
-              Gallery
-            </a>
+              <GalleryIcon size={16} />
+              <span>Gallery</span>
+            </button>
 
-            <a
-              href="/contactus"
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick("contactus");
-              }}
+            <button
+              type="button"
+              className={`nav-link ${currentPage === "contactus" ? "active" : ""}`}
+              onClick={() => handleNavClick("contactus")}
             >
-              Contact Us
-            </a>
+              <PhoneCall size={16} />
+              <span>Contact</span>
+            </button>
           </div>
 
-          <a
-            href="/#"
-            className="nav-link"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick("aboutus");
-            }}
-          >
-           Blog
-          </a>
-
+          <div className="navbar-actions">
+            <button
+              type="button"
+              className="btn btn-schedule-call"
+              onClick={() => handleNavClick("schedulecall")}
+            >
+              <Calendar size={16} />
+              <span>Schedule Call</span>
+            </button>
+            
+            <button
+              type="button"
+              className="btn btn-portal-shortcut"
+              onClick={() => handleNavClick("recruiterlogin")}
+            >
+              <Sparkles size={16} />
+              <span>Portals</span>
+            </button>
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
+

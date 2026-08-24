@@ -1,104 +1,152 @@
 .schedule-call-page {
-  min-height: 75vh;
-  padding: 0;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  min-height: 100vh;
+  padding: 5rem 1.5rem 6rem;
+  background: var(--bg-main);
 }
 
 .schedule-call-container {
   max-width: 760px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .schedule-call-header {
   text-align: center;
-  margin-bottom: var(--spacing-2xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.schedule-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(223, 83, 61, 0.12);
+  border: 1px solid rgba(223, 83, 61, 0.3);
+  color: #df533d;
+  font-size: 0.825rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .schedule-call-header h1 {
-  margin-bottom: var(--spacing-sm);
-  color: var(--text-primary);
-  text-transform: lowercase;
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  color: var(--charcoal);
 }
 
 .schedule-call-header p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.schedule-call-card {
+  padding: 2.5rem;
+  background: #ffffff;
+  border: 1px solid rgba(20, 33, 50, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .schedule-call-form {
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-  border-radius: 1rem;
-  padding: var(--spacing-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .schedule-field {
-  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .schedule-field label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
   font-weight: 600;
+  color: var(--charcoal);
+}
+
+.schedule-field label svg {
+  color: #df533d;
 }
 
 .schedule-field input,
 .schedule-field select {
   width: 100%;
+  padding: 0.85rem 1rem;
+  background: #fcfaf5;
+  border: 1px solid rgba(20, 33, 50, 0.12);
+  border-radius: var(--radius-sm);
+  color: var(--charcoal);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.schedule-field input:focus,
+.schedule-field select:focus {
+  border-color: #df533d;
+  box-shadow: 0 0 0 2px rgba(223, 83, 61, 0.2);
+}
+
+.schedule-field select option {
+  background: #ffffff;
+  color: var(--charcoal);
 }
 
 .schedule-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
+  gap: 1.25rem;
 }
 
 .schedule-submit {
   width: 100%;
+  padding: 0.9rem 1.75rem;
+  font-size: 1rem;
+  justify-content: center;
+  margin-top: 0.5rem;
 }
 
-.schedule-submit:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
+.schedule-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-.schedule-status {
-  margin-top: var(--spacing-md);
-  margin-bottom: 0;
-  font-weight: 600;
+.schedule-status-banner.success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
 }
 
-.schedule-status.success {
-  color: #166534;
+.schedule-status-banner.error {
+  background: rgba(223, 83, 61, 0.12);
+  border: 1px solid rgba(223, 83, 61, 0.25);
+  color: #c62828;
 }
 
-.schedule-status.error {
-  color: #b91c1c;
-}
-
-@media (max-width: 768px) {
-  .schedule-call-form {
-    padding: var(--spacing-xl);
-  }
-
+@media (max-width: 640px) {
   .schedule-grid {
     grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-  }
-}
-
-@media (max-width: 480px) {
-  .schedule-call-form {
-    padding: var(--spacing-lg);
   }
 
-  .schedule-call-container {
-    width: 100%;
-  }
-
-  .schedule-field input,
-  .schedule-field select {
-    font-size: 16px;
+  .schedule-call-card {
+    padding: 1.5rem;
   }
 }

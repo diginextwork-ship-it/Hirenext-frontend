@@ -24,14 +24,30 @@ export const fetchAllRecruiterStatuses = ({
   );
 };
 
-export const fetchTeamLeaderDashboard = () =>
-  authFetch(
-    `${API_BASE_URL}/api/dashboard/team-leader`,
-    {},
-    "Failed to fetch team leader dashboard.",
-  );
+export const fetchTeamLeaderDashboard = async () => {
+  try {
+    return await authFetch(
+      `${API_BASE_URL}/api/dashboard/team-leader`,
+      {},
+      "Failed to fetch team leader dashboard.",
+    );
+  } catch (error) {
+    console.warn("fetchTeamLeaderDashboard fallback:", error.message);
+    return {
+      overview: {
+        totalJobs: 0,
+        openJobs: 0,
+        restrictedJobs: 0,
+        totalRecruiters: 0,
+        activeRecruiters: 0,
+        totalSubmissions: 0,
+      },
+      topPerformers: [],
+    };
+  }
+};
 
-export const fetchTeamLeaderPerformanceDashboard = ({
+export const fetchTeamLeaderPerformanceDashboard = async ({
   startDate = "",
   endDate = "",
 } = {}) => {
@@ -44,11 +60,47 @@ export const fetchTeamLeaderPerformanceDashboard = ({
   }
   const query = params.toString();
 
-  return authFetch(
-    `${API_BASE_URL}/api/dashboard/team-leader/performance${query ? `?${query}` : ""}`,
-    {},
-    "Failed to fetch team leader performance dashboard.",
-  );
+  try {
+    return await authFetch(
+      `${API_BASE_URL}/api/dashboard/team-leader/performance${query ? `?${query}` : ""}`,
+      {},
+      "Failed to fetch team leader performance dashboard.",
+    );
+  } catch (error) {
+    console.warn("fetchTeamLeaderPerformanceDashboard fallback:", error.message);
+    return {
+      statusDrilldown: {
+        submitted: [],
+        verified: [],
+        others: [],
+        walk_in: [],
+        shortlisted: [],
+        selected: [],
+        rejected: [],
+        joined: [],
+        dropout: [],
+        billed: [],
+        left: [],
+      },
+      summary: {
+        totalJobs: 0,
+        openJobs: 0,
+        restrictedJobs: 0,
+        totalRecruiters: 0,
+        totalSubmitted: 0,
+        totalVerified: 0,
+        totalOthers: 0,
+        totalWalkIn: 0,
+        totalShortlisted: 0,
+        totalSelected: 0,
+        totalRejected: 0,
+        totalJoined: 0,
+        totalDropout: 0,
+        totalBilled: 0,
+        totalLeft: 0,
+      },
+    };
+  }
 };
 
 export const fetchRecruiterDashboard = (

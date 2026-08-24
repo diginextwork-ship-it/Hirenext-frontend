@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Headphones, ShoppingCart, Factory, Laptop, PackageCheck, Truck, Landmark, Car, Building2, ArrowLeft, Target, Award, Users, CheckCircle2 } from "lucide-react";
 import logoImage from "../assets/Logo.png";
 import founderPhoto from "../assets/about/founders_pic.jpeg";
 import directorPhoto from "../assets/about/director.jpeg";
@@ -22,15 +23,15 @@ const CLIENTS = [
 ];
 
 const EXPERTISE = [
-  { icon: "\u260E", label: "BPO & KPO" },
-  { icon: "\u{1F6D2}", label: "E-Commerce" },
-  { icon: "\u{1F3ED}", label: "Manufacturing" },
-  { icon: "\u{1F4BB}", label: "IT" },
-  { icon: "\u{1F9FC}", label: "FMCG" },
-  { icon: "\u{1F69A}", label: "Logistics" },
-  { icon: "\u{1F3E6}", label: "Banking & Finance" },
-  { icon: "\u{1F697}", label: "Automobiles" },
-  { icon: "\u{1F3D7}", label: "Construction" },
+  { icon: Headphones, label: "BPO & KPO" },
+  { icon: ShoppingCart, label: "E-Commerce" },
+  { icon: Factory, label: "Manufacturing" },
+  { icon: Laptop, label: "IT & Software" },
+  { icon: PackageCheck, label: "FMCG" },
+  { icon: Truck, label: "Logistics" },
+  { icon: Landmark, label: "Banking & Finance" },
+  { icon: Car, label: "Automobiles" },
+  { icon: Building2, label: "Construction" },
 ];
 
 const STATS = [
@@ -41,8 +42,8 @@ const STATS = [
 ];
 
 const MISSION_POINTS = [
-  "Provide exceptional recruitment solutions that connect top talent with leading organizations and create mutual growth.",
-  "Be a trusted partner through personalized service and long-term relationships with clients and candidates alike.",
+  "Provide exceptional recruitment solutions that connect top talent with leading organizations for mutual growth.",
+  "Be a trusted partner through personalized service and long-term relationships with clients and candidates.",
   "Transform the recruitment landscape through sharper processes, modern tools, and a higher standard of hiring excellence.",
 ];
 
@@ -124,7 +125,7 @@ export default function AboutUs({ onBack }) {
   };
 
   return (
-    <>
+    <div className="about-page-container">
       <nav className="about-topbar">
         <div className="topbar-brand">
           <img src={logoImage} alt="HireNext India" className="topbar-logo" />
@@ -136,28 +137,26 @@ export default function AboutUs({ onBack }) {
           onClick={handleBack}
           aria-label="Back to previous page"
         >
-          <span className="btn-back-arrow" aria-hidden="true">
-            &larr;
-          </span>
-          <span className="btn-back-label">Back</span>
+          <ArrowLeft size={16} />
+          <span>Back</span>
         </button>
       </nav>
 
       <section className="about-section">
         <div className="about-inner">
-          <AnimatedEl className="section-label">About Us</AnimatedEl>
+          <AnimatedEl className="section-label">Enterprise Staffing Leader</AnimatedEl>
 
           <AnimatedEl className="section-title">
             <h1>
-              Connecting <em>Talent</em>
+              Connecting <span className="gradient-text">Top Talent</span>
               <br />
-              with Opportunity
+              with Global Opportunities
             </h1>
           </AnimatedEl>
 
           <div className="stats-row">
             {STATS.map((stat, index) => (
-              <AnimatedEl key={stat.label} className="stat-card" delay={index * 80}>
+              <AnimatedEl key={stat.label} className="stat-card glass-card" delay={index * 80}>
                 <div className="stat-number">{stat.num}</div>
                 <div className="stat-label">{stat.label}</div>
               </AnimatedEl>
@@ -165,8 +164,8 @@ export default function AboutUs({ onBack }) {
           </div>
 
           <div className="two-col">
-            <AnimatedEl className="story-card">
-              <span className="card-tag coral">Our Story</span>
+            <AnimatedEl className="story-card glass-card">
+              <span className="card-tag coral">Our Journey</span>
               <h2 className="card-heading">Who We Are</h2>
               <p className="card-body">
                 Hire NexT India Consulting is a PAN India recruitment firm founded
@@ -182,13 +181,13 @@ export default function AboutUs({ onBack }) {
               </p>
             </AnimatedEl>
 
-            <AnimatedEl className="mission-card" delay={100}>
-              <span className="card-tag white">Mission & Vision</span>
+            <AnimatedEl className="mission-card glass-card" delay={100}>
+              <span className="card-tag white">Vision & Core Mission</span>
               <h2 className="card-heading">Where We Are Going</h2>
               <div className="mission-items">
                 {MISSION_POINTS.map((point) => (
                   <div key={point} className="mission-item">
-                    <div className="mission-dot" />
+                    <CheckCircle2 size={20} className="mission-check-icon" />
                     <p className="mission-text">{point}</p>
                   </div>
                 ))}
@@ -198,14 +197,14 @@ export default function AboutUs({ onBack }) {
 
           <div className="leaders-section">
             <AnimatedEl className="leaders-heading">
-              <h2>Leadership</h2>
+              <h2>Executive Leadership</h2>
             </AnimatedEl>
 
             <div className="leaders-grid">
               {LEADERS.map((leader, index) => (
                 <AnimatedEl
                   key={leader.name}
-                  className="leader-card"
+                  className="leader-card glass-card"
                   delay={index * 130}
                 >
                   <div className="leader-portrait-wrap">
@@ -214,13 +213,6 @@ export default function AboutUs({ onBack }) {
                       alt={leader.imageAlt}
                       className="leader-portrait"
                     />
-                    <div className={`leader-avatar ${leader.accentClass}`}>
-                      {leader.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
                   </div>
 
                   <div className="leader-info">
@@ -234,21 +226,22 @@ export default function AboutUs({ onBack }) {
           </div>
 
           <AnimatedEl className="expertise-section">
-            <div className="expertise-heading">Our Expertise</div>
+            <div className="expertise-heading">Industries We Serve</div>
             <div className="expertise-grid">
-              {EXPERTISE.map((item) => (
-                <div key={item.label} className="expertise-pill">
-                  <span className="pill-icon" aria-hidden="true">
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </div>
-              ))}
+              {EXPERTISE.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <div key={item.label} className="expertise-pill glass-card">
+                    <IconComponent size={18} className="pill-icon" />
+                    <span>{item.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </AnimatedEl>
 
           <AnimatedEl className="clients-section">
-            <div className="clients-heading">Our Clients</div>
+            <div className="clients-heading">Trusted by Corporate Leaders</div>
             <div className="marquee-wrapper">
               <div className="marquee-track">
                 {clientsDoubled.map((client, index) => (
@@ -260,15 +253,16 @@ export default function AboutUs({ onBack }) {
             </div>
           </AnimatedEl>
 
-          <AnimatedEl className="quote-block">
+          <AnimatedEl className="quote-block glass-card">
             <p className="quote-text">
               "If you are looking for a recruitment partner that prioritizes your
               needs and delivers results, you have found us."
             </p>
-            <div className="quote-source">Hire NexT India Consulting | est. 2016</div>
+            <div className="quote-source">Hire NexT India Consulting &bull; Est. 2016</div>
           </AnimatedEl>
         </div>
       </section>
-    </>
+    </div>
   );
 }
+

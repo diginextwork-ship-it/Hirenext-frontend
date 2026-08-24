@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Building, User, Phone, Mail, Briefcase, GraduationCap, ArrowRight, Loader2 } from "lucide-react";
 import "../styles/job-application.css";
 import { API_BASE_URL, BACKEND_CONNECTION_ERROR } from "../config/api";
 import PageBackButton from "../components/PageBackButton";
@@ -44,6 +45,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
   const [isJobLoading, setIsJobLoading] = useState(() => !selectedJob && Boolean(routeJobId));
   const activeResumeRequestIdRef = useRef(0);
   const selectedJobId = String(selectedJob?.id ?? selectedJob?.jid ?? "").trim();
+
   useEffect(() => {
     let isActive = true;
 
@@ -173,7 +175,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
         return null;
       }
 
-      updateResumeRequestStage(requestId, "Calculating ATS score...");
+      updateResumeRequestStage(requestId, "Calculating ATS match score...");
       const response = await fetch(`${API_BASE_URL}/api/applications/parse-resume`, {
         method: "POST",
         headers: {
@@ -224,7 +226,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
       };
       setParsedResume(parsedPayload);
       setResumeMessageType("success");
-      setResumeMessage("Resume parsed and form auto-filled successfully.");
+      setResumeMessage("Resume parsed & form autofilled with ATS match evaluation.");
       return parsedPayload;
     } catch (error) {
       if (activeResumeRequestIdRef.current !== requestId) {
@@ -291,7 +293,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
       return;
     }
 
-    const requestId = beginResumeRequest("Submitting...");
+    const requestId = beginResumeRequest("Submitting application...");
     setSubmitted(false);
     setSubmitMessage("");
 
@@ -349,7 +351,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
       }
 
       setPhoneError("");
-      updateResumeRequestStage(requestId, "Submitting...");
+      updateResumeRequestStage(requestId, "Submitting application...");
       const response = await fetch(`${API_BASE_URL}/api/applications`, {
         method: "POST",
         headers: {
@@ -381,7 +383,7 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
       }
 
       setSubmitted(true);
-      setSubmitMessage("Application submitted successfully.");
+      setSubmitMessage("Application submitted successfully! Our recruiters will review your profile.");
       setFormData(initialFormData);
       setResumeFile(null);
       setParsedResume(null);
@@ -415,291 +417,381 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
             fallbackParams={selectedJobId ? { jobId: selectedJobId } : undefined}
           />
         </div>
+
         <div className="job-application-layout">
           <div className="job-application-intro">
-            <span className="job-application-kicker">Job Application Form</span>
-            <h1>Complete the form below to submit your application.</h1>
+            <span className="job-application-kicker">Direct Hiring Portal</span>
+            <h1>Submit Your Application</h1>
             {isJobLoading ? (
               <p>Loading selected job details...</p>
             ) : selectedJob ? (
               <p>
-                Applying for <strong>{selectedJob.title}</strong> at{" "}
-                <strong>{selectedJob.company}</strong>
+                Applying for <strong className="highlight-text">{selectedJob.title}</strong> at{" "}
+                <strong className="highlight-text">{selectedJob.company}</strong>
               </p>
             ) : (
               <p className="application-error-message">
-                No job selected. Use Back to jobs and click Apply now on a job.
+                No job selected. Return to search and click Apply Now on an open role.
               </p>
             )}
           </div>
 
-          <div className="job-application-card">
+          <div className="job-application-card glass-card">
             {selectedJob ? (
               <div className="job-application-role-card">
-                <span>{selectedJob.company}</span>
-                <h2>{selectedJob.title}</h2>
-                <p>{selectedJob.location}</p>
+                <div className="role-card-company-icon">
+                  <Building size={20} />
+                </div>
+                <div>
+                  <span className="role-company">{selectedJob.company}</span>
+                  <h2>{selectedJob.title}</h2>
+                  <p className="role-location">{selectedJob.location} &bull; {selectedJob.salary}</p>
+                </div>
               </div>
             ) : null}
 
             <form ref={formRef} className="job-application-form" onSubmit={handleSubmit}>
-            <div className="application-field">
-              <label htmlFor="resumeUpload">Upload resume (PDF/DOCX) *</label>
-              <input
-                id="resumeUpload"
-                name="resume_attachment"
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={handleResumeFileChange}
-                required
-              />
-              {isResumeProcessing && resumeProcessingStage ? (
-                <p>{resumeProcessingStage}</p>
-              ) : null}
-              {resumeMessage ? (
-                <p
-                  className={
-                    resumeMessageType === "success"
-                      ? "application-success-message"
-                      : "application-error-message"
-                  }
-                >
-                  {resumeMessage}
-                </p>
-              ) : null}
-            </div>
+              {/* File Upload Dropzone */}
+              <div className="form-section-title">
+                <FileText size={18} />
+                <span>1. Resume Attachment & Auto-Fill</span>
+              </div>
 
-            <div className="application-field">
-              <label htmlFor="applicantName">Name *</label>
-              <input
-                id="applicantName"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
+              <div className="dropzone-box">
+                <input
+                  id="resumeUpload"
+                  name="resume_attachment"
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleResumeFileChange}
+                  required
+                  className="file-input-hidden"
+                />
+                <label htmlFor="resumeUpload" className="dropzone-label">
+                  {isResumeProcessing ? (
+                    <Loader2 size={32} className="spin-icon" />
+                  ) : (
+                    <UploadCloud size={32} className="upload-icon" />
+                  )}
+                  <div className="dropzone-text">
+                    <strong>{resumeFile ? resumeFile.name : "Click or drag resume here"}</strong>
+                    <span>PDF or DOCX format (Max 10MB)</span>
+                  </div>
+                </label>
 
-            <div className="application-field">
-              <label htmlFor="applicantPhone">Phone *</label>
-              <input
-                id="applicantPhone"
-                name="phone"
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]{10}"
-                minLength={10}
-                maxLength={10}
-                title="Phone number must be exactly 10 digits"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Enter 10-digit phone number"
-                required
-              />
-              {phoneError ? <p className="application-error-message">{phoneError}</p> : null}
-            </div>
-
-            <div className="application-field">
-              <label htmlFor="applicantEmail">Email *</label>
-              <input
-                id="applicantEmail"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            <div className="application-field">
-              <label htmlFor="hasPriorExperience">Do you have any prior experience? *</label>
-              <select
-                id="hasPriorExperience"
-                name="hasPriorExperience"
-                value={formData.hasPriorExperience}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-
-            {formData.hasPriorExperience === "yes" ? (
-              <div className="application-experience-block">
-                <div className="application-field">
-                  <label htmlFor="experienceIndustry">Industry *</label>
-                  <select
-                    id="experienceIndustry"
-                    name="experienceIndustry"
-                    value={formData.experienceIndustry}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select industry</option>
-                    <option value="it">IT</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="sales">Sales</option>
-                    <option value="finance">Finance</option>
-                    <option value="others">Others</option>
-                  </select>
-                </div>
-
-                {formData.experienceIndustry === "others" ? (
-                  <div className="application-field">
-                    <label htmlFor="experienceIndustryOther">Please specify industry *</label>
-                    <input
-                      id="experienceIndustryOther"
-                      name="experienceIndustryOther"
-                      type="text"
-                      value={formData.experienceIndustryOther}
-                      onChange={handleChange}
-                      placeholder="Enter industry name"
-                      required
-                    />
+                {isResumeProcessing && resumeProcessingStage ? (
+                  <div className="processing-status-bar">
+                    <Loader2 size={16} className="spin-icon" />
+                    <span>{resumeProcessingStage}</span>
                   </div>
                 ) : null}
 
-                <div className="application-grid">
-                  <div className="application-field">
-                    <label htmlFor="currentSalary">Current salary *</label>
-                    <input
-                      id="currentSalary"
-                      name="currentSalary"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.currentSalary}
-                      onChange={handleChange}
-                      placeholder="Enter current salary"
-                      required
-                    />
+                {resumeMessage ? (
+                  <div
+                    className={`status-message-banner ${
+                      resumeMessageType === "success" ? "success" : "error"
+                    }`}
+                  >
+                    {resumeMessageType === "success" ? (
+                      <CheckCircle2 size={18} />
+                    ) : (
+                      <AlertCircle size={18} />
+                    )}
+                    <span>{resumeMessage}</span>
                   </div>
+                ) : null}
 
-                  <div className="application-field">
-                    <label htmlFor="expectedSalary">Expected salary *</label>
-                    <input
-                      id="expectedSalary"
-                      name="expectedSalary"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.expectedSalary}
-                      onChange={handleChange}
-                      placeholder="Enter expected salary"
-                      required
-                    />
+                {parsedResume?.atsScore !== null && parsedResume?.atsScore !== undefined && (
+                  <div className="ats-score-pill">
+                    <CheckCircle2 size={16} className="ats-check" />
+                    <span>ATS Match Score: <strong>{parsedResume.atsScore}%</strong></span>
                   </div>
+                )}
+              </div>
+
+              {/* Personal Details */}
+              <div className="form-section-title">
+                <User size={18} />
+                <span>2. Personal & Contact Information</span>
+              </div>
+
+              <div className="application-field">
+                <label htmlFor="applicantName">Full Name *</label>
+                <input
+                  id="applicantName"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="e.g. John Doe"
+                  required
+                />
+              </div>
+
+              <div className="form-row-grid">
+                <div className="application-field">
+                  <label htmlFor="applicantPhone">Phone Number *</label>
+                  <input
+                    id="applicantPhone"
+                    name="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    minLength={10}
+                    maxLength={10}
+                    title="Phone number must be exactly 10 digits"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="10-digit mobile number"
+                    required
+                  />
+                  {phoneError ? <p className="field-error-text">{phoneError}</p> : null}
                 </div>
 
-                <div className="application-grid">
+                <div className="application-field">
+                  <label htmlFor="applicantEmail">Email Address *</label>
+                  <input
+                    id="applicantEmail"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@domain.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Experience Info */}
+              <div className="form-section-title">
+                <Briefcase size={18} />
+                <span>3. Professional Experience</span>
+              </div>
+
+              <div className="application-field">
+                <label htmlFor="hasPriorExperience">Do you have prior work experience? *</label>
+                <select
+                  id="hasPriorExperience"
+                  name="hasPriorExperience"
+                  value={formData.hasPriorExperience}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select option</option>
+                  <option value="yes">Yes, I have work experience</option>
+                  <option value="no">No, I am a fresher</option>
+                </select>
+              </div>
+
+              {formData.hasPriorExperience === "yes" ? (
+                <div className="application-experience-block">
                   <div className="application-field">
-                    <label htmlFor="noticePeriod">Notice period *</label>
-                    <input
-                      id="noticePeriod"
-                      name="noticePeriod"
-                      type="text"
-                      value={formData.noticePeriod}
+                    <label htmlFor="experienceIndustry">Industry Sector *</label>
+                    <select
+                      id="experienceIndustry"
+                      name="experienceIndustry"
+                      value={formData.experienceIndustry}
                       onChange={handleChange}
-                      placeholder="Immediate / 30 days / 60 days"
                       required
-                    />
+                    >
+                      <option value="">Select industry</option>
+                      <option value="it">Information Technology (IT)</option>
+                      <option value="marketing">Digital Marketing</option>
+                      <option value="sales">Sales & Business Dev</option>
+                      <option value="finance">Finance & Accounting</option>
+                      <option value="others">Others</option>
+                    </select>
                   </div>
 
-                  <div className="application-field">
-                    <label htmlFor="yearsOfExperience">Years of experience *</label>
-                    <input
-                      id="yearsOfExperience"
-                      name="yearsOfExperience"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={formData.yearsOfExperience}
-                      onChange={handleChange}
-                      placeholder="Enter years of experience"
-                      required
-                    />
+                  {formData.experienceIndustry === "others" ? (
+                    <div className="application-field">
+                      <label htmlFor="experienceIndustryOther">Please specify industry *</label>
+                      <input
+                        id="experienceIndustryOther"
+                        name="experienceIndustryOther"
+                        type="text"
+                        value={formData.experienceIndustryOther}
+                        onChange={handleChange}
+                        placeholder="Enter industry name"
+                        required
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="form-row-grid">
+                    <div className="application-field">
+                      <label htmlFor="currentSalary">Current Salary (LPA / Annual) *</label>
+                      <input
+                        id="currentSalary"
+                        name="currentSalary"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.currentSalary}
+                        onChange={handleChange}
+                        placeholder="e.g. 6.5"
+                        required
+                      />
+                    </div>
+
+                    <div className="application-field">
+                      <label htmlFor="expectedSalary">Expected Salary (LPA / Annual) *</label>
+                      <input
+                        id="expectedSalary"
+                        name="expectedSalary"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.expectedSalary}
+                        onChange={handleChange}
+                        placeholder="e.g. 9.0"
+                        required
+                      />
+                    </div>
                   </div>
+
+                  <div className="form-row-grid">
+                    <div className="application-field">
+                      <label htmlFor="noticePeriod">Notice Period *</label>
+                      <input
+                        id="noticePeriod"
+                        name="noticePeriod"
+                        type="text"
+                        value={formData.noticePeriod}
+                        onChange={handleChange}
+                        placeholder="Immediate / 30 Days"
+                        required
+                      />
+                    </div>
+
+                    <div className="application-field">
+                      <label htmlFor="yearsOfExperience">Years of Experience *</label>
+                      <input
+                        id="yearsOfExperience"
+                        name="yearsOfExperience"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={formData.yearsOfExperience}
+                        onChange={handleChange}
+                        placeholder="e.g. 3.5"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Education Section */}
+              <div className="form-section-title">
+                <GraduationCap size={18} />
+                <span>4. Education & Background</span>
+              </div>
+
+              <div className="application-field">
+                <label htmlFor="latestEducationLevel">Highest Completed Qualification *</label>
+                <select
+                  id="latestEducationLevel"
+                  name="latestEducationLevel"
+                  value={formData.latestEducationLevel}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select qualification</option>
+                  <option value="10th">10th Standard</option>
+                  <option value="12th">12th Standard</option>
+                  <option value="bachelors">Bachelor's Degree</option>
+                  <option value="masters">Master's Degree / Doctorate</option>
+                </select>
+              </div>
+
+              <div className="form-row-grid">
+                <div className="application-field">
+                  <label htmlFor="boardUniversity">Board / University *</label>
+                  <input
+                    id="boardUniversity"
+                    name="boardUniversity"
+                    type="text"
+                    value={formData.boardUniversity}
+                    onChange={handleChange}
+                    placeholder="University name"
+                    required
+                  />
+                </div>
+
+                <div className="application-field">
+                  <label htmlFor="institutionName">School / College *</label>
+                  <input
+                    id="institutionName"
+                    name="institutionName"
+                    type="text"
+                    value={formData.institutionName}
+                    onChange={handleChange}
+                    placeholder="Institute name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="application-field">
+                <label htmlFor="applicantAge">Age (Years) *</label>
+                <input
+                  id="applicantAge"
+                  name="age"
+                  type="number"
+                  min="16"
+                  max="100"
+                  value={formData.age}
+                  onChange={handleChange}
+                  placeholder="e.g. 24"
+                  required
+                />
+              </div>
+
+              <div className="application-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-submit-app"
+                  disabled={isResumeProcessing}
+                >
+                  {isResumeProcessing ? (
+                    <>
+                      <Loader2 size={18} className="spin-icon" />
+                      <span>{resumeProcessingStage || "Processing..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Submit Application</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {submitted ? (
+              <div className="submission-banner success">
+                <CheckCircle2 size={24} />
+                <div>
+                  <h4>Application Received!</h4>
+                  <p>{submitMessage}</p>
                 </div>
               </div>
             ) : null}
 
-            <div className="application-field">
-              <label htmlFor="latestEducationLevel">Add your latest education *</label>
-              <select
-                id="latestEducationLevel"
-                name="latestEducationLevel"
-                value={formData.latestEducationLevel}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select highest level of completed education</option>
-                <option value="10th">10th</option>
-                <option value="12th">12th</option>
-                <option value="bachelors">Bachelors</option>
-                <option value="masters">Masters</option>
-              </select>
-            </div>
-
-            <div className="application-field">
-              <label htmlFor="boardUniversity">Enter your board/university *</label>
-              <input
-                id="boardUniversity"
-                name="boardUniversity"
-                type="text"
-                value={formData.boardUniversity}
-                onChange={handleChange}
-                placeholder="Board or university name"
-                required
-              />
-            </div>
-
-            <div className="application-field">
-              <label htmlFor="institutionName">Enter school/college name *</label>
-              <input
-                id="institutionName"
-                name="institutionName"
-                type="text"
-                value={formData.institutionName}
-                onChange={handleChange}
-                placeholder="School or college name"
-                required
-              />
-            </div>
-
-            <div className="application-field">
-              <label htmlFor="applicantAge">Age *</label>
-              <input
-                id="applicantAge"
-                name="age"
-                type="number"
-                min="16"
-                max="100"
-                value={formData.age}
-                onChange={handleChange}
-                placeholder="Enter your age"
-                required
-              />
-            </div>
-
-            <div className="application-actions">
-              <button type="submit" className="apply-submit-btn" disabled={isResumeProcessing}>
-                {isResumeProcessing && resumeProcessingStage
-                  ? resumeProcessingStage
-                  : "Submit Application"}
-              </button>
-            </div>
-            </form>
-
-            {submitted ? <p className="application-success-message">Application submitted successfully.</p> : null}
-            {submitMessage && !submitted ? <p className="application-error-message">{submitMessage}</p> : null}
+            {submitMessage && !submitted ? (
+              <div className="submission-banner error">
+                <AlertCircle size={24} />
+                <div>
+                  <h4>Submission Error</h4>
+                  <p>{submitMessage}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
     </main>
   );
 }
+

@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { ShieldCheck, KeyRound, Eye, EyeOff, LogIn, Loader2, AlertCircle, ArrowLeft, Lock } from "lucide-react";
 import { API_BASE_URL } from "../config/api";
 import { readJsonResponse } from "../auth/authFetch";
 import { saveAuthSession } from "../auth/session";
 import { fetchWithRetry } from "../utils/network";
-import "../styles/recruiter-login.css";
+import logo from "../assets/Logo.png";
+import "../styles/admin-login.css";
 
-export default function AdminLogin({ onLoginSuccess }) {
+export default function AdminLogin({ onLoginSuccess, setCurrentPage }) {
   const [adminKey, setAdminKey] = useState("");
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +36,7 @@ export default function AdminLogin({ onLoginSuccess }) {
         "Check VITE_API_BASE_URL and backend route setup.",
       );
       if (!response.ok) {
-        throw new Error(data?.message || "Invalid admin credentials.");
+        throw new Error(data?.message || "Invalid administrative security key.");
       }
 
       const session = {
@@ -48,7 +50,7 @@ export default function AdminLogin({ onLoginSuccess }) {
       setMessage(
         error instanceof Error && error.message
           ? error.message
-          : "Login failed. Please try again.",
+          : "Authentication failed. Please verify your admin key.",
       );
     } finally {
       setIsSubmitting(false);
@@ -56,99 +58,95 @@ export default function AdminLogin({ onLoginSuccess }) {
   };
 
   return (
-    <main className="recruiter-login-page ui-page">
-      <section className="recruiter-login-shell ui-shell">
-        <div className="recruiter-login-card">
-          <h1>admin login</h1>
-          <p>Sign in to access protected admin pages.</p>
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="adminKey">Admin Key</label>
-            <div className="password-input-wrap">
-              <input
-                id="adminKey"
-                type={showAdminKey ? "text" : "password"}
-                value={adminKey}
-                onChange={(event) => setAdminKey(event.target.value)}
-                placeholder="Enter admin key"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowAdminKey((prev) => !prev)}
-                aria-label={showAdminKey ? "Hide admin key" : "Show admin key"}
-              >
-                {showAdminKey ? (
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 3l18 18"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9.88 5.08A10.9 10.9 0 0 1 12 4.9c5.25 0 8.85 3.97 10 7.1a12.64 12.64 0 0 1-3.12 4.49M6.6 6.6A13.4 13.4 0 0 0 2 12c1.15 3.13 4.75 7.1 10 7.1 1.87 0 3.5-.5 4.94-1.27"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 12s3.6-7.1 10-7.1S22 12 22 12s-3.6 7.1-10 7.1S2 12 2 12z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                  </svg>
-                )}
-              </button>
+    <main className="admin-login-page">
+      <div className="admin-login-wrapper">
+        <header className="admin-login-header">
+          <img src={logo} alt="HireNext logo" className="admin-login-logo" />
+        </header>
+
+        <section className="admin-login-card">
+          <div className="admin-login-badge">
+            <ShieldCheck size={15} />
+            <span>Admin Secure Gateway</span>
+          </div>
+
+          <h1>System Control Center</h1>
+          <p>
+            Enter your system authorization key to manage platform resources, recruiters, and financials.
+          </p>
+
+          <form onSubmit={handleSubmit} className="admin-login-form">
+            <div className="admin-input-group">
+              <label htmlFor="adminKey">
+                <span>Security Access Key</span>
+              </label>
+              <div className="admin-input-wrapper">
+                <KeyRound size={18} className="admin-input-icon" />
+                <input
+                  id="adminKey"
+                  className="admin-input-field"
+                  type={showAdminKey ? "text" : "password"}
+                  value={adminKey}
+                  onChange={(event) => setAdminKey(event.target.value)}
+                  placeholder="Enter administrative key..."
+                  required
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="admin-password-toggle"
+                  onClick={() => setShowAdminKey((prev) => !prev)}
+                  aria-label={showAdminKey ? "Hide admin key" : "Show admin key"}
+                >
+                  {showAdminKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
+
             <button
               type="submit"
-              className="recruiter-login-btn"
+              className="admin-submit-btn"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Logging in..." : "Login"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={19} className="spin-icon" />
+                  <span>Authenticating Gateway...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={19} />
+                  <span>Authorize Access</span>
+                </>
+              )}
             </button>
-            {message ? (
-              <p className="job-message job-message-error">{message}</p>
-            ) : null}
+
+            {message && (
+              <div className="admin-error-alert">
+                <AlertCircle size={18} />
+                <span>{message}</span>
+              </div>
+            )}
           </form>
-        </div>
-      </section>
+
+          <div className="admin-login-footer">
+            <span><Lock size={12} /> Encrypted Session</span>
+            <span>•</span>
+            <span>256-bit Security</span>
+          </div>
+        </section>
+
+        {setCurrentPage && (
+          <button
+            type="button"
+            className="admin-back-home"
+            onClick={() => setCurrentPage("home")}
+          >
+            <ArrowLeft size={14} />
+            <span>Return to Public Portal</span>
+          </button>
+        )}
+      </div>
     </main>
   );
 }

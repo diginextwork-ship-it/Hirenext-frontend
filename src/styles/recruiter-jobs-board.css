@@ -1,9 +1,10 @@
 .recruiter-jobs-board {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid #e0dede;
-  border-radius: 12px;
-  background: #fff;
+  margin-top: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(20, 33, 50, 0.08);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(20, 33, 50, 0.04);
 }
 
 .recruiter-jobs-board-head {
@@ -14,31 +15,50 @@
 }
 
 .recruiter-filters {
-  margin: 12px 0;
+  margin: 1rem 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .recruiter-filters input,
 .recruiter-filters select {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #cdc9c9;
-  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(20, 33, 50, 0.15);
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  color: #142132;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.recruiter-filters input:focus,
+.recruiter-filters select:focus {
+  border-color: #df533d;
+  box-shadow: 0 0 0 3px rgba(223, 83, 61, 0.12);
 }
 
 .recruiter-jobs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
 }
 
 .recruiter-job-card-item {
-  border: 1px solid #ece6e6;
-  border-radius: 12px;
-  padding: 12px;
-  background: #fffbfb;
+  border: 1px solid rgba(20, 33, 50, 0.08);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+}
+
+.recruiter-job-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(20, 33, 50, 0.08);
+  border-color: rgba(223, 83, 61, 0.25);
 }
 
 .recruiter-job-card-head {
@@ -50,37 +70,44 @@
 
 .recruiter-job-card-head h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #142132;
 }
 
 .job-access-badge {
-  font-size: 0.7rem;
-  padding: 4px 8px;
-  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
   border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .job-access-badge.open {
-  color: #19692c;
-  background: #e8f5ea;
-  border-color: #8ac99a;
+  color: #15803d;
+  background: #dcfce7;
+  border-color: #86efac;
 }
 
 .job-access-badge.restricted {
-  color: #7a3a00;
-  background: #fff4e6;
-  border-color: #f0bf8f;
+  color: #c2410c;
+  background: #ffedd5;
+  border-color: #fdba74;
 }
 
 .job-company,
 .job-location,
 .job-footer {
   margin: 8px 0 0;
-  color: #3c3c3c;
+  color: #5e6f86;
+  font-size: 0.9rem;
 }
 
 .job-actions {
-  margin-top: 12px;
+  margin-top: 1rem;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -89,23 +116,38 @@
 .btn-primary,
 .btn-secondary {
   border: 0;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 9999px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .btn-primary {
-  background: #c62828;
-  color: #fff;
+  background: linear-gradient(135deg, #df533d 0%, #b8382b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(223, 83, 61, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(223, 83, 61, 0.4);
 }
 
 .btn-secondary {
-  background: #ece8e8;
-  color: #252525;
+  background: #f1f5f9;
+  color: #142132;
+  border: 1px solid rgba(20, 33, 50, 0.1);
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  color: #df533d;
 }
 
 .recruiter-pagination {
-  margin-top: 14px;
+  margin-top: 1rem;
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -117,7 +159,8 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  color: #5e6f86;
 }
 
 .job-skills {
@@ -128,10 +171,12 @@
 }
 
 .skill-tag {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #f4f1f1;
-  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #142132;
+  font-size: 0.775rem;
+  font-weight: 600;
 }
 
 .job-details-modal-overlay {

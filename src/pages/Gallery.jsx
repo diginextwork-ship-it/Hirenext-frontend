@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ArrowLeft, Sparkles, Image as ImageIcon, Video as VideoIcon, Layers, Camera } from "lucide-react";
 import "../styles/gallery.css";
 import PageBackButton from "../components/PageBackButton";
 
@@ -36,32 +37,36 @@ const campaignMedia = allGalleryMedia.filter(
 );
 const recentMedia = [...allGalleryMedia].reverse();
 
-const mediaLabel = (items) =>
-  `${items.filter((item) => item.type === "image").length} photos${
-    items.some((item) => item.type === "video") ? `, ${items.filter((item) => item.type === "video").length} videos` : ""
-  }`;
+const mediaLabel = (items) => {
+  const photoCount = items.filter((item) => item.type === "image").length;
+  const videoCount = items.filter((item) => item.type === "video").length;
+  return `${photoCount} Photos${videoCount > 0 ? `, ${videoCount} Videos` : ""}`;
+};
 
 const categoryCards = [
   {
     key: "office",
-    title: "Office",
-    description: "Inside our workplace, team culture, and daily operations.",
+    title: "Office Culture",
+    description: "Inside our workplace, team collaboration, and daily energy.",
     preview: officeMedia[0] || null,
     count: mediaLabel(officeMedia),
+    icon: Camera,
   },
   {
     key: "campaign",
-    title: "Campaign",
-    description: "Hiring drives, outreach campaigns, and event highlights.",
+    title: "Hiring Campaigns",
+    description: "Job drives, campus outreach, and recruitment events.",
     preview: campaignMedia[0] || null,
     count: mediaLabel(campaignMedia),
+    icon: Sparkles,
   },
   {
     key: "recent",
-    title: "Recently Added",
-    description: "Fresh photos and videos from the latest team moments.",
+    title: "Latest Highlights",
+    description: "Fresh photos and videos captured from our newest milestones.",
     preview: recentMedia[0] || null,
     count: mediaLabel(recentMedia),
+    icon: Layers,
   },
 ];
 
@@ -77,11 +82,11 @@ export default function Gallery({ setCurrentPage }) {
 
   const activeCategoryTitle =
     activeCategory === "office"
-      ? "Office"
+      ? "Office Culture"
       : activeCategory === "campaign"
-      ? "Campaign"
+      ? "Hiring Campaigns"
       : activeCategory === "recent"
-      ? "Recently Added"
+      ? "Latest Highlights"
       : "";
 
   return (
@@ -93,59 +98,75 @@ export default function Gallery({ setCurrentPage }) {
         <div className="ui-page-back">
           <PageBackButton setCurrentPage={setCurrentPage} />
         </div>
-        <p className="gallery-badge">HireNext Gallery</p>
+        <div className="gallery-badge-pill">
+          <Camera size={14} />
+          <span>HireNext Media Gallery</span>
+        </div>
         <h1>Moments From Our Hiring Journey</h1>
-        <p>A quick look at our team culture, events, and hiring milestones.</p>
+        <p>Explore our company culture, recruitment drives, and workplace milestones.</p>
       </section>
 
       <section className="gallery-grid-wrap ui-shell">
         {!activeCategory ? (
           <div className="gallery-category-grid">
-            {categoryCards.map((category, index) => (
-              <button
-                type="button"
-                className="gallery-category-card"
-                key={category.key}
-                style={{ "--gallery-delay": `${Math.min(index * 120, 400)}ms` }}
-                onClick={() => setActiveCategory(category.key)}
-              >
-                <div className="gallery-category-preview">
-                  {category.preview?.type === "video" ? (
-                    <video src={category.preview.src} aria-label={category.title} muted playsInline />
-                  ) : category.preview ? (
-                    <img src={category.preview.src} alt={category.title} />
-                  ) : null}
-                </div>
-                <div className="gallery-category-content">
-                  <h2>{category.title}</h2>
-                  <p>{category.description}</p>
-                  <span>{category.count}</span>
-                </div>
-              </button>
-            ))}
+            {categoryCards.map((category, index) => {
+              const CategoryIcon = category.icon;
+              return (
+                <button
+                  type="button"
+                  className="gallery-category-card glass-card"
+                  key={category.key}
+                  style={{ "--gallery-delay": `${Math.min(index * 120, 400)}ms` }}
+                  onClick={() => setActiveCategory(category.key)}
+                >
+                  <div className="gallery-category-preview">
+                    {category.preview?.type === "video" ? (
+                      <video src={category.preview.src} aria-label={category.title} muted playsInline />
+                    ) : category.preview ? (
+                      <img src={category.preview.src} alt={category.title} />
+                    ) : null}
+                    <div className="category-icon-badge">
+                      <CategoryIcon size={18} />
+                    </div>
+                  </div>
+                  <div className="gallery-category-content">
+                    <h2>{category.title}</h2>
+                    <p>{category.description}</p>
+                    <span className="category-count-badge">{category.count}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="gallery-active-panel">
             <div className="gallery-active-header">
-              <h2>{activeCategoryTitle} Photos</h2>
-              <button type="button" className="gallery-back-btn" onClick={() => setActiveCategory(null)}>
-                Back to categories
+              <h2>{activeCategoryTitle}</h2>
+              <button type="button" className="btn-secondary gallery-back-btn" onClick={() => setActiveCategory(null)}>
+                <ArrowLeft size={16} />
+                <span>Back to Categories</span>
               </button>
             </div>
             {activeImages.length === 0 ? (
-              <p className="gallery-empty">No images found in this category.</p>
+              <p className="gallery-empty">No media files found in this category.</p>
             ) : (
               <div className="gallery-grid">
                 {activeImages.map((image, index) => (
                   <article
-                    className="gallery-card"
+                    className="gallery-card glass-card"
                     key={image.key}
                     style={{ "--gallery-delay": `${Math.min(index * 70, 700)}ms` }}
                   >
                     {image.type === "video" ? (
-                      <video src={image.src} controls preload="metadata" playsInline />
+                      <div className="media-wrapper">
+                        <video src={image.src} controls preload="metadata" playsInline />
+                        <span className="media-type-badge"><VideoIcon size={14} /></span>
+                      </div>
                     ) : (
-                      <img src={image.src} alt={image.alt} loading="lazy" />
+                      <div className="media-wrapper">
+                        <img src={image.src} alt={image.alt} loading="lazy" />
+                        <span className="media-type-badge"><ImageIcon size={14} /></span>
+                      </div>
                     )}
                     <div className="gallery-card-overlay">{image.alt}</div>
                   </article>
@@ -158,3 +179,4 @@ export default function Gallery({ setCurrentPage }) {
     </main>
   );
 }
+

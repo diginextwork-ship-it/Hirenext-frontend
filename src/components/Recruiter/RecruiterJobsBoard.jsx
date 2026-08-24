@@ -36,6 +36,18 @@ const toDisplayText = (value) => {
   return normalized;
 };
 
+const formatSalaryText = (value) => {
+  const normalized = toDisplayText(value);
+  if (!normalized) return "";
+  if (normalized.includes("$")) {
+    return normalized.replace(/\$/g, "₹");
+  }
+  if (/^\d+(\.\d+)?$/.test(normalized)) {
+    return `₹${Number(normalized).toLocaleString("en-IN")}`;
+  }
+  return normalized;
+};
+
 const splitList = (value) =>
   String(value ?? "")
     .split(",")
@@ -68,7 +80,7 @@ const buildDetailRows = (job) => {
     ["Role", toDisplayText(job?.role_name)],
     ["Access", toDisplayText(job?.access_mode)],
     ["Location", location],
-    ["Salary", toDisplayText(job?.salary)],
+    ["Salary", formatSalaryText(job?.salary)],
     [
       "Positions Open",
       Number(job?.positions_open) > 0 ? String(Number(job.positions_open)) : "",
@@ -85,6 +97,7 @@ export default function RecruiterJobsBoard({
   recruiterId,
   onResumeSubmitted,
   canEditJobs = false,
+  refreshKey = 0,
 }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -149,7 +162,7 @@ export default function RecruiterJobsBoard({
     return () => {
       active = false;
     };
-  }, [recruiterId, filters.location, filters.company, filters.search, offset]);
+  }, [recruiterId, filters.location, filters.company, filters.search, offset, refreshKey]);
 
   const openSubmitModal = (jobId) => {
     const selectedJob =
@@ -384,9 +397,9 @@ export default function RecruiterJobsBoard({
                     .join(", ")}
                 </span>
               ) : null}
-              {toDisplayText(activeJob.salary) ? (
+              {formatSalaryText(activeJob.salary) ? (
                 <span className="job-detail-meta-chip">
-                  {toDisplayText(activeJob.salary)}
+                  {formatSalaryText(activeJob.salary)}
                 </span>
               ) : null}
               {Number(activeJob.positions_open) ? (
