@@ -569,6 +569,7 @@ export default function RecruiterLogin({ setCurrentPage }) {
             <div className="recruiter-dashboard-header">
               <div className="recruiter-dashboard-header-copy">
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
                   <button
                     type="button"
                     className="admin-back-btn"
@@ -576,7 +577,6 @@ export default function RecruiterLogin({ setCurrentPage }) {
                   >
                     Logout
                   </button>
-                  <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
                 </div>
                 <p style={{ margin: "6px 0 0" }}>
                   Logged in as <strong>{recruiter.name}</strong>.
