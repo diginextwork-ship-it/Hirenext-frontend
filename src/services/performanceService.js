@@ -168,3 +168,26 @@ export const triggerBillingProcess = () =>
     },
     "Failed to process billing.",
   );
+
+export const fetchEmployeeLeaderboard = async () => {
+  try {
+    return await authFetch(
+      `${API_BASE_URL}/api/dashboard/leaderboard`,
+      {},
+      "Failed to fetch employee leaderboard.",
+    );
+  } catch (error) {
+    console.warn("fetchEmployeeLeaderboard fallback:", error.message);
+    const tlData = await fetchTeamLeaderDashboard();
+    return {
+      rankings: (tlData.topPerformers || []).map((row, index) => ({
+        rank: index + 1,
+        rid: row.rid,
+        name: row.name,
+        submitted: Number(row.submitted) || 0,
+        points: Number(row.points) || 0,
+      })),
+    };
+  }
+};
+

@@ -1502,3 +1502,339 @@
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   Employee Ranking Leaderboard Widget (Big, Prominent, Right-Side Layout)
+   ========================================================================== */
+
+.perf-dashboard-top-layout {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 14px;
+}
+
+.perf-dashboard-cards-side {
+  flex: 1 1 60%;
+  min-width: 0;
+}
+
+.perf-dashboard-ranking-side {
+  flex: 0 0 420px;
+  min-width: 320px;
+  display: flex;
+  margin-top: -185px;
+}
+
+.employee-ranking-card {
+  width: 100%;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-ranking-card-prominent {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid rgba(203, 213, 225, 0.8);
+}
+
+.employee-ranking-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.employee-ranking-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.employee-ranking-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.employee-ranking-head h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.employee-ranking-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.employee-ranking-search-box {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.employee-ranking-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.employee-ranking-search-input:focus {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.1);
+}
+
+.employee-ranking-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.employee-ranking-list-wrap {
+  flex: 1;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.employee-ranking-list-wrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.employee-ranking-list-wrap::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.employee-ranking-list-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.employee-ranking-list-wrap::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.employee-ranking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.employee-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.employee-ranking-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+.employee-ranking-item.is-top-three {
+  border-left: 4px solid #f59e0b;
+}
+
+.employee-ranking-item.is-current-user {
+  background: linear-gradient(135deg, #fef2f2 0%, #ffe4e6 100%);
+  border: 1.5px solid #f87171;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.12);
+}
+
+.employee-ranking-rank-col {
+  flex-shrink: 0;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  min-width: 44px;
+  text-align: center;
+}
+
+.rank-badge-gold {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #78350f;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
+}
+
+.rank-badge-silver {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #334155;
+  border: 1px solid #94a3b8;
+}
+
+.rank-badge-bronze {
+  background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+  color: #7c2d12;
+  border: 1px solid #ea580c;
+}
+
+.rank-badge-neutral {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.employee-ranking-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.is-current-user .employee-ranking-avatar {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+.employee-ranking-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-ranking-name {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-user-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: #dc2626;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.employee-ranking-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.stat-count {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.is-current-user .stat-count {
+  color: #991b1b;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.employee-ranking-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 12px;
+  color: #64748b;
+}
+
+.employee-ranking-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(198, 40, 40, 0.15);
+  border-top-color: #c62828;
+  border-radius: 50%;
+  animation: rankingSpin 0.8s linear infinite;
+}
+
+@keyframes rankingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.perf-timeline-refresh-date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1120px) {
+  .perf-dashboard-top-layout {
+    flex-direction: column;
+  }
+  .perf-dashboard-ranking-side {
+    flex: 1 1 auto;
+    width: 100%;
+    margin-top: 0;
+  }
+}
+
+
+
+

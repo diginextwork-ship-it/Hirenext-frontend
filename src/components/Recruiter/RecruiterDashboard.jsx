@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PerformanceMetricCard from "./PerformanceMetricCard";
+import EmployeeRankingWidget from "./EmployeeRankingWidget";
 import ResumeStatusActionModal from "./ResumeStatusActionModal";
 import TablePaginationControls from "../common/TablePaginationControls";
 import NoteViewButton from "../common/NoteViewButton";
@@ -519,174 +520,185 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   return (
     <section className="recruiter-performance-dashboard">
-      <div className="ui-row-between ui-row-wrap">
-        <h2>My Performance Dashboard</h2>
-        <button
-          type="button"
-          className="click-here-btn"
-          onClick={handleRefreshDashboard}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
-      <div className="dashboard-date-filter">
-        <div className="perf-timeline-presets">
-          {[
-            { key: PRESETS.TODAY, label: "Today" },
-            { key: PRESETS.YESTERDAY, label: "Yesterday" },
-            { key: PRESETS.THIS_MONTH, label: "This Month" },
-            { key: PRESETS.LAST_MONTH, label: "Last Month" },
-            { key: PRESETS.CUSTOM, label: "Custom" },
-          ].map((preset) => (
-            <button
-              key={preset.key}
-              type="button"
-              className={`perf-timeline-btn${timelinePreset === preset.key ? " perf-timeline-btn-active" : ""}`}
-              onClick={() => setTimelinePreset(preset.key)}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        {timelinePreset === PRESETS.CUSTOM ? (
-          <div className="perf-timeline-custom">
-            <label className="perf-timeline-input">
-              From
-              <input
-                type="date"
-                value={customStart}
-                max={customEnd || undefined}
-                onChange={(event) => setCustomStart(event.target.value)}
-              />
-            </label>
-            <label className="perf-timeline-input">
-              To
-              <input
-                type="date"
-                value={customEnd}
-                min={customStart || undefined}
-                onChange={(event) => setCustomEnd(event.target.value)}
-              />
-            </label>
+      <div className="perf-dashboard-top-layout" style={{ marginTop: 0 }}>
+        <div className="perf-dashboard-cards-side">
+          <div className="ui-row-between ui-row-wrap">
+            <h2>My Performance Dashboard</h2>
           </div>
-        ) : null}
-      </div>
-      {appliedFilters.startDate && appliedFilters.endDate ? (
-        <p className="dashboard-filter-summary">
-          Showing: <strong>{formatLabel(timelinePreset)}</strong>{" "}
-          {appliedFilters.startDate === appliedFilters.endDate
-            ? appliedFilters.startDate
-            : `${appliedFilters.startDate} to ${appliedFilters.endDate}`}
-        </p>
-      ) : null}
-      <h3>Status Breakdown</h3>
-      <div className="metric-grid">
-        <PerformanceMetricCard
-          title="Submitted"
-          color="blue"
-          value={data.stats?.submitted || 0}
-          clickable
-          onClick={() => handleStatusCardClick("submitted")}
-        />
-        <PerformanceMetricCard
-          title="Verified"
-          color="green"
-          value={toDisplay(data.stats?.verified)}
-          clickable
-          onClick={() => handleStatusCardClick("verified")}
-        />
-        <PerformanceMetricCard
-          title="Others"
-          color="teal"
-          value={toDisplay(othersEventResumes.length)}
-          clickable
-          onClick={() => handleStatusCardClick("others")}
-        />
-        <PerformanceMetricCard
-          title="Walk in"
-          color="green"
-          value={toDisplay(data.stats?.walk_in)}
-          clickable
-          onClick={() => handleStatusCardClick("walk_in")}
-        />
-        <PerformanceMetricCard
-          title="Shortlisted"
-          color="blue"
-          value={toDisplay(data.stats?.shortlisted)}
-          clickable
-          onClick={() => handleStatusCardClick("shortlisted")}
-        />
-        <PerformanceMetricCard
-          title="Selected"
-          color="purple"
-          value={toDisplay(data.stats?.select)}
-          clickable
-          onClick={() => handleStatusCardClick("selected")}
-        />
-        <PerformanceMetricCard
-          title="Rejected"
-          color="red"
-          value={toDisplay(data.stats?.reject)}
-          clickable
-          onClick={() => handleStatusCardClick("rejected")}
-        />
-        <PerformanceMetricCard
-          title="Joined"
-          color="gold"
-          value={toDisplay(data.stats?.joined)}
-          clickable
-          onClick={() => handleStatusCardClick("joined")}
-        />
-        <PerformanceMetricCard
-          title="Dropout"
-          color="pink"
-          value={toDisplay(data.stats?.dropout)}
-          clickable
-          onClick={() => handleStatusCardClick("dropout")}
-        />
-        <PerformanceMetricCard
-          title="Billed"
-          color="teal"
-          value={toDisplay(data.stats?.billed)}
-          clickable
-          onClick={() => handleStatusCardClick("billed")}
-        />
-        <PerformanceMetricCard
-          title="Left"
-          color="orange"
-          value={toDisplay(data.stats?.left)}
-          clickable
-          onClick={() => handleStatusCardClick("left")}
-        />
-      </div>
-
-      {data.calculatedMetrics ? (
-        <div className="metric-grid" style={{ marginTop: 12 }}>
-          <article className="metric-card teal">
-            <h4>Billing Rate</h4>
-            <div className="billing-rate-bar">
-              <div className="billing-rate-track">
-                <div
-                  className="billing-rate-fill"
-                  style={{
-                    width: `${Math.min(Number(data.calculatedMetrics.billingRate) || 0, 100)}%`,
-                  }}
-                />
-              </div>
-              <span className="billing-rate-label">
-                {data.calculatedMetrics.billingRate ?? 0}%
-              </span>
+          <div className="dashboard-date-filter">
+            <div className="perf-timeline-presets">
+              {[
+                { key: PRESETS.TODAY, label: "Today" },
+                { key: PRESETS.YESTERDAY, label: "Yesterday" },
+                { key: PRESETS.THIS_MONTH, label: "This Month" },
+                { key: PRESETS.LAST_MONTH, label: "Last Month" },
+                { key: PRESETS.CUSTOM, label: "Custom" },
+              ].map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  className={`perf-timeline-btn${timelinePreset === preset.key ? " perf-timeline-btn-active" : ""}`}
+                  onClick={() => setTimelinePreset(preset.key)}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
-          </article>
-          <article className="metric-card orange">
-            <h4>Left Rate</h4>
-            <p className="metric-value">
-              {data.calculatedMetrics.leftRate ?? 0}%
-            </p>
-          </article>
+            {timelinePreset === PRESETS.CUSTOM ? (
+              <div className="perf-timeline-custom">
+                <label className="perf-timeline-input">
+                  From
+                  <input
+                    type="date"
+                    value={customStart}
+                    max={customEnd || undefined}
+                    onChange={(event) => setCustomStart(event.target.value)}
+                  />
+                </label>
+                <label className="perf-timeline-input">
+                  To
+                  <input
+                    type="date"
+                    value={customEnd}
+                    min={customStart || undefined}
+                    onChange={(event) => setCustomEnd(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+          <div className="perf-timeline-refresh-date-row">
+            <button
+              type="button"
+              className="admin-refresh-btn"
+              onClick={handleRefreshDashboard}
+              disabled={loading}
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+            {appliedFilters.startDate && appliedFilters.endDate ? (
+              <p className="dashboard-filter-summary" style={{ margin: 0 }}>
+                Showing: <strong>{formatLabel(timelinePreset)}</strong>{" "}
+                {appliedFilters.startDate === appliedFilters.endDate
+                  ? appliedFilters.startDate
+                  : `${appliedFilters.startDate} to ${appliedFilters.endDate}`}
+              </p>
+            ) : null}
+          </div>
+
+          <h3>Status Breakdown</h3>
+          <div className="metric-grid">
+            <PerformanceMetricCard
+              title="Submitted"
+              color="blue"
+              value={data.stats?.submitted || 0}
+              clickable
+              onClick={() => handleStatusCardClick("submitted")}
+            />
+            <PerformanceMetricCard
+              title="Verified"
+              color="green"
+              value={toDisplay(data.stats?.verified)}
+              clickable
+              onClick={() => handleStatusCardClick("verified")}
+            />
+            <PerformanceMetricCard
+              title="Others"
+              color="teal"
+              value={toDisplay(othersEventResumes.length)}
+              clickable
+              onClick={() => handleStatusCardClick("others")}
+            />
+            <PerformanceMetricCard
+              title="Walk in"
+              color="green"
+              value={toDisplay(data.stats?.walk_in)}
+              clickable
+              onClick={() => handleStatusCardClick("walk_in")}
+            />
+            <PerformanceMetricCard
+              title="Shortlisted"
+              color="blue"
+              value={toDisplay(data.stats?.shortlisted)}
+              clickable
+              onClick={() => handleStatusCardClick("shortlisted")}
+            />
+            <PerformanceMetricCard
+              title="Selected"
+              color="purple"
+              value={toDisplay(data.stats?.select)}
+              clickable
+              onClick={() => handleStatusCardClick("selected")}
+            />
+            <PerformanceMetricCard
+              title="Rejected"
+              color="red"
+              value={toDisplay(data.stats?.reject)}
+              clickable
+              onClick={() => handleStatusCardClick("rejected")}
+            />
+            <PerformanceMetricCard
+              title="Joined"
+              color="gold"
+              value={toDisplay(data.stats?.joined)}
+              clickable
+              onClick={() => handleStatusCardClick("joined")}
+            />
+            <PerformanceMetricCard
+              title="Dropout"
+              color="pink"
+              value={toDisplay(data.stats?.dropout)}
+              clickable
+              onClick={() => handleStatusCardClick("dropout")}
+            />
+            <PerformanceMetricCard
+              title="Billed"
+              color="teal"
+              value={toDisplay(data.stats?.billed)}
+              clickable
+              onClick={() => handleStatusCardClick("billed")}
+            />
+            <PerformanceMetricCard
+              title="Left"
+              color="orange"
+              value={toDisplay(data.stats?.left)}
+              clickable
+              onClick={() => handleStatusCardClick("left")}
+            />
+          </div>
+
+          {data.calculatedMetrics ? (
+            <div className="metric-grid" style={{ marginTop: 12 }}>
+              <article className="metric-card teal">
+                <h4>Billing Rate</h4>
+                <div className="billing-rate-bar">
+                  <div className="billing-rate-track">
+                    <div
+                      className="billing-rate-fill"
+                      style={{
+                        width: `${Math.min(Number(data.calculatedMetrics.billingRate) || 0, 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="billing-rate-label">
+                    {data.calculatedMetrics.billingRate ?? 0}%
+                  </span>
+                </div>
+              </article>
+              <article className="metric-card orange">
+                <h4>Left Rate</h4>
+                <p className="metric-value">
+                  {data.calculatedMetrics.leftRate ?? 0}%
+                </p>
+              </article>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+
+        <div className="perf-dashboard-ranking-side">
+          <EmployeeRankingWidget currentRecruiterRid={recruiterId} />
+        </div>
+      </div>
 
       {activeStatus ? (
         <section className="chart-card ui-mt-md">
@@ -969,28 +981,32 @@ export default function RecruiterDashboard({ recruiterId }) {
         </section>
       ) : null}
 
-      <article className="points-progress-card">
-        <div className="points-progress-head">
-          <h3>Total Points Progress</h3>
-          <p className="points-progress-label">
-            <strong>{totalPoints}</strong>
-            {totalPoints <= 100 ? " / 100" : ""}
-          </p>
-        </div>
-        <div
-          className="points-progress-track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={cappedPoints}
-        >
+      <div className="perf-dashboard-bottom-grid">
+        <article className="points-progress-card">
+          <div className="points-progress-head">
+            <h3>Total Points Progress</h3>
+            <p className="points-progress-label">
+              <strong>{totalPoints}</strong>
+              {totalPoints <= 100 ? " / 100" : ""}
+            </p>
+          </div>
           <div
-            className={`points-progress-fill ${pointsProgressColor}`}
-            style={{ width: `${progressWidth}%` }}
-          />
-        </div>
-        <div className="points-progress-actions"></div>
-      </article>
+            className="points-progress-track"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={cappedPoints}
+          >
+            <div
+              className={`points-progress-fill ${pointsProgressColor}`}
+              style={{ width: `${progressWidth}%` }}
+            />
+          </div>
+          <div className="points-progress-actions"></div>
+        </article>
+
+        <EmployeeRankingWidget currentRecruiterRid={recruiterId} />
+      </div>
 
       <ResumeStatusActionModal
         isOpen={actionModalOpen}
