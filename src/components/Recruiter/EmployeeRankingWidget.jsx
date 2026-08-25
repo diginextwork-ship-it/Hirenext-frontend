@@ -9,8 +9,9 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
 
   useEffect(() => {
     let isMounted = true;
-    const loadRankings = async () => {
-      setLoading(true);
+
+    const loadRankings = async (isBackground = false) => {
+      if (!isBackground) setLoading(true);
       setError("");
       try {
         const data = await fetchEmployeeLeaderboard();
@@ -18,17 +19,34 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
           setRankings(Array.isArray(data.rankings) ? data.rankings : []);
         }
       } catch (err) {
-        if (isMounted) {
+        if (isMounted && !isBackground) {
           setError(err.message || "Failed to load employee rankings.");
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted && !isBackground) setLoading(false);
       }
     };
 
-    loadRankings();
+    // Initial fetch
+    loadRankings(false);
+
+    // 8-second real-time polling interval
+    const intervalId = setInterval(() => {
+      loadRankings(true);
+    }, 8000);
+
+    // Trigger update on tab focus or visibility change
+    const handleFocus = () => loadRankings(true);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+    window.addEventListener("hirenext:leaderboard_refresh", handleFocus);
+
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+      window.removeEventListener("hirenext:leaderboard_refresh", handleFocus);
     };
   }, []);
 
@@ -64,7 +82,12 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
         <div className="employee-ranking-title-wrap">
           <div className="employee-ranking-icon-box">🏆</div>
           <div>
-            <h3>Employee Ranking Leaderboard</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h3 style={{ margin: 0 }}>Employee Ranking</h3>
+              <span className="leaderboard-live-tag" title="Auto-updating in real time">
+                <span className="live-dot" /> REAL-TIME
+              </span>
+            </div>
             <p className="employee-ranking-subtitle">
               All-Time Resume Submissions ({rankings.length} Total Employees)
             </p>
