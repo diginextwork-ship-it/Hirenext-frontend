@@ -568,21 +568,30 @@ export default function RecruiterLogin({ setCurrentPage }) {
           <div className="recruiter-login-card recruiter-job-card">
             <div className="recruiter-dashboard-header">
               <div className="recruiter-dashboard-header-copy">
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
-                  <button
-                    type="button"
-                    className="admin-back-btn"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </button>
-                </div>
+                <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
                 <p style={{ margin: "4px 0 0" }}>
                   Logged in as <strong>{recruiter.name}</strong>.
                 </p>
               </div>
-              <div className="recruiter-dashboard-header-actions">
+              <div className="recruiter-dashboard-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  style={{
+                    background: "#dc2626",
+                    color: "#ffffff",
+                    border: "none",
+                    padding: "8px 18px",
+                    borderRadius: "8px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(220, 38, 38, 0.35)",
+                    fontSize: "0.9rem"
+                  }}
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
                 <img
                   src={logo}
                   alt="HireNext logo"
