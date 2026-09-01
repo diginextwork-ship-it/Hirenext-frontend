@@ -43,7 +43,7 @@ export default function Footer({
           {showDeveloperStrip && (
             <a
               className="footer-developer-strip"
-              href="https://www.linkedin.com/in/kushaggra"
+              href="https://www.linkedin.com/in/jay-ninawe-78081121a/"
               target="_blank"
               rel="noreferrer"
             >
