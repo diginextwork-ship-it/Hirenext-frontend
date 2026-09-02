@@ -6,6 +6,7 @@ import {
   normalizeResumeData,
 } from "../../utils/dashboardData";
 import NoteViewButton from "../common/NoteViewButton";
+import EmployeeRankingWidget from "../Recruiter/EmployeeRankingWidget";
 import { formatDateTimeInIndia } from "../../utils/dateTime";
 import {
   fetchTeamLeaderPerformanceDashboard,
@@ -670,105 +671,115 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   return (
     <section className="perf-section">
-      <div className="ui-row-between ui-row-wrap" style={{ gap: 12 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Performance Dashboard</h2>
-          <p className="admin-muted" style={{ margin: "8px 0 0" }}>
-            Track everyone's activity, including your own, across all team leader jobs.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="admin-refresh-btn"
-          onClick={fetchPerformance}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
-
-      {error ? (
-        <div className="admin-alert admin-alert-error" style={{ marginTop: 16 }}>
-          {error}
-        </div>
-      ) : null}
-
-      <div className="perf-timeline-bar">
-        <div className="perf-timeline-presets">
-          {[
-            { key: PRESETS.TODAY, label: "Today" },
-            { key: PRESETS.YESTERDAY, label: "Yesterday" },
-            { key: PRESETS.THIS_MONTH, label: "This Month" },
-            { key: PRESETS.LAST_MONTH, label: "Last Month" },
-            { key: PRESETS.CUSTOM, label: "Custom" },
-          ].map((preset) => (
-            <button
-              key={preset.key}
-              type="button"
-              className={`perf-timeline-btn${timelinePreset === preset.key ? " perf-timeline-btn-active" : ""}`}
-              onClick={() => setTimelinePreset(preset.key)}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-
-        {timelinePreset === PRESETS.CUSTOM ? (
-          <div className="perf-timeline-custom">
-            <label className="perf-timeline-input">
-              From
-              <input
-                type="date"
-                value={customStart}
-                max={customEnd || undefined}
-                onChange={(event) => setCustomStart(event.target.value)}
-              />
-            </label>
-            <label className="perf-timeline-input">
-              To
-              <input
-                type="date"
-                value={customEnd}
-                min={customStart || undefined}
-                onChange={(event) => setCustomEnd(event.target.value)}
-              />
-            </label>
+      <div className="perf-dashboard-top-layout" style={{ marginTop: 0 }}>
+        <div className="perf-dashboard-cards-side">
+          <div className="ui-row-between ui-row-wrap" style={{ gap: 12 }}>
+            <div>
+              <h2 style={{ margin: 0 }}>Performance Dashboard</h2>
+              <p className="admin-muted" style={{ margin: "8px 0 0" }}>
+                Track everyone's activity, including your own, across all team leader jobs.
+              </p>
+            </div>
           </div>
-        ) : null}
 
-        {dateRange ? (
-          <p className="perf-timeline-label">
-            Showing: <strong>{formatPresetLabel(timelinePreset)}</strong>
-            {" - "}
-            {dateRange.start === dateRange.end
-              ? dateRange.start
-              : `${dateRange.start} to ${dateRange.end}`}
-          </p>
-        ) : null}
-      </div>
+          {error ? (
+            <div className="admin-alert admin-alert-error" style={{ marginTop: 16 }}>
+              {error}
+            </div>
+          ) : null}
 
-      <div className="perf-summary-grid">
-        <button
-          type="button"
-          className={`perf-stat-card perf-stat-card-button perf-stat-card-submitted${selectedStatusKey === "submitted" ? " perf-stat-card-active" : ""}`}
-          onClick={() => setSelectedStatusKey("submitted")}
-        >
-          <span className="perf-stat-label">Resumes Submitted</span>
-          <span className="perf-stat-value">{visibleSummary.totalSubmitted ?? 0}</span>
-        </button>
-        {STATUS_CARDS.map((card) => (
-          <button
-            key={card.key}
-            type="button"
-            className={`perf-stat-card perf-stat-card-button perf-stat-card-${card.tone}${selectedStatusKey === card.key ? " perf-stat-card-active" : ""}`}
-            onClick={() => setSelectedStatusKey(card.key)}
-          >
-            <span className="perf-stat-label">{card.label}</span>
-            <span className="perf-stat-value">
-              {visibleSummary[card.summaryKey] ?? 0}
-            </span>
-          </button>
-        ))}
+          <div className="perf-timeline-bar">
+            <div className="perf-timeline-presets">
+              {[
+                { key: PRESETS.TODAY, label: "Today" },
+                { key: PRESETS.YESTERDAY, label: "Yesterday" },
+                { key: PRESETS.THIS_MONTH, label: "This Month" },
+                { key: PRESETS.LAST_MONTH, label: "Last Month" },
+                { key: PRESETS.CUSTOM, label: "Custom" },
+              ].map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  className={`perf-timeline-btn${timelinePreset === preset.key ? " perf-timeline-btn-active" : ""}`}
+                  onClick={() => setTimelinePreset(preset.key)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            {timelinePreset === PRESETS.CUSTOM ? (
+              <div className="perf-timeline-custom">
+                <label className="perf-timeline-input">
+                  From
+                  <input
+                    type="date"
+                    value={customStart}
+                    max={customEnd || undefined}
+                    onChange={(event) => setCustomStart(event.target.value)}
+                  />
+                </label>
+                <label className="perf-timeline-input">
+                  To
+                  <input
+                    type="date"
+                    value={customEnd}
+                    min={customStart || undefined}
+                    onChange={(event) => setCustomEnd(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            <div className="perf-timeline-refresh-date-row">
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                onClick={fetchPerformance}
+                disabled={loading}
+              >
+                {loading ? "Refreshing..." : "Refresh"}
+              </button>
+              {dateRange ? (
+                <p className="perf-timeline-label" style={{ margin: 0 }}>
+                  Showing: <strong>{formatPresetLabel(timelinePreset)}</strong>
+                  {" - "}
+                  {dateRange.start === dateRange.end
+                    ? dateRange.start
+                    : `${dateRange.start} to ${dateRange.end}`}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="perf-summary-grid">
+            <button
+              type="button"
+              className={`perf-stat-card perf-stat-card-button perf-stat-card-submitted${selectedStatusKey === "submitted" ? " perf-stat-card-active" : ""}`}
+              onClick={() => setSelectedStatusKey("submitted")}
+            >
+              <span className="perf-stat-label">Resumes Submitted</span>
+              <span className="perf-stat-value">{visibleSummary.totalSubmitted ?? 0}</span>
+            </button>
+            {STATUS_CARDS.map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                className={`perf-stat-card perf-stat-card-button perf-stat-card-${card.tone}${selectedStatusKey === card.key ? " perf-stat-card-active" : ""}`}
+                onClick={() => setSelectedStatusKey(card.key)}
+              >
+                <span className="perf-stat-label">{card.label}</span>
+                <span className="perf-stat-value">
+                  {visibleSummary[card.summaryKey] ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="perf-dashboard-ranking-side">
+          <EmployeeRankingWidget currentRecruiterRid={getAuthSession()?.rid} />
+        </div>
       </div>
 
       <div className="perf-section">

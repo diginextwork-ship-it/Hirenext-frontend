@@ -43,11 +43,11 @@ export default function Footer({
           {showDeveloperStrip && (
             <a
               className="footer-developer-strip"
-              href="https://www.linkedin.com/in/jay-ninawe-78081121a/"
+              href="https://infonext.co.in/"
               target="_blank"
               rel="noreferrer"
             >
-              Designed & Built with <Heart size={12} className="heart-icon" /> by Om Wadhwani
+              InfoNext <ExternalLink size={14} />
             </a>
           )}
         </div>
@@ -105,11 +105,11 @@ export default function Footer({
               </div>
               <div className="footer-info-item">
                 <Phone size={18} className="info-icon" />
-                <a href="tel:+919425159000">+91 94251 59000</a>
+                <a href="tel:07614085424">0761-4085424</a>
               </div>
               <div className="footer-info-item">
                 <Mail size={18} className="info-icon" />
-                <a href="mailto:contact@hirenextindia.com">contact@hirenextindia.com</a>
+                <a href="mailto:hr@hirenextindia.com">hr@hirenextindia.com</a>
               </div>
             </div>
 
@@ -202,11 +202,11 @@ export default function Footer({
           {showDeveloperStrip && (
             <a
               className="footer-developer-strip"
-              href="https://www.linkedin.com/in/kushaggra"
+              href="https://infonext.co.in/"
               target="_blank"
               rel="noreferrer"
             >
-              Meet the Developer <ExternalLink size={14} />
+              InfoNext <ExternalLink size={14} />
             </a>
           )}
         </div>

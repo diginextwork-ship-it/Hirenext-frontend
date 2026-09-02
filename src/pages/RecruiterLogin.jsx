@@ -568,8 +568,17 @@ export default function RecruiterLogin({ setCurrentPage }) {
           <div className="recruiter-login-card recruiter-job-card">
             <div className="recruiter-dashboard-header">
               <div className="recruiter-dashboard-header-copy">
-                <h1>recruiter dashboard</h1>
-                <p>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
+                  <button
+                    type="button"
+                    className="admin-back-btn"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
+                <p style={{ margin: "6px 0 0" }}>
                   Logged in as <strong>{recruiter.name}</strong>.
                 </p>
               </div>
@@ -579,13 +588,6 @@ export default function RecruiterLogin({ setCurrentPage }) {
                   alt="HireNext logo"
                   className="recruiter-dashboard-logo"
                 />
-                <button
-                  type="button"
-                  className="admin-back-btn"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
               </div>
             </div>
 
