@@ -184,7 +184,7 @@ export const fetchEmployeeLeaderboard = async () => {
         rank: index + 1,
         rid: row.rid,
         name: row.name,
-        submitted: Number(row.submitted) || 0,
+        joined: Number(row.joined) || 0,
         points: Number(row.points) || 0,
       })),
     };

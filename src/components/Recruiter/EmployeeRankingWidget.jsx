@@ -89,7 +89,7 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
               </span>
             </div>
             <p className="employee-ranking-subtitle">
-              All-Time Resume Submissions ({rankings.length} Total Employees)
+              All-Time Joined Candidates ({rankings.length} Total Employees)
             </p>
           </div>
         </div>
@@ -160,9 +160,9 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
                   </div>
 
                   <div className="employee-ranking-stat">
-                    <strong className="stat-count">{emp.submitted}</strong>
+                    <strong className="stat-count">{emp.joined}</strong>
                     <span className="stat-label">
-                      {emp.submitted === 1 ? "resume" : "resumes"}
+                      joined
                     </span>
                   </div>
                 </li>
