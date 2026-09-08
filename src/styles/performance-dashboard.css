@@ -1623,6 +1623,90 @@
   font-weight: 600;
 }
 
+.employee-ranking-filter-bar {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.employee-ranking-presets {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.employee-ranking-presets::-webkit-scrollbar {
+  height: 4px;
+}
+
+.employee-ranking-presets::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.employee-ranking-filter-btn {
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+}
+
+.employee-ranking-filter-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.employee-ranking-filter-btn.is-active {
+  background: #c62828;
+  border-color: #c62828;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.25);
+}
+
+.employee-ranking-custom-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+}
+
+.employee-ranking-date-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.employee-ranking-date-input {
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  outline: none;
+  color: #1e293b;
+  transition: border-color 0.15s;
+}
+
+.employee-ranking-date-input:focus {
+  border-color: #c62828;
+}
+
 .employee-ranking-search-box {
   position: relative;
   margin-bottom: 12px;

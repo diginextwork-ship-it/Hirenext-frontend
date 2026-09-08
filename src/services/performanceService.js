@@ -169,10 +169,15 @@ export const triggerBillingProcess = () =>
     "Failed to process billing.",
   );
 
-export const fetchEmployeeLeaderboard = async () => {
+export const fetchEmployeeLeaderboard = async (params = {}) => {
   try {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.set("startDate", params.startDate);
+    if (params?.endDate) query.set("endDate", params.endDate);
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+
     return await authFetch(
-      `${API_BASE_URL}/api/dashboard/leaderboard`,
+      `${API_BASE_URL}/api/dashboard/leaderboard${queryString}`,
       {},
       "Failed to fetch employee leaderboard.",
     );
