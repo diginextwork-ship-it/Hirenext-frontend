@@ -1300,11 +1300,17 @@ export default function AdminPerformance({ setCurrentPage }) {
       const entryType = String(entry?.entryType || "")
         .trim()
         .toLowerCase();
-      return entryType === "intake" && entryReason.includes(marker.toLowerCase());
+      const entryResId = String(entry?.resId || "").trim();
+      return (
+        entryType === "intake" &&
+        (entryResId === String(resId).trim() ||
+          entryReason.includes(marker.toLowerCase()))
+      );
     });
     if (alreadyRecorded) return;
 
     const payload = new FormData();
+    payload.append("resId", resId);
     payload.append("entryType", "intake");
     payload.append("amount", String(Math.trunc(amount)));
     payload.append("reasonCategory", "others");
