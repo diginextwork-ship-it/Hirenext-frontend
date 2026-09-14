@@ -298,6 +298,10 @@ const buildBilledFormData = (resume, attachmentFile) => {
   if (normalized.candidatePhone) {
     formData.append("candidate_phone", String(normalized.candidatePhone));
   }
+  const effectiveJoining = resume?.joiningDate || resume?.currentJoiningDate;
+  if (effectiveJoining) {
+    formData.append("joining_date", String(effectiveJoining));
+  }
   formData.append("photo", attachmentFile);
 
   return formData;
@@ -1249,9 +1253,13 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionReason("");
     setActionContacted("Yes");
     setActionSituation("");
-    setActionJoiningDate("");
-    setActionJoiningNote("");
-    setActionRevenue("");
+    setActionJoiningDate(item?.joiningDate || item?.currentJoiningDate || "");
+    setActionJoiningNote(item?.joiningNote || item?.selectionNote || "");
+    setActionRevenue(
+      item?.revenue !== undefined && item?.revenue !== null && item?.revenue !== ""
+        ? String(item.revenue)
+        : "",
+    );
     setActionAttachmentFile(null);
     setActionError("");
   };
@@ -1275,6 +1283,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     amount,
     reason,
     attachmentFile,
+    createdAt = null,
   }) => {
     const marker = `[BILLED:${resId}]`;
     const revenueResponse = await fetch(`${API_BASE_URL}/api/admin/revenue`, {
@@ -1320,6 +1329,9 @@ export default function AdminPerformance({ setCurrentPage }) {
     );
     if (attachmentFile) {
       payload.append("photo", attachmentFile);
+    }
+    if (createdAt) {
+      payload.append("createdAt", String(createdAt));
     }
 
     const createResponse = await fetch(`${API_BASE_URL}/api/admin/revenue/entries`, {
@@ -1473,6 +1485,11 @@ export default function AdminPerformance({ setCurrentPage }) {
             amount: syncRevenueAmount,
             reason: "",
             attachmentFile: actionAttachmentFile,
+            createdAt:
+              actionModalItem?.joiningDate ||
+              actionModalItem?.currentJoiningDate ||
+              actionJoiningDate ||
+              null,
           });
         } catch (syncError) {
           intakeSyncWarning = `Candidate moved to billed, but intake sync failed: ${syncError.message || "unknown error"}`;
