@@ -37,6 +37,17 @@ const initialFormState = {
 
 const allowedFilePattern = /\.(pdf|doc|docx)$/i;
 
+const normalizeCandidateName = (value) => {
+  if (!value) return "";
+  const cleaned = String(value).trim().replace(/\s+/g, " ");
+  if (!cleaned) return "";
+  return cleaned
+    .toLowerCase()
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+    .join(" ");
+};
+
 const mergeRecruiterOverridesIntoParsedData = (parsedData, formData) => {
   const safeParsedData =
     parsedData && typeof parsedData === "object" && !Array.isArray(parsedData)
@@ -50,7 +61,7 @@ const mergeRecruiterOverridesIntoParsedData = (parsedData, formData) => {
         : {};
   const mergedEducation = { ...educationSource };
 
-  const candidateName = String(formData.candidate_name || "").trim();
+  const candidateName = normalizeCandidateName(formData.candidate_name || "");
   const candidatePhone = String(formData.phone || "").replace(/\D/g, "").slice(0, 10);
   const candidateEmail = String(formData.email || "").trim().toLowerCase();
   const latestEducationLevel = String(formData.latest_education_level || "").trim();
@@ -288,7 +299,7 @@ export default function ResumeSubmissionModal({
       const autofill = data?.autofill || {};
       setFormData((prev) => ({
         ...prev,
-        candidate_name: prev.candidate_name || autofill.name || "",
+        candidate_name: normalizeCandidateName(prev.candidate_name || autofill.name || ""),
         phone: String(prev.phone || autofill.phone || "").replace(/\D/g, "").slice(0, 10),
         email: prev.email || autofill.email || "",
         latest_education_level:
@@ -436,7 +447,7 @@ export default function ResumeSubmissionModal({
       payload.append("recruiter_rid", String(recruiterId));
       payload.append("jid", jid);
       payload.append("submitted_at_client", submittedAtClient);
-      const candidateName = String(formData.candidate_name || "").trim();
+      const candidateName = normalizeCandidateName(formData.candidate_name || "");
       const candidateEmail = String(formData.email || "").trim();
       const candidatePhone = String(formData.phone || "")
         .replace(/\D/g, "")
