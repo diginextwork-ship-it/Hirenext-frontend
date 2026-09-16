@@ -136,7 +136,17 @@ const getCompanyFilterValue = (resume) =>
       resume?.company_name ||
       resume?.job?.companyName ||
       resume?.job?.company_name ||
-      formatResumeCompanyDisplay(resume) ||
+      "",
+  ).trim();
+
+const getCityFilterValue = (resume) =>
+  String(
+    resume?.officeLocationCity ||
+      resume?.office_location_city ||
+      resume?.city ||
+      resume?.jobCity ||
+      resume?.job_city ||
+      resume?.job?.city ||
       "",
   ).trim();
 
@@ -233,6 +243,7 @@ export default function SubmittedResumesPanel({
   renderRowActions = null,
   deletingResId = "",
   afterSourceActions = null,
+  onDownloadExcel = null,
 }) {
   const [sourceFilter, setSourceFilter] = useState(
     sourceOptions[0]?.key || "all",
@@ -278,7 +289,7 @@ export default function SubmittedResumesPanel({
   const cityOptions = useMemo(
     () =>
       uniqueSortedValues(
-        displayedResumes.map((resume) => resume.city || resume.job?.city),
+        displayedResumes.map((resume) => getCityFilterValue(resume)),
       ),
     [displayedResumes],
   );
@@ -338,7 +349,7 @@ export default function SubmittedResumesPanel({
     const endDateQuery = String(filters?.endDate || "").trim();
 
     const company = getCompanyFilterValue(resume).toLowerCase();
-    const city = String(resume.city || resume.job?.city || "").toLowerCase();
+    const city = getCityFilterValue(resume).toLowerCase();
     const status = normalizeStatusValue(getLatestResumeStatus(resume));
     const submittedDate = formatDateInputInIndia(resume.submittedAt || resume.uploadedAt);
 
@@ -347,17 +358,11 @@ export default function SubmittedResumesPanel({
       if (!submittedDate) {
         isWithinDateRange = false;
       } else {
-        const resumeDate = new Date(submittedDate);
-
-        if (startDateQuery) {
-          const startDate = new Date(startDateQuery);
-          isWithinDateRange = isWithinDateRange && resumeDate >= startDate;
+        if (startDateQuery && submittedDate < startDateQuery) {
+          isWithinDateRange = false;
         }
-
-        if (endDateQuery) {
-          const endDate = new Date(endDateQuery);
-          endDate.setHours(23, 59, 59, 999);
-          isWithinDateRange = isWithinDateRange && resumeDate <= endDate;
+        if (endDateQuery && submittedDate > endDateQuery) {
+          isWithinDateRange = false;
         }
       }
     }
@@ -469,7 +474,38 @@ export default function SubmittedResumesPanel({
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const handleDownloadAsExcel = () => {
+  const handleDownloadAsExcel = async () => {
+    const effectiveCompany = draftFilters.company || appliedFilters.company || "";
+    const effectiveCity = draftFilters.city || appliedFilters.city || "";
+    const effectiveStartDate = draftFilters.startDate || appliedFilters.startDate || "";
+    const effectiveEndDate = draftFilters.endDate || appliedFilters.endDate || "";
+    const effectiveStatuses = (draftFilters.statuses && draftFilters.statuses.length)
+      ? draftFilters.statuses
+      : (appliedFilters.statuses || []);
+
+    const activeFilterParams = {
+      source: activeSourceFilter,
+      company: effectiveCompany,
+      city: effectiveCity,
+      startDate: effectiveStartDate,
+      endDate: effectiveEndDate,
+      statuses: effectiveStatuses,
+      phone: phoneSearch.trim(),
+      candidate: candidateSearch.trim(),
+    };
+
+    if (typeof onDownloadExcel === "function") {
+      try {
+        setDownloadError("");
+        setDownloadMessage("Generating Excel export from server...");
+        await onDownloadExcel(activeFilterParams);
+        setDownloadMessage("Excel export downloaded successfully.");
+        return;
+      } catch (error) {
+        console.error("Backend export failed, falling back to client export:", error);
+      }
+    }
+
     try {
       const exportRows = buildExcelExportRows(
         advancedFilteredResumes,

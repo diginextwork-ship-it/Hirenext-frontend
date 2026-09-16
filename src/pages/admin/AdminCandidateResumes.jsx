@@ -4,13 +4,10 @@ import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
   adminDeleteResume,
-  fetchAdminCandidateResumes,
-  fetchAdminDashboard,
+  fetchAdminSubmittedResumes,
+  exportAdminSubmittedResumes,
 } from "./adminApi";
-import {
-  formatResumeCompanyDisplay,
-  normalizeResumeData,
-} from "../../utils/dashboardData";
+import { normalizeResumeData } from "../../utils/dashboardData";
 import SubmittedResumesPanel from "../../components/common/SubmittedResumesPanel";
 
 const SOURCE_FILTERS = {
@@ -21,48 +18,27 @@ const SOURCE_FILTERS = {
 
 export default function AdminCandidateResumes({ setCurrentPage }) {
   const [resumes, setResumes] = useState([]);
-  const [recruiterResumes, setRecruiterResumes] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deletingResId, setDeletingResId] = useState("");
 
-  const loadCandidateResumes = async () => {
+  const loadAllResumes = async () => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const data = await fetchAdminCandidateResumes();
+      const data = await fetchAdminSubmittedResumes({ limit: 5000 });
+      const rawResumes = Array.isArray(data?.resumes) ? data.resumes : [];
 
       setResumes(
-        (Array.isArray(data?.resumes) ? data.resumes : []).map((resume) => ({
-          ...normalizeResumeData(resume),
-          _source: "candidate",
-        })),
-      );
-      setTotalCount(Number(data?.totalCount) || 0);
-    } catch (error) {
-      setResumes([]);
-      setTotalCount(0);
-      setErrorMessage(
-        error.message || "Failed to fetch candidate submitted resumes.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadRecruiterResumes = async () => {
-    try {
-      const data = await fetchAdminDashboard();
-
-      const uploads = Array.isArray(data?.recruiterResumeUploads)
-        ? data.recruiterResumeUploads
-        : [];
-
-      setRecruiterResumes(
-        uploads.map((item) => {
+        rawResumes.map((item) => {
           const normalized = normalizeResumeData(item);
+          const cleanCompanyName =
+            item.companyName || normalized.companyName || normalized.job?.companyName || "N/A";
+          const cleanCity =
+            item.officeLocationCity || item.city || normalized.officeLocationCity || normalized.city || normalized.job?.city || "N/A";
+
           return {
             ...normalized,
             applicantName:
@@ -70,24 +46,31 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
               normalized.candidateName ||
               normalized.name ||
               "N/A",
+            // Keep pure company name without office city appended to prevent search/filter leakage
+            companyName: cleanCompanyName,
             job: {
               ...normalized.job,
-              companyName: formatResumeCompanyDisplay(normalized),
+              companyName: cleanCompanyName,
             },
+            city: cleanCity,
+            officeLocationCity: item.officeLocationCity || normalized.officeLocationCity || null,
             atsScore:
               normalized.atsScore ?? item.atsScore ?? item.ats_score ?? null,
-            _source: "recruiter",
-            _recruiterName: normalized.recruiterName || "N/A",
+            _source: item._source || (item.source === "candidate" ? "candidate" : "recruiter"),
+            _recruiterName: item._recruiterName || item.recruiterName || normalized.recruiterName || "N/A",
           };
         }),
       );
-    } catch {
-      setRecruiterResumes([]);
+      setTotalCount(Number(data?.totalCount) || rawResumes.length);
+    } catch (error) {
+      setResumes([]);
+      setTotalCount(0);
+      setErrorMessage(
+        error.message || "Failed to fetch submitted resumes.",
+      );
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const loadAllResumes = async () => {
-    await Promise.all([loadCandidateResumes(), loadRecruiterResumes()]);
   };
 
   useEffect(() => {
@@ -104,7 +87,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
     const candidateName =
       resume?.applicantName || resume?.candidateName || "Unknown candidate";
-    const companyName = formatResumeCompanyDisplay(resume) || "Unknown company";
+    const companyName = resume?.companyName || "Unknown company";
     const shouldDelete = window.confirm(
       `Delete this resume from the database?\n\nCandidate: ${candidateName}\nCompany: ${companyName}`,
     );
@@ -126,36 +109,36 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     }
   };
 
-  const allResumes = useMemo(
-    () => [...resumes, ...recruiterResumes],
-    [recruiterResumes, resumes],
-  );
-
-  const sourceOptions = useMemo(
-    () => [
+  const sourceOptions = useMemo(() => {
+    const candidateCount = resumes.filter((r) => r._source === "candidate").length;
+    const recruiterCount = resumes.filter((r) => r._source !== "candidate").length;
+    return [
       {
         key: SOURCE_FILTERS.ALL,
         label: "All",
-        count: totalCount + recruiterResumes.length,
+        count: resumes.length,
       },
       {
         key: SOURCE_FILTERS.CANDIDATE,
         label: "Candidate",
-        count: totalCount,
+        count: candidateCount,
       },
       {
         key: SOURCE_FILTERS.RECRUITER,
         label: "Recruiter",
-        count: recruiterResumes.length,
+        count: recruiterCount,
       },
-    ],
-    [recruiterResumes.length, totalCount],
-  );
+    ];
+  }, [resumes]);
 
   const getResumeUrl = (resume) => {
     const token = getAuthSession()?.token;
     if (!token || !resume?.resId) return "";
     return `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+  };
+
+  const handleDownloadExcel = async (activeFilters) => {
+    return await exportAdminSubmittedResumes(activeFilters);
   };
 
   return (
@@ -180,11 +163,12 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       ) : null}
 
       <SubmittedResumesPanel
-        resumes={allResumes}
+        resumes={resumes}
         isLoading={isLoading}
         sourceOptions={sourceOptions}
         getResumeUrl={getResumeUrl}
         deletingResId={deletingResId}
+        onDownloadExcel={handleDownloadExcel}
         renderRowActions={(resume) => (
           <button
             type="button"

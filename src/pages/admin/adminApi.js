@@ -8,7 +8,62 @@ import { API_BASE_URL } from "../../config/api";
 
 export { API_BASE_URL, readJsonResponse };
 
+import { getAuthSession } from "../../auth/session";
+
 export const getAdminHeaders = buildAuthHeaders;
+
+export const fetchAdminSubmittedResumes = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      query.append(key, String(value).trim());
+    }
+  });
+  const queryString = query.toString();
+  return authFetch(
+    `${API_BASE_URL}/api/admin/all-submitted-resumes${queryString ? `?${queryString}` : ""}`,
+    {},
+    "Failed to fetch all submitted resumes.",
+  );
+};
+
+export const exportAdminSubmittedResumes = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      query.append(key, String(value).trim());
+    }
+  });
+  const token = getAuthSession()?.token;
+  if (token) {
+    query.append("token", token);
+  }
+  const queryString = query.toString();
+  const url = `${API_BASE_URL}/api/admin/all-submitted-resumes/export${queryString ? `?${queryString}` : ""}`;
+
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    let errorMsg = "Failed to export Excel file.";
+    try {
+      const errJson = await response.json();
+      if (errJson?.message) errorMsg = errJson.message;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  const blob = await response.blob();
+  const fileDate = new Date().toISOString().slice(0, 10);
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = `all-submitted-resumes-${fileDate}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
+  return true;
+};
 
 export const fetchAdminCandidateResumes = async () =>
   authFetch(
