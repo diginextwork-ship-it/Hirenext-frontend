@@ -28,7 +28,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const data = await fetchAdminSubmittedResumes({ limit: 5000 });
+      const data = await fetchAdminSubmittedResumes({ limit: "all" });
       const rawResumes = Array.isArray(data?.resumes) ? data.resumes : [];
 
       setResumes(

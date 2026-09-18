@@ -77,6 +77,91 @@ const normalizeStatusValue = (value) =>
 const normalizePhoneForSearch = (value) =>
   String(value || "").replace(/\D/g, "");
 
+const matchesCandidateTextSearch = (resume, searchValue) => {
+  const normalizedSearch = String(searchValue || "").trim().toLowerCase();
+  if (!normalizedSearch) return true;
+
+  const candidateNames = [
+    resume.candidateName,
+    resume.applicantName,
+    resume.name,
+    resume.fullName,
+  ]
+    .filter(Boolean)
+    .map((name) => String(name).toLowerCase());
+
+  if (candidateNames.some((name) => name.includes(normalizedSearch))) {
+    return true;
+  }
+
+  const digitsOnly = normalizedSearch.replace(/\D/g, "");
+  const last10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+  if (digitsOnly.length >= 4) {
+    const phones = [
+      resume.candidatePhone,
+      resume.phone,
+      resume.mobile,
+      resume.applicantPhone,
+      resume.phoneNumber,
+    ]
+      .filter(Boolean)
+      .map((p) => String(p).replace(/\D/g, ""));
+
+    if (
+      phones.some(
+        (p) =>
+          p.includes(digitsOnly) ||
+          (last10 && p.includes(last10)) ||
+          (p.length >= 10 && digitsOnly.includes(p)),
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return [
+    resume.candidatePhone,
+    resume.phone,
+    resume.mobile,
+    resume.applicantPhone,
+    resume.candidateEmail,
+    resume.email,
+  ]
+    .filter(Boolean)
+    .some((val) => String(val).toLowerCase().includes(normalizedSearch));
+};
+
+const matchesPhoneSearch = (resume, phoneValue) => {
+  const normalizedPhone = String(phoneValue || "").trim();
+  if (!normalizedPhone) return true;
+
+  const digitsOnly = normalizedPhone.replace(/\D/g, "");
+  const last10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+  const phones = [
+    resume.candidatePhone,
+    resume.phone,
+    resume.mobile,
+    resume.applicantPhone,
+    resume.phoneNumber,
+  ]
+    .filter(Boolean)
+    .map((p) => String(p).replace(/\D/g, ""));
+
+  if (
+    digitsOnly &&
+    phones.some(
+      (p) =>
+        p.includes(digitsOnly) ||
+        (last10 && p.includes(last10)) ||
+        (p.length >= 10 && digitsOnly.includes(p)),
+    )
+  ) {
+    return true;
+  }
+
+  return matchesCandidateTextSearch(resume, phoneValue);
+};
+
 const uniqueSortedValues = (values) =>
   Array.from(
     new Map(
@@ -311,28 +396,11 @@ export default function SubmittedResumesPanel({
   }, [cityOptions, deferredCityInput]);
 
   const filteredResumes = phoneSearch.trim()
-    ? displayedResumes.filter((resume) =>
-        [
-          resume.candidatePhone,
-          resume.phone,
-          resume.mobile,
-          resume.applicantPhone,
-        ].some((value) =>
-          normalizePhoneForSearch(value).includes(
-            normalizePhoneForSearch(phoneSearch),
-          ),
-        ),
-      )
+    ? displayedResumes.filter((resume) => matchesPhoneSearch(resume, phoneSearch))
     : displayedResumes;
 
   const candidateFilteredResumes = candidateSearch.trim()
-    ? filteredResumes.filter((resume) =>
-        String(
-          resume.candidateName || resume.applicantName || resume.name || "",
-        )
-          .toLowerCase()
-          .includes(candidateSearch.trim().toLowerCase()),
-      )
+    ? filteredResumes.filter((resume) => matchesCandidateTextSearch(resume, candidateSearch))
     : filteredResumes;
 
   const matchesAdvancedFilters = (resume, filters) => {
@@ -390,25 +458,8 @@ export default function SubmittedResumesPanel({
 
   const sourceCounts = useMemo(() => {
     const resumesAfterTextAndAdvancedFilters = resumes.filter((resume) => {
-      const matchesPhone = phoneSearch.trim()
-        ? [
-            resume.candidatePhone,
-            resume.phone,
-            resume.mobile,
-            resume.applicantPhone,
-          ].some((value) =>
-            normalizePhoneForSearch(value).includes(
-            normalizePhoneForSearch(phoneSearch),
-          ),
-        )
-        : true;
-      const matchesCandidate = candidateSearch.trim()
-        ? String(
-            resume.candidateName || resume.applicantName || resume.name || "",
-          )
-            .toLowerCase()
-            .includes(candidateSearch.trim().toLowerCase())
-        : true;
+      const matchesPhone = matchesPhoneSearch(resume, phoneSearch);
+      const matchesCandidate = matchesCandidateTextSearch(resume, candidateSearch);
 
       return (
         matchesPhone &&
