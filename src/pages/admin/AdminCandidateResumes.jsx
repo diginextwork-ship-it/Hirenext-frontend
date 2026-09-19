@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAuthSession } from "../../auth/session";
 import AdminLayout from "./AdminLayout";
 import {
@@ -19,16 +19,24 @@ const SOURCE_FILTERS = {
 export default function AdminCandidateResumes({ setCurrentPage }) {
   const [resumes, setResumes] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deletingResId, setDeletingResId] = useState("");
+  const [activeParams, setActiveParams] = useState({});
+  const activeParamsRef = useRef(activeParams);
+  activeParamsRef.current = activeParams;
+  const initialLoadDone = useRef(false);
 
-  const loadAllResumes = async () => {
+  const loadResumes = useCallback(async (params = {}) => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const data = await fetchAdminSubmittedResumes({ limit: "all" });
+      const data = await fetchAdminSubmittedResumes({
+        limit: 500,
+        ...params,
+      });
       const rawResumes = Array.isArray(data?.resumes) ? data.resumes : [];
 
       setResumes(
@@ -46,7 +54,6 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
               normalized.candidateName ||
               normalized.name ||
               "N/A",
-            // Keep pure company name without office city appended to prevent search/filter leakage
             companyName: cleanCompanyName,
             job: {
               ...normalized.job,
@@ -62,20 +69,37 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         }),
       );
       setTotalCount(Number(data?.totalCount) || rawResumes.length);
+      setFilteredCount(Number(data?.filteredCount) || rawResumes.length);
     } catch (error) {
       setResumes([]);
       setTotalCount(0);
+      setFilteredCount(0);
       setErrorMessage(
         error.message || "Failed to fetch submitted resumes.",
       );
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadAllResumes();
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadResumes({});
+    initialLoadDone.current = true;
+  }, [loadResumes]);
+
+  const handleQueryChange = useCallback((newParams) => {
+    setActiveParams(newParams);
+  }, []);
+
+  // Debounced search on activeParams change (skip first trigger on mount)
+  useEffect(() => {
+    if (!initialLoadDone.current) return;
+    const timer = setTimeout(() => {
+      loadResumes(activeParams);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeParams, loadResumes]);
 
   const handleResumeDelete = async (resume) => {
     const resId = String(resume?.resId || "").trim();
@@ -100,7 +124,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
 
     try {
       const data = await adminDeleteResume(resId);
-      await loadAllResumes();
+      await loadResumes(activeParamsRef.current);
       setSuccessMessage(data?.message || "Resume deleted successfully.");
     } catch (error) {
       setErrorMessage(error.message || "Failed to delete resume.");
@@ -116,7 +140,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
       {
         key: SOURCE_FILTERS.ALL,
         label: "All",
-        count: resumes.length,
+        count: totalCount || resumes.length,
       },
       {
         key: SOURCE_FILTERS.CANDIDATE,
@@ -129,7 +153,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         count: recruiterCount,
       },
     ];
-  }, [resumes]);
+  }, [resumes, totalCount]);
 
   const getResumeUrl = (resume) => {
     const token = getAuthSession()?.token;
@@ -138,7 +162,10 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   };
 
   const handleDownloadExcel = async (activeFilters) => {
-    return await exportAdminSubmittedResumes(activeFilters);
+    return await exportAdminSubmittedResumes({
+      ...activeParamsRef.current,
+      ...activeFilters,
+    });
   };
 
   return (
@@ -150,7 +177,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         <button
           type="button"
           className="admin-refresh-btn"
-          onClick={loadAllResumes}
+          onClick={() => loadResumes(activeParamsRef.current)}
           disabled={isLoading}
         >
           {isLoading ? "Refreshing..." : "Refresh"}
@@ -169,6 +196,9 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         getResumeUrl={getResumeUrl}
         deletingResId={deletingResId}
         onDownloadExcel={handleDownloadExcel}
+        onQueryChange={handleQueryChange}
+        serverTotalCount={totalCount}
+        serverFilteredCount={filteredCount}
         renderRowActions={(resume) => (
           <button
             type="button"

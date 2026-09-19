@@ -90,7 +90,11 @@ const matchesCandidateTextSearch = (resume, searchValue) => {
     .filter(Boolean)
     .map((name) => String(name).toLowerCase());
 
-  if (candidateNames.some((name) => name.includes(normalizedSearch))) {
+  const searchWords = normalizedSearch.split(/\s+/).filter(Boolean);
+  if (
+    searchWords.length > 0 &&
+    candidateNames.some((name) => searchWords.every((word) => name.includes(word)))
+  ) {
     return true;
   }
 
@@ -119,16 +123,21 @@ const matchesCandidateTextSearch = (resume, searchValue) => {
     }
   }
 
-  return [
-    resume.candidatePhone,
-    resume.phone,
-    resume.mobile,
-    resume.applicantPhone,
+  const otherFields = [
+    resume.companyName,
+    resume.job?.companyName,
+    resume.recruiterName,
+    resume._recruiterName,
     resume.candidateEmail,
     resume.email,
+    resume.applicantEmail,
+    resume.city,
+    resume.roleName,
   ]
     .filter(Boolean)
-    .some((val) => String(val).toLowerCase().includes(normalizedSearch));
+    .map((val) => String(val).toLowerCase());
+
+  return otherFields.some((field) => field.includes(normalizedSearch));
 };
 
 const matchesPhoneSearch = (resume, phoneValue) => {
@@ -329,10 +338,14 @@ export default function SubmittedResumesPanel({
   deletingResId = "",
   afterSourceActions = null,
   onDownloadExcel = null,
+  onQueryChange = null,
+  serverTotalCount = null,
+  serverFilteredCount = null,
 }) {
   const [sourceFilter, setSourceFilter] = useState(
     sourceOptions[0]?.key || "all",
   );
+  const [topLevelSearch, setTopLevelSearch] = useState("");
   const [phoneSearch, setPhoneSearch] = useState("");
   const [candidateSearch, setCandidateSearch] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -348,6 +361,37 @@ export default function SubmittedResumesPanel({
     sourceOptions.length && sourceOptions.some((option) => option.key === sourceFilter)
       ? sourceFilter
       : sourceOptions[0]?.key || "all";
+
+  const notifyQueryChange = (overrides = {}) => {
+    if (typeof onQueryChange !== "function") return;
+    const effectiveCompany = "company" in overrides ? overrides.company : (draftFilters.company || appliedFilters.company || "");
+    const effectiveCity = "city" in overrides ? overrides.city : (draftFilters.city || appliedFilters.city || "");
+    const effectiveStartDate = "startDate" in overrides ? overrides.startDate : (draftFilters.startDate || appliedFilters.startDate || "");
+    const effectiveEndDate = "endDate" in overrides ? overrides.endDate : (draftFilters.endDate || appliedFilters.endDate || "");
+    const effectiveStatuses = "statuses" in overrides ? overrides.statuses : (draftFilters.statuses?.length ? draftFilters.statuses : appliedFilters.statuses || []);
+
+    onQueryChange({
+      search: ("search" in overrides ? overrides.search : topLevelSearch).trim(),
+      phone: ("phone" in overrides ? overrides.phone : phoneSearch).trim(),
+      candidate: ("candidate" in overrides ? overrides.candidate : candidateSearch).trim(),
+      source: ("source" in overrides ? overrides.source : activeSourceFilter),
+      company: effectiveCompany,
+      city: effectiveCity,
+      startDate: effectiveStartDate,
+      endDate: effectiveEndDate,
+      statuses: effectiveStatuses,
+    });
+  };
+
+  const handleTopLevelSearchChange = (value) => {
+    setTopLevelSearch(value);
+    notifyQueryChange({ search: value });
+  };
+
+  const handleSourceSelect = (key) => {
+    setSourceFilter(key);
+    notifyQueryChange({ source: key });
+  };
 
   const displayedResumes = useMemo(() => {
     if (!sourceOptions.length || activeSourceFilter === "all") return resumes;
@@ -395,9 +439,13 @@ export default function SubmittedResumesPanel({
       .slice(0, 12);
   }, [cityOptions, deferredCityInput]);
 
-  const filteredResumes = phoneSearch.trim()
-    ? displayedResumes.filter((resume) => matchesPhoneSearch(resume, phoneSearch))
+  const searchFilteredResumes = topLevelSearch.trim()
+    ? displayedResumes.filter((resume) => matchesCandidateTextSearch(resume, topLevelSearch))
     : displayedResumes;
+
+  const filteredResumes = phoneSearch.trim()
+    ? searchFilteredResumes.filter((resume) => matchesPhoneSearch(resume, phoneSearch))
+    : searchFilteredResumes;
 
   const candidateFilteredResumes = candidateSearch.trim()
     ? filteredResumes.filter((resume) => matchesCandidateTextSearch(resume, candidateSearch))
@@ -452,16 +500,23 @@ export default function SubmittedResumesPanel({
   const advancedFilteredResumes = candidateFilteredResumes.filter((resume) =>
     matchesAdvancedFilters(resume, appliedFilters),
   );
-  const filteredResultsLabel = `${advancedFilteredResumes.length} result${
-    advancedFilteredResumes.length === 1 ? "" : "s"
+  const displayCount =
+    serverFilteredCount !== null && serverFilteredCount !== undefined
+      ? serverFilteredCount
+      : advancedFilteredResumes.length;
+
+  const filteredResultsLabel = `${displayCount} result${
+    displayCount === 1 ? "" : "s"
   }`;
 
   const sourceCounts = useMemo(() => {
     const resumesAfterTextAndAdvancedFilters = resumes.filter((resume) => {
+      const matchesTopLevel = matchesCandidateTextSearch(resume, topLevelSearch);
       const matchesPhone = matchesPhoneSearch(resume, phoneSearch);
       const matchesCandidate = matchesCandidateTextSearch(resume, candidateSearch);
 
       return (
+        matchesTopLevel &&
         matchesPhone &&
         matchesCandidate &&
         matchesAdvancedFilters(resume, appliedFilters)
@@ -479,7 +534,7 @@ export default function SubmittedResumesPanel({
     );
 
     return counts;
-  }, [appliedFilters, candidateSearch, phoneSearch, resumes]);
+  }, [appliedFilters, candidateSearch, phoneSearch, resumes, topLevelSearch]);
 
   const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
@@ -511,12 +566,45 @@ export default function SubmittedResumesPanel({
     setAppliedFilters({ ...draftFilters });
     setShowStatusOptions(false);
     setShowAdvancedFilters(false);
+    notifyQueryChange({
+      company: draftFilters.company,
+      city: draftFilters.city,
+      startDate: draftFilters.startDate,
+      endDate: draftFilters.endDate,
+      statuses: draftFilters.statuses,
+    });
   };
 
   const handleClearAdvancedFilters = () => {
     setDraftFilters(EMPTY_ADVANCED_FILTERS);
     setAppliedFilters(EMPTY_ADVANCED_FILTERS);
     setShowStatusOptions(false);
+    notifyQueryChange({
+      company: "",
+      city: "",
+      startDate: "",
+      endDate: "",
+      statuses: [],
+    });
+  };
+
+  const handleClearAllEverything = () => {
+    setTopLevelSearch("");
+    setPhoneSearch("");
+    setCandidateSearch("");
+    setDraftFilters(EMPTY_ADVANCED_FILTERS);
+    setAppliedFilters(EMPTY_ADVANCED_FILTERS);
+    setShowStatusOptions(false);
+    notifyQueryChange({
+      search: "",
+      phone: "",
+      candidate: "",
+      company: "",
+      city: "",
+      startDate: "",
+      endDate: "",
+      statuses: [],
+    });
   };
 
   const handleResumeOpen = (resume) => {
@@ -543,6 +631,7 @@ export default function SubmittedResumesPanel({
       statuses: effectiveStatuses,
       phone: phoneSearch.trim(),
       candidate: candidateSearch.trim(),
+      search: topLevelSearch.trim(),
     };
 
     if (typeof onDownloadExcel === "function") {
@@ -623,11 +712,11 @@ export default function SubmittedResumesPanel({
                 key={filterOption.key}
                 type="button"
                 className={`perf-timeline-btn${activeSourceFilter === filterOption.key ? " perf-timeline-btn-active" : ""}`}
-                onClick={() => setSourceFilter(filterOption.key)}
+                onClick={() => handleSourceSelect(filterOption.key)}
               >
                 {filterOption.label} (
                 {filterOption.key === "all"
-                  ? sourceCounts.all
+                  ? (serverTotalCount || sourceCounts.all)
                   : filterOption.key === "candidate"
                     ? sourceCounts.candidate
                     : filterOption.key === "recruiter"
@@ -640,51 +729,65 @@ export default function SubmittedResumesPanel({
           </div>
         ) : null}
 
-        <div className="admin-candidate-resumes-toolbar">
-        <button
-          type="button"
-          className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim() ? " has-filters" : ""}`}
-          onClick={() => setShowAdvancedFilters((prev) => !prev)}
-        >
-          <span className="admin-filter-toggle-icon">⚙️</span>
-          Filters
-          {(hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim()) && (
-            <span className="admin-filter-count">
-              {[
-                appliedFilters.company,
-                appliedFilters.city,
-                appliedFilters.startDate,
-                appliedFilters.endDate,
-                ...(Array.isArray(appliedFilters.statuses)
-                  ? appliedFilters.statuses
-                  : []),
-                phoneSearch,
-                candidateSearch,
-              ].filter((v) => String(v || "").trim()).length}
-            </span>
-          )}
-        </button>
-        {(phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters) && (
+        <div className="admin-candidate-resumes-toolbar" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <div className="perf-inline-search" style={{ flex: "1 1 280px", maxWidth: 440, margin: 0 }}>
+            <input
+              type="text"
+              className="perf-search perf-search-wide"
+              placeholder="Search by candidate name or phone..."
+              value={topLevelSearch}
+              onChange={(e) => handleTopLevelSearchChange(e.target.value)}
+            />
+            {topLevelSearch ? (
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={() => handleTopLevelSearchChange("")}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
           <button
             type="button"
-            className="admin-clear-filters-btn"
-            onClick={() => {
-              setPhoneSearch("");
-              setCandidateSearch("");
-              handleClearAdvancedFilters();
-            }}
+            className={`admin-filter-toggle-btn${hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim() ? " has-filters" : ""}`}
+            onClick={() => setShowAdvancedFilters((prev) => !prev)}
           >
-            Clear All
+            <span className="admin-filter-toggle-icon">⚙️</span>
+            Filters
+            {(hasAppliedAdvancedFilters || phoneSearch.trim() || candidateSearch.trim()) && (
+              <span className="admin-filter-count">
+                {[
+                  appliedFilters.company,
+                  appliedFilters.city,
+                  appliedFilters.startDate,
+                  appliedFilters.endDate,
+                  ...(Array.isArray(appliedFilters.statuses)
+                    ? appliedFilters.statuses
+                    : []),
+                  phoneSearch,
+                  candidateSearch,
+                ].filter((v) => String(v || "").trim()).length}
+              </span>
+            )}
           </button>
-        )}
-      </div>
+          {(topLevelSearch.trim() || phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters) && (
+            <button
+              type="button"
+              className="admin-clear-filters-btn"
+              onClick={handleClearAllEverything}
+            >
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="admin-muted" style={{ margin: "0 0 12px" }}>
         Showing {filteredResultsLabel}
-        {(phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters || activeSourceFilter !== "all") &&
-        resumes.length
-          ? ` of ${resumes.length} total resumes`
+        {(topLevelSearch.trim() || phoneSearch.trim() || candidateSearch.trim() || hasAppliedAdvancedFilters || activeSourceFilter !== "all") &&
+        (serverTotalCount || resumes.length)
+          ? ` of ${serverTotalCount || resumes.length} total resumes`
           : ""}
         .
       </p>
