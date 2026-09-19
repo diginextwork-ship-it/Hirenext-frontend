@@ -967,50 +967,41 @@ export default function AdminPerformance({ setCurrentPage }) {
     const submittedRawItems =
       performanceSubmittedItems.length > 0 ? performanceSubmittedItems : submittedResumes;
 
+    const allCandidateItemsMap = new Map();
+    const getResId = (it) =>
+      it?.resId ?? it?.res_id ?? it?.resumeId ?? it?.resume_id;
+
+    for (const [, bucketArr] of Object.entries(statusDrilldown || {})) {
+      if (!Array.isArray(bucketArr)) continue;
+      for (const it of bucketArr) {
+        const id = getResId(it);
+        if (id && !allCandidateItemsMap.has(String(id))) {
+          allCandidateItemsMap.set(String(id), it);
+        }
+      }
+    }
+
+    for (const it of submittedRawItems) {
+      const id = getResId(it);
+      if (id && !allCandidateItemsMap.has(String(id))) {
+        allCandidateItemsMap.set(String(id), it);
+      }
+    }
+
+    const postSubmissionPool = Array.from(allCandidateItemsMap.values());
+
     return {
       submitted: buildItems(submittedRawItems, "submitted"),
-      verified: buildItems(
-        Array.isArray(statusDrilldown?.verified) ? statusDrilldown.verified : [],
-        "verified",
-      ),
-      others: buildItems(
-        Array.isArray(statusDrilldown?.others) ? statusDrilldown.others : [],
-        "others",
-      ),
-      walk_in: buildItems(
-        Array.isArray(statusDrilldown?.walk_in) ? statusDrilldown.walk_in : [],
-        "walk_in",
-      ),
-      shortlisted: buildItems(
-        Array.isArray(statusDrilldown?.shortlisted)
-          ? statusDrilldown.shortlisted
-          : [],
-        "shortlisted",
-      ),
-      selected: buildItems(
-        Array.isArray(statusDrilldown?.selected) ? statusDrilldown.selected : [],
-        "selected",
-      ),
-      rejected: buildItems(
-        Array.isArray(statusDrilldown?.rejected) ? statusDrilldown.rejected : [],
-        "rejected",
-      ),
-      joined: buildItems(
-        Array.isArray(statusDrilldown?.joined) ? statusDrilldown.joined : [],
-        "joined",
-      ),
-      dropout: buildItems(
-        Array.isArray(statusDrilldown?.dropout) ? statusDrilldown.dropout : [],
-        "dropout",
-      ),
-      billed: buildItems(
-        Array.isArray(statusDrilldown?.billed) ? statusDrilldown.billed : [],
-        "billed",
-      ),
-      left: buildItems(
-        Array.isArray(statusDrilldown?.left) ? statusDrilldown.left : [],
-        "left",
-      ),
+      verified: buildItems(postSubmissionPool, "verified"),
+      others: buildItems(postSubmissionPool, "others"),
+      walk_in: buildItems(postSubmissionPool, "walk_in"),
+      shortlisted: buildItems(postSubmissionPool, "shortlisted"),
+      selected: buildItems(postSubmissionPool, "selected"),
+      rejected: buildItems(postSubmissionPool, "rejected"),
+      joined: buildItems(postSubmissionPool, "joined"),
+      dropout: buildItems(postSubmissionPool, "dropout"),
+      billed: buildItems(postSubmissionPool, "billed"),
+      left: buildItems(postSubmissionPool, "left"),
     };
   }, [
     latestStatusByResId,
