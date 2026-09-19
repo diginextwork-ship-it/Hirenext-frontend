@@ -72,8 +72,10 @@ export default function AdminRevenue({ setCurrentPage }) {
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [uploadInputKey, setUploadInputKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
   const [decisionBusyId, setDecisionBusyId] = useState(null);
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [editingAmount, setEditingAmount] = useState("");
+  const [isSavingAmount, setIsSavingAmount] = useState(false);
 
   const loadRevenue = async () => {
     setIsLoading(true);
@@ -352,6 +354,77 @@ export default function AdminRevenue({ setCurrentPage }) {
       setErrorMessage(error.message || "Failed to remove revenue entry.");
     } finally {
       setIsDeletingId(null);
+    }
+  };
+
+  const handleStartEdit = (item) => {
+    setEditingEntryId(item.id);
+    const currentVal = item.entryType === "intake" ? item.companyRev : item.expense;
+    setEditingAmount(currentVal !== undefined && currentVal !== null ? String(currentVal) : "");
+    setErrorMessage("");
+    setStatusMessage("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+    setEditingAmount("");
+  };
+
+  const handleSaveAmount = async (entryId, entryType) => {
+    const parsedAmount = Number(editingAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+      setErrorMessage("Please enter a valid non-negative amount.");
+      return;
+    }
+
+    setIsSavingAmount(true);
+    setErrorMessage("");
+    setStatusMessage("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/revenue/entries/${entryId}/amount`, {
+        method: "PATCH",
+        headers: {
+          ...getAdminHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ amount: parsedAmount }),
+      });
+      const data = await readJsonResponse(
+        response,
+        "Failed to parse update revenue entry response."
+      );
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to update revenue entry amount.");
+      }
+
+      const updatedEntry = data.entry;
+      setEntries((prevEntries) =>
+        prevEntries.map((item) => {
+          if (item.id !== entryId) return item;
+          return {
+            ...item,
+            companyRev: updatedEntry?.companyRev ?? (entryType === "intake" ? parsedAmount : 0),
+            expense: updatedEntry?.expense ?? (entryType === "expense" ? parsedAmount : 0),
+            profit: updatedEntry?.profit ?? item.profit,
+          };
+        })
+      );
+
+      if (data?.summary) {
+        setSummary({
+          totalIntake: Number(data.summary.totalIntake) || 0,
+          totalExpense: Number(data.summary.totalExpense) || 0,
+          netProfit: Number(data.summary.netProfit) || 0,
+        });
+      }
+
+      setStatusMessage(`Revenue entry #${entryId} amount updated successfully.`);
+      setEditingEntryId(null);
+      setEditingAmount("");
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to update revenue entry amount.");
+    } finally {
+      setIsSavingAmount(false);
     }
   };
 
@@ -689,8 +762,76 @@ export default function AdminRevenue({ setCurrentPage }) {
                   <tr key={item.id}>
                     <td>#{item.id}</td>
                     <td>{item.entryType}</td>
-                    <td>{item.entryType === "intake" ? toCurrency(item.companyRev) : "—"}</td>
-                    <td>{item.entryType === "expense" ? toCurrency(item.expense) : "—"}</td>
+                    <td>
+                      {item.entryType === "intake" ? (
+                        editingEntryId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={editingAmount}
+                            onChange={(e) => setEditingAmount(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleSaveAmount(item.id, item.entryType);
+                              } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                handleCancelEdit();
+                              }
+                            }}
+                            style={{
+                              width: "110px",
+                              padding: "4px 8px",
+                              fontSize: "13px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                            }}
+                            autoFocus
+                            disabled={isSavingAmount}
+                          />
+                        ) : (
+                          toCurrency(item.companyRev)
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      {item.entryType === "expense" ? (
+                        editingEntryId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={editingAmount}
+                            onChange={(e) => setEditingAmount(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleSaveAmount(item.id, item.entryType);
+                              } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                handleCancelEdit();
+                              }
+                            }}
+                            style={{
+                              width: "110px",
+                              padding: "4px 8px",
+                              fontSize: "13px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                            }}
+                            autoFocus
+                            disabled={isSavingAmount}
+                          />
+                        ) : (
+                          toCurrency(item.expense)
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td>
                       {(() => {
                         const companyName =
@@ -730,14 +871,56 @@ export default function AdminRevenue({ setCurrentPage }) {
                     </td>
                     <td>{formatDate(item.createdAt)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="admin-back-btn"
-                        onClick={() => handleDeleteEntry(item.id)}
-                        disabled={isDeletingId === item.id}
-                      >
-                        {isDeletingId === item.id ? "Removing..." : "Remove"}
-                      </button>
+                      {editingEntryId === item.id ? (
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          <button
+                            type="button"
+                            className="admin-refresh-btn"
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "12px",
+                              background: "#166534",
+                              color: "#fff",
+                              borderColor: "#166534",
+                            }}
+                            onClick={() => handleSaveAmount(item.id, item.entryType)}
+                            disabled={isSavingAmount}
+                          >
+                            {isSavingAmount ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-back-btn"
+                            style={{ padding: "4px 10px", fontSize: "12px" }}
+                            onClick={handleCancelEdit}
+                            disabled={isSavingAmount}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          <button
+                            type="button"
+                            className="admin-refresh-btn"
+                            style={{ padding: "4px 10px", fontSize: "12px" }}
+                            onClick={() => handleStartEdit(item)}
+                            disabled={editingEntryId !== null || isDeletingId === item.id}
+                            title="Edit amount"
+                          >
+                            Edit Amount
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-back-btn"
+                            style={{ padding: "4px 10px", fontSize: "12px" }}
+                            onClick={() => handleDeleteEntry(item.id)}
+                            disabled={isDeletingId === item.id || editingEntryId !== null}
+                          >
+                            {isDeletingId === item.id ? "Removing..." : "Remove"}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
