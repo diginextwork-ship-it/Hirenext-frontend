@@ -72,6 +72,7 @@ export default function AdminRevenue({ setCurrentPage }) {
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [uploadInputKey, setUploadInputKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const [decisionBusyId, setDecisionBusyId] = useState(null);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [editingAmount, setEditingAmount] = useState("");
@@ -320,7 +321,9 @@ export default function AdminRevenue({ setCurrentPage }) {
       setUploadInputKey((prev) => prev + 1);
       try {
         await loadRevenue();
-      } catch {}
+      } catch (refreshErr) {
+        console.warn("Failed to reload revenue dashboard:", refreshErr);
+      }
     } catch (error) {
       setErrorMessage(error.message || "Failed to add revenue entry.");
     } finally {
@@ -758,120 +761,126 @@ export default function AdminRevenue({ setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((item) => (
-                  <tr key={item.id}>
-                    <td>#{item.id}</td>
-                    <td>{item.entryType}</td>
-                    <td>
-                      {item.entryType === "intake" ? (
-                        editingEntryId === item.id ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={editingAmount}
-                            onChange={(e) => setEditingAmount(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleSaveAmount(item.id, item.entryType);
-                              } else if (e.key === "Escape") {
-                                e.preventDefault();
-                                handleCancelEdit();
-                              }
-                            }}
-                            style={{
-                              width: "110px",
-                              padding: "4px 8px",
-                              fontSize: "13px",
-                              borderRadius: "4px",
-                              border: "1px solid #cbd5e1",
-                            }}
-                            autoFocus
-                            disabled={isSavingAmount}
-                          />
+                {filteredEntries.map((item, index) => {
+                  if (!item) return null;
+                  const itemId = item.id ?? `entry-${index}`;
+                  const isIntake = item.entryType === "intake";
+                  const isExpense = item.entryType === "expense";
+                  const isEditing = editingEntryId === item.id;
+                  return (
+                    <tr key={itemId}>
+                      <td>#{item.id ?? "—"}</td>
+                      <td>{item.entryType || "—"}</td>
+                      <td>
+                        {isIntake ? (
+                          isEditing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={editingAmount}
+                              onChange={(e) => setEditingAmount(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSaveAmount(item.id, item.entryType);
+                                } else if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                }
+                              }}
+                              style={{
+                                width: "110px",
+                                padding: "4px 8px",
+                                fontSize: "13px",
+                                borderRadius: "4px",
+                                border: "1px solid #cbd5e1",
+                              }}
+                              autoFocus
+                              disabled={isSavingAmount}
+                            />
+                          ) : (
+                            toCurrency(item.companyRev)
+                          )
                         ) : (
-                          toCurrency(item.companyRev)
-                        )
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      {item.entryType === "expense" ? (
-                        editingEntryId === item.id ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={editingAmount}
-                            onChange={(e) => setEditingAmount(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleSaveAmount(item.id, item.entryType);
-                              } else if (e.key === "Escape") {
-                                e.preventDefault();
-                                handleCancelEdit();
-                              }
-                            }}
-                            style={{
-                              width: "110px",
-                              padding: "4px 8px",
-                              fontSize: "13px",
-                              borderRadius: "4px",
-                              border: "1px solid #cbd5e1",
-                            }}
-                            autoFocus
-                            disabled={isSavingAmount}
-                          />
+                          "—"
+                        )}
+                      </td>
+                      <td>
+                        {isExpense ? (
+                          isEditing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={editingAmount}
+                              onChange={(e) => setEditingAmount(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSaveAmount(item.id, item.entryType);
+                                } else if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                }
+                              }}
+                              style={{
+                                width: "110px",
+                                padding: "4px 8px",
+                                fontSize: "13px",
+                                borderRadius: "4px",
+                                border: "1px solid #cbd5e1",
+                              }}
+                              autoFocus
+                              disabled={isSavingAmount}
+                            />
+                          ) : (
+                            toCurrency(item.expense)
+                          )
                         ) : (
-                          toCurrency(item.expense)
-                        )
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      {(() => {
-                        const companyName =
-                          item.companyName ||
-                          item.company_name ||
-                          item.company ||
-                          item.orgName ||
-                          item.organization ||
-                          "";
-                        const candidateName =
-                          item.candidateName ||
-                          item.candidate_name ||
-                          item.name ||
-                          "";
-                        if (companyName && candidateName) {
-                          return `${companyName} (${candidateName})`;
-                        }
-                        return companyName || "N/A";
-                      })()}
-                    </td>
-                    <td>
-                      {item.city ||
-                        item.jobCity ||
-                        item.locationCity ||
-                        item.location ||
-                        "N/A"}
-                    </td>
-                    <td>{item.reason || "N/A"}</td>
-                    <td>
-                      {item.photo ? (
-                        <a href={item.photo} target="_blank" rel="noreferrer">
-                          Attachment
-                        </a>
-                      ) : (
-                        "N/A"
-                      )}
-                    </td>
-                    <td>{formatDate(item.createdAt)}</td>
-                    <td>
-                      {editingEntryId === item.id ? (
+                          "—"
+                        )}
+                      </td>
+                      <td>
+                        {(() => {
+                          const companyName =
+                            item.companyName ||
+                            item.company_name ||
+                            item.company ||
+                            item.orgName ||
+                            item.organization ||
+                            "";
+                          const candidateName =
+                            item.candidateName ||
+                            item.candidate_name ||
+                            item.name ||
+                            "";
+                          if (companyName && candidateName) {
+                            return `${companyName} (${candidateName})`;
+                          }
+                          return companyName || "N/A";
+                        })()}
+                      </td>
+                      <td>
+                        {item.city ||
+                          item.jobCity ||
+                          item.locationCity ||
+                          item.location ||
+                          "N/A"}
+                      </td>
+                      <td>{item.reason || "N/A"}</td>
+                      <td>
+                        {item.photo ? (
+                          <a href={item.photo} target="_blank" rel="noreferrer">
+                            Attachment
+                          </a>
+                        ) : (
+                          "N/A"
+                        )}
+                      </td>
+                      <td>{formatDate(item.createdAt)}</td>
+                      <td>
+                        {isEditing ? (
                         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                           <button
                             type="button"
@@ -923,7 +932,8 @@ export default function AdminRevenue({ setCurrentPage }) {
                       )}
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
