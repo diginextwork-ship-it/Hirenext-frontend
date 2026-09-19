@@ -368,26 +368,22 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         if (!resId) continue;
 
         const effectiveStatus = normalizeStatus(
-          normalized?.workflowStatus ||
-            normalized?.workflow_status ||
-            normalized?.status ||
-            item?.workflowStatus ||
+          item?.workflowStatus ||
             item?.workflow_status ||
             item?.status ||
+            normalized?.workflowStatus ||
+            normalized?.workflow_status ||
+            normalized?.status ||
             bucketStatus,
         );
         const itemRank = getStatusRank(effectiveStatus);
-        const currentRank = Math.max(bucketRank, itemRank);
-        if (currentRank < 0) continue;
+        if (itemRank < 0) continue;
 
         const previous = map.get(resId);
-        if (!previous || currentRank > previous.rank) {
+        if (!previous || itemRank > previous.rank) {
           map.set(resId, {
-            status:
-              currentRank === itemRank && itemRank >= 0
-                ? effectiveStatus
-                : normalizeStatus(bucketStatus),
-            rank: currentRank,
+            status: effectiveStatus,
+            rank: itemRank,
           });
         }
       }
@@ -434,7 +430,13 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         return dedupedItems;
       }
 
-      return dedupedItems;
+      const targetStatus = normalizeStatus(fallbackStatus);
+      return dedupedItems.filter((item) => {
+        const effectiveStatus = normalizeStatus(
+          item?.currentStatus || item?.workflowStatus || item?.status,
+        );
+        return effectiveStatus === targetStatus;
+      });
     };
 
     return {

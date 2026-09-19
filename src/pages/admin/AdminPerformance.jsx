@@ -859,30 +859,26 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     for (const [bucketStatus, bucketItems] of Object.entries(statusDrilldown)) {
       if (!Array.isArray(bucketItems)) continue;
-      const bucketRank = getStatusRank(bucketStatus);
       for (const item of bucketItems) {
         const normalizedItem = normalizeResumeData(item);
         const resId = getResId(item);
         if (!resId || String(resId).trim() === "") continue;
         const itemStatus = normalizeStatus(
-          normalizedItem?.workflowStatus ||
-            normalizedItem?.status ||
-            item?.workflowStatus ||
+          item?.workflowStatus ||
             item?.workflow_status ||
-            item?.status,
+            item?.status ||
+            normalizedItem?.workflowStatus ||
+            normalizedItem?.status ||
+            bucketStatus,
         );
         const itemRank = getStatusRank(itemStatus);
-        const currentRank = Math.max(bucketRank, itemRank);
-        if (currentRank < 0) continue;
+        if (itemRank < 0) continue;
 
         const prev = map.get(String(resId));
-        if (!prev || currentRank > prev.rank) {
+        if (!prev || itemRank > prev.rank) {
           map.set(String(resId), {
-            status:
-              currentRank === itemRank && itemRank >= 0
-                ? itemStatus
-                : normalizeStatus(bucketStatus),
-            rank: currentRank,
+            status: itemStatus,
+            rank: itemRank,
           });
         }
       }
@@ -959,7 +955,13 @@ export default function AdminPerformance({ setCurrentPage }) {
         });
       }
 
-      return dedupedItems;
+      const targetStatus = normalizeStatus(fallbackStatus);
+      return dedupedItems.filter((item) => {
+        const effectiveStatus = normalizeStatus(
+          item?.currentStatus || item?.workflowStatus || item?.status,
+        );
+        return effectiveStatus === targetStatus;
+      });
     };
 
     const submittedRawItems =
