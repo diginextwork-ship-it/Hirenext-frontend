@@ -1,4 +1,4 @@
-const PRODUCTION_API_BASE_URL = "https://hotpink-starling-791289.hostingersite.com";
+const PRODUCTION_API_BASE_URL = "https://api.hirenextindia.com";
 const FALLBACK_API_BASE_URL = "http://localhost:5001";
 
 const normalizeApiBaseUrl = (rawBaseUrl) => {
