@@ -176,3 +176,17 @@ export const adminUpdateRecruiterTeam = async (rid, team) =>
     },
     "Failed to update recruiter team.",
   );
+
+export const fetchAdminRecruiterResumes = async (rid) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/resumes`,
+    {},
+    "Failed to fetch recruiter resumes.",
+  );
+
+export const fetchAdminRecruitersList = async () =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/list`,
+    {},
+    "Failed to fetch recruiters list.",
+  );

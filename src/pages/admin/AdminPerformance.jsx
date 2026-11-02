@@ -12,6 +12,8 @@ import {
   adminDeleteRecruiter,
   adminUpdateRecruiterAccountStatus,
   updateTeamLeaderNote,
+  fetchAdminRecruiterResumes,
+  fetchAdminRecruitersList,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
 import {
@@ -774,6 +776,17 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [customEnd, setCustomEnd] = useState("");
   const [statusOverrides, setStatusOverrides] = useState({});
 
+  // Inactive recruiter resume inspection state
+  const [allStaffList, setAllStaffList] = useState([]);
+  const [selectedInactiveRid, setSelectedInactiveRid] = useState("");
+  const [inactiveResumesModalOpen, setInactiveResumesModalOpen] = useState(false);
+  const [selectedInactiveRecruiter, setSelectedInactiveRecruiter] = useState(null);
+  const [inactiveRecruiterResumes, setInactiveRecruiterResumes] = useState([]);
+  const [loadingInactiveResumes, setLoadingInactiveResumes] = useState(false);
+  const [inactiveResumesError, setInactiveResumesError] = useState("");
+  const [inactiveResumeSearch, setInactiveResumeSearch] = useState("");
+  const [inactiveResumeStatusFilter, setInactiveResumeStatusFilter] = useState("all");
+
   // Temporary debugging toggle:
   // set localStorage.setItem("perf_debug_admin","1") then refresh the page.
   const PERF_DEBUG =
@@ -856,6 +869,98 @@ export default function AdminPerformance({ setCurrentPage }) {
       clearInterval(intervalId);
     };
   }, [fetchPerformance]);
+
+  const loadStaffList = useCallback(async () => {
+    try {
+      const respData = await fetchAdminRecruitersList();
+      if (Array.isArray(respData?.recruiters)) {
+        setAllStaffList(respData.recruiters);
+      }
+    } catch (err) {
+      console.error("Failed to load staff list for inactive recruiters:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStaffList();
+  }, [loadStaffList]);
+
+  const inactiveRecruiters = useMemo(() => {
+    const map = new Map();
+    (allStaffList || []).forEach((r) => {
+      const st = String(r?.accountStatus || r?.account_status || "").trim().toLowerCase();
+      if (st === "inactive" || st === "disabled" || st === "deactivated") {
+        map.set(r.rid, r);
+      }
+    });
+    (data?.recruiters || []).forEach((r) => {
+      const st = String(r?.accountStatus || r?.account_status || "").trim().toLowerCase();
+      if (st === "inactive" || st === "disabled" || st === "deactivated") {
+        if (!map.has(r.rid)) {
+          map.set(r.rid, r);
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [allStaffList, data?.recruiters]);
+
+  const handleViewInactiveResumes = async () => {
+    if (!selectedInactiveRid) return;
+    const rec = inactiveRecruiters.find((r) => String(r.rid) === String(selectedInactiveRid));
+    setSelectedInactiveRecruiter(rec || { rid: selectedInactiveRid, name: "Recruiter" });
+    setInactiveResumesModalOpen(true);
+    setLoadingInactiveResumes(true);
+    setInactiveResumesError("");
+    setInactiveResumeSearch("");
+    setInactiveResumeStatusFilter("all");
+    try {
+      const resData = await fetchAdminRecruiterResumes(selectedInactiveRid);
+      if (resData?.recruiter) {
+        setSelectedInactiveRecruiter(resData.recruiter);
+      }
+      setInactiveRecruiterResumes(Array.isArray(resData?.resumes) ? resData.resumes : []);
+    } catch (err) {
+      setInactiveResumesError(err.message || "Failed to load recruiter resumes.");
+      setInactiveRecruiterResumes([]);
+    } finally {
+      setLoadingInactiveResumes(false);
+    }
+  };
+
+  const handleOpenResumeFile = (resId) => {
+    const token = getAuthSession()?.token;
+    const url = `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/file${
+      token ? `?token=${encodeURIComponent(token)}` : ""
+    }`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const filteredInactiveResumes = useMemo(() => {
+    return (inactiveRecruiterResumes || []).filter((item) => {
+      if (inactiveResumeStatusFilter !== "all") {
+        const itemStatus = String(item.currentStatus || item.status || "").toLowerCase();
+        if (itemStatus !== inactiveResumeStatusFilter) {
+          return false;
+        }
+      }
+      if (inactiveResumeSearch.trim()) {
+        const query = inactiveResumeSearch.toLowerCase();
+        const candName = String(item.candidateName || item.name || "").toLowerCase();
+        const candPhone = String(item.candidatePhone || item.phone || "").toLowerCase();
+        const jobTitle = String(
+          item.jobTitle || item.jobRole || item.companyName || "",
+        ).toLowerCase();
+        const resId = String(item.resId || "").toLowerCase();
+        return (
+          candName.includes(query) ||
+          candPhone.includes(query) ||
+          jobTitle.includes(query) ||
+          resId.includes(query)
+        );
+      }
+      return true;
+    });
+  }, [inactiveRecruiterResumes, inactiveResumeStatusFilter, inactiveResumeSearch]);
 
   const fetchSubmittedResumes = useCallback(async () => {
     setSubmittedLoading(true);
@@ -2071,6 +2176,45 @@ export default function AdminPerformance({ setCurrentPage }) {
         <EmployeeRankingWidget layout="horizontal" />
       </div>
 
+      {/* Inactive Recruiters Resumes Section (Directly above timeline filter) */}
+      <div className="perf-inactive-recruiter-bar">
+        <div className="perf-inactive-recruiter-left">
+          <div className="perf-inactive-icon-box">📁</div>
+          <div>
+            <h4 className="perf-inactive-title">Ex-Recruiters / Inactive Staff</h4>
+            <p className="perf-inactive-desc">
+              Review candidate resumes uploaded by recruiters who have left or been deactivated
+            </p>
+          </div>
+        </div>
+        <div className="perf-inactive-recruiter-controls">
+          <select
+            className="perf-inactive-select"
+            value={selectedInactiveRid}
+            onChange={(e) => setSelectedInactiveRid(e.target.value)}
+          >
+            <option value="">
+              {inactiveRecruiters.length === 0
+                ? "No inactive recruiters found"
+                : `-- Select Inactive Recruiter (${inactiveRecruiters.length}) --`}
+            </option>
+            {inactiveRecruiters.map((rec) => (
+              <option key={rec.rid} value={rec.rid}>
+                {rec.name || rec.rid} ({rec.team || "Team BPO"}) — {rec.rid}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="perf-view-resumes-btn"
+            onClick={handleViewInactiveResumes}
+            disabled={!selectedInactiveRid}
+          >
+            📄 View Resumes
+          </button>
+        </div>
+      </div>
+
       {/* Timeline filter */}
       <div className="perf-timeline-bar">
         <div className="perf-timeline-presets">
@@ -3124,6 +3268,158 @@ export default function AdminPerformance({ setCurrentPage }) {
           </div>
         </div>
       ) : null}
+
+      {/* Inactive Recruiter Resumes Modal */}
+      {inactiveResumesModalOpen && (
+        <div
+          className="perf-resumes-modal-overlay"
+          onClick={() => setInactiveResumesModalOpen(false)}
+        >
+          <div
+            className="perf-resumes-modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="perf-resumes-modal-header">
+              <div className="perf-resumes-modal-title-wrap">
+                <div className="perf-inactive-icon-box">📁</div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
+                    Resumes Uploaded by {selectedInactiveRecruiter?.name || selectedInactiveRecruiter?.rid}
+                  </h3>
+                  <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                    Recruiter ID: <strong>{selectedInactiveRecruiter?.rid}</strong>
+                    {selectedInactiveRecruiter?.team ? ` • Team: ${selectedInactiveRecruiter.team}` : ""}
+                    {selectedInactiveRecruiter?.email ? ` • ${selectedInactiveRecruiter.email}` : ""}
+                    {" • "}
+                    <span style={{ color: "#dc2626", fontWeight: 600 }}>Deactivated / Left</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="perf-resumes-modal-close"
+                onClick={() => setInactiveResumesModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="perf-resumes-modal-body">
+              {/* Search & filter toolbar */}
+              <div className="perf-modal-toolbar">
+                <input
+                  type="text"
+                  className="perf-modal-search"
+                  placeholder="Search by candidate name, phone, job role, or ID..."
+                  value={inactiveResumeSearch}
+                  onChange={(e) => setInactiveResumeSearch(e.target.value)}
+                />
+                <select
+                  className="perf-modal-filter-select"
+                  value={inactiveResumeStatusFilter}
+                  onChange={(e) => setInactiveResumeStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Stages ({inactiveRecruiterResumes.length})</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="verified">Verified</option>
+                  <option value="others">Others</option>
+                  <option value="walk_in">Walk In</option>
+                  <option value="shortlisted">Shortlisted</option>
+                  <option value="selected">Selected</option>
+                  <option value="joined">Joined</option>
+                  <option value="billed">Billed</option>
+                  <option value="left">Left</option>
+                  <option value="dropout">Dropout</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              {loadingInactiveResumes ? (
+                <div style={{ padding: "48px 20px", textAlign: "center", color: "#64748b" }}>
+                  <div style={{ fontSize: "1.2rem", marginBottom: 8 }}>⏳ Loading uploaded resumes...</div>
+                </div>
+              ) : inactiveResumesError ? (
+                <div className="admin-alert admin-alert-error">{inactiveResumesError}</div>
+              ) : filteredInactiveResumes.length === 0 ? (
+                <div style={{ padding: "48px 20px", textAlign: "center", color: "#64748b" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#334155" }}>
+                    No resumes found
+                  </div>
+                  <div style={{ fontSize: "0.85rem", marginTop: 4 }}>
+                    {inactiveResumeSearch || inactiveResumeStatusFilter !== "all"
+                      ? "Try clearing your search or status filter."
+                      : "This recruiter has not uploaded any resumes yet."}
+                  </div>
+                </div>
+              ) : (
+                <div className="perf-resumes-table-wrap">
+                  <table className="perf-resumes-table">
+                    <thead>
+                      <tr>
+                        <th>Candidate</th>
+                        <th>Phone</th>
+                        <th>Job / Company</th>
+                        <th>Current Stage</th>
+                        <th>Uploaded On</th>
+                        <th>Resume File</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInactiveResumes.map((resume) => {
+                        const statusKey = String(
+                          resume.currentStatus || resume.status || "submitted",
+                        ).toLowerCase();
+                        return (
+                          <tr key={resume.resId}>
+                            <td>
+                              <div style={{ fontWeight: 600, color: "#0f172a" }}>
+                                {resume.candidateName || "Unnamed Candidate"}
+                              </div>
+                              {resume.candidateEmail && (
+                                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                                  {resume.candidateEmail}
+                                </div>
+                              )}
+                            </td>
+                            <td>{resume.candidatePhone || "—"}</td>
+                            <td>
+                              <div style={{ fontWeight: 600, color: "#334155" }}>
+                                {resume.jobTitle || `Job #${resume.jobId || "—"}`}
+                              </div>
+                              {resume.companyName && (
+                                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                                  {resume.companyName}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <span className={`perf-status-pill perf-status-${statusKey}`}>
+                                {formatStatusLabel(statusKey)}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: "0.8rem", color: "#475569" }}>
+                              {formatDateTime(resume.uploadedAt || resume.createdAt)}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="perf-view-file-btn"
+                                onClick={() => handleOpenResumeFile(resume.resId)}
+                              >
+                                View File ↗
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
