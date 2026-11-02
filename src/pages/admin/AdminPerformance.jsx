@@ -25,6 +25,8 @@ import {
   formatDateTimeInIndia,
 } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
+import EmployeeRankingWidget from "../../components/Recruiter/EmployeeRankingWidget";
+import "../../styles/performance-dashboard.css";
 
 const TABS = {
   OVERVIEW: "overview",
@@ -2063,6 +2065,11 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     >
       {error && <div className="admin-alert admin-alert-error">{error}</div>}
+
+      {/* Horizontal Employee Ranking & Team Breakdown Showcase */}
+      <div className="perf-horizontal-ranking-wrap" style={{ marginTop: 8, marginBottom: 24 }}>
+        <EmployeeRankingWidget layout="horizontal" />
+      </div>
 
       {/* Timeline filter */}
       <div className="perf-timeline-bar">

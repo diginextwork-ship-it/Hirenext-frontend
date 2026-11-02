@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { fetchEmployeeLeaderboard } from "../../services/performanceService";
+import "../../styles/performance-dashboard.css";
 
 const FILTER_PRESETS = {
   ALL_TIME: "all_time",
