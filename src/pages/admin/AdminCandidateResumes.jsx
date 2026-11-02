@@ -6,6 +6,7 @@ import {
   adminDeleteResume,
   fetchAdminSubmittedResumes,
   exportAdminSubmittedResumes,
+  fetchAdminRecruitersList,
 } from "./adminApi";
 import { normalizeResumeData } from "../../utils/dashboardData";
 import SubmittedResumesPanel from "../../components/common/SubmittedResumesPanel";
@@ -24,6 +25,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deletingResId, setDeletingResId] = useState("");
+  const [recruiterList, setRecruiterList] = useState([]);
   const [activeParams, setActiveParams] = useState({});
   const activeParamsRef = useRef(activeParams);
   activeParamsRef.current = activeParams;
@@ -101,6 +103,17 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
     loadResumes({});
     initialLoadDone.current = true;
   }, [loadResumes]);
+
+  // Load staff/recruiters list for filter dropdown
+  useEffect(() => {
+    fetchAdminRecruitersList()
+      .then((data) => {
+        if (Array.isArray(data?.recruiters)) {
+          setRecruiterList(data.recruiters);
+        }
+      })
+      .catch((err) => console.error("Failed to load recruiter list for filter:", err));
+  }, []);
 
   const handleQueryChange = useCallback((newParams) => {
     setActiveParams(newParams);
@@ -207,6 +220,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         resumes={resumes}
         isLoading={isLoading}
         sourceOptions={sourceOptions}
+        recruiterList={recruiterList}
         getResumeUrl={getResumeUrl}
         deletingResId={deletingResId}
         onDownloadExcel={handleDownloadExcel}

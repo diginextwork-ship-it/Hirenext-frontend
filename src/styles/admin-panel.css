@@ -3576,8 +3576,12 @@
   gap: 16px;
 }
 
-.admin-candidate-filter-panel > .admin-filter-row:nth-of-type(-n + 3) {
+.admin-candidate-filter-panel > .admin-filter-row {
   display: contents;
+}
+
+.admin-filter-group-span-2 {
+  grid-column: span 2;
 }
 
 .admin-filter-group {
@@ -3610,6 +3614,11 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
   box-sizing: border-box;
+}
+
+select.admin-filter-select {
+  cursor: pointer;
+  appearance: auto;
 }
 
 .admin-filter-input:focus {
@@ -3688,20 +3697,26 @@
   margin: 0;
 }
 
+.admin-filter-footer-row {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f6;
+  margin-top: 4px;
+}
+
 .admin-filter-actions {
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
-  padding-top: 4px;
-  grid-column: 2 / 3;
-  align-self: end;
+  align-items: center;
 }
 
 .admin-filter-export {
   display: flex;
-  justify-content: flex-end;
-  grid-column: 3 / 4;
-  align-self: end;
+  align-items: center;
 }
 
 .admin-filter-action-btn {
@@ -3789,13 +3804,19 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-candidate-filter-panel > .admin-filter-row:nth-of-type(-n + 3) {
+  .admin-candidate-filter-panel > .admin-filter-row {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .admin-candidate-filter-panel > .admin-filter-row:nth-of-type(3) .admin-filter-group:first-child {
+  .admin-filter-group-span-2 {
     grid-column: auto;
+  }
+
+  .admin-filter-footer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .admin-date-range {
@@ -3811,7 +3832,7 @@
 
   .admin-filter-actions {
     flex-direction: column;
-    grid-column: auto;
+    width: 100%;
   }
 
   .admin-filter-action-btn {
@@ -3819,7 +3840,7 @@
   }
 
   .admin-filter-export {
-    grid-column: auto;
+    width: 100%;
   }
 
   .admin-filter-export .admin-filter-action-btn {

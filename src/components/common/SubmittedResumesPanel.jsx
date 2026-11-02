@@ -13,6 +13,7 @@ import "../../styles/admin-panel.css";
 const EMPTY_ADVANCED_FILTERS = {
   company: "",
   city: "",
+  recruiter: "",
   startDate: "",
   endDate: "",
   statuses: [],
@@ -354,6 +355,7 @@ export default function SubmittedResumesPanel({
   headerActions = null,
   sourceOptions = [],
   defaultRecruiterName = "",
+  recruiterList = [],
   getResumeUrl,
   renderRowActions = null,
   deletingResId = "",
@@ -388,6 +390,7 @@ export default function SubmittedResumesPanel({
     if (typeof onQueryChange !== "function") return;
     const effectiveCompany = "company" in overrides ? overrides.company : (draftFilters.company || appliedFilters.company || "");
     const effectiveCity = "city" in overrides ? overrides.city : (draftFilters.city || appliedFilters.city || "");
+    const effectiveRecruiter = "recruiter" in overrides ? overrides.recruiter : (draftFilters.recruiter || appliedFilters.recruiter || "");
     const effectiveStartDate = "startDate" in overrides ? overrides.startDate : (draftFilters.startDate || appliedFilters.startDate || "");
     const effectiveEndDate = "endDate" in overrides ? overrides.endDate : (draftFilters.endDate || appliedFilters.endDate || "");
     const effectiveStatuses = "statuses" in overrides ? overrides.statuses : (draftFilters.statuses?.length ? draftFilters.statuses : appliedFilters.statuses || []);
@@ -399,6 +402,7 @@ export default function SubmittedResumesPanel({
       source: ("source" in overrides ? overrides.source : activeSourceFilter),
       company: effectiveCompany,
       city: effectiveCity,
+      recruiter: effectiveRecruiter,
       startDate: effectiveStartDate,
       endDate: effectiveEndDate,
       statuses: effectiveStatuses,
@@ -461,6 +465,23 @@ export default function SubmittedResumesPanel({
       .slice(0, 12);
   }, [cityOptions, deferredCityInput]);
 
+  const allRecruiterOptions = useMemo(() => {
+    const map = new Map();
+    (recruiterList || []).forEach((r) => {
+      const name = typeof r === "string" ? r : (r?.name || r?.recruiterName);
+      if (name && String(name).trim() && name !== "N/A" && name !== "Name not found") {
+        map.set(name.toLowerCase().trim(), String(name).trim());
+      }
+    });
+    (resumes || []).forEach((resume) => {
+      const name = getRecruiterDisplayName(resume, defaultRecruiterName);
+      if (name && String(name).trim() && name !== "N/A" && name !== "Name not found") {
+        map.set(name.toLowerCase().trim(), String(name).trim());
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [recruiterList, resumes, defaultRecruiterName]);
+
   const searchFilteredResumes = topLevelSearch.trim()
     ? displayedResumes.filter((resume) => matchesCandidateTextSearch(resume, topLevelSearch))
     : displayedResumes;
@@ -480,6 +501,9 @@ export default function SubmittedResumesPanel({
     const cityQuery = String(filters?.city || "")
       .trim()
       .toLowerCase();
+    const recruiterQuery = String(filters?.recruiter || "")
+      .trim()
+      .toLowerCase();
     const statusQueries = Array.isArray(filters?.statuses)
       ? filters.statuses.map((value) => normalizeStatusValue(value))
       : [];
@@ -488,6 +512,7 @@ export default function SubmittedResumesPanel({
 
     const company = getCompanyFilterValue(resume).toLowerCase();
     const city = getCityFilterValue(resume).toLowerCase();
+    const recruiter = getRecruiterDisplayName(resume, defaultRecruiterName).toLowerCase();
     const status = normalizeStatusValue(getLatestResumeStatus(resume));
     const submittedDate = formatDateInputInIndia(resume.submittedAt || resume.uploadedAt);
 
@@ -508,6 +533,7 @@ export default function SubmittedResumesPanel({
     return (
       (!companyQuery || company.includes(companyQuery)) &&
       (!cityQuery || city.includes(cityQuery)) &&
+      (!recruiterQuery || recruiter.includes(recruiterQuery)) &&
       (!statusQueries.length || statusQueries.includes(status)) &&
       isWithinDateRange
     );
@@ -591,6 +617,7 @@ export default function SubmittedResumesPanel({
     notifyQueryChange({
       company: draftFilters.company,
       city: draftFilters.city,
+      recruiter: draftFilters.recruiter,
       startDate: draftFilters.startDate,
       endDate: draftFilters.endDate,
       statuses: draftFilters.statuses,
@@ -604,6 +631,7 @@ export default function SubmittedResumesPanel({
     notifyQueryChange({
       company: "",
       city: "",
+      recruiter: "",
       startDate: "",
       endDate: "",
       statuses: [],
@@ -623,6 +651,7 @@ export default function SubmittedResumesPanel({
       candidate: "",
       company: "",
       city: "",
+      recruiter: "",
       startDate: "",
       endDate: "",
       statuses: [],
@@ -880,7 +909,7 @@ export default function SubmittedResumesPanel({
           </div>
           
           <div className="admin-filter-row">
-            <label className="admin-filter-group">
+            <label className="admin-filter-group admin-filter-group-span-2">
               <span className="admin-filter-label">Submission date range</span>
               <div className="admin-date-range">
                 <input
@@ -902,7 +931,9 @@ export default function SubmittedResumesPanel({
                 />
               </div>
             </label>
-            
+          </div>
+
+          <div className="admin-filter-row">
             <label className="admin-filter-group">
               <span className="admin-filter-label">Current Status</span>
               <div className="admin-filter-multiselect">
@@ -945,34 +976,53 @@ export default function SubmittedResumesPanel({
                 ) : null}
               </div>
             </label>
+
+            <label className="admin-filter-group">
+              <span className="admin-filter-label">Recruiter</span>
+              <select
+                name="recruiter"
+                value={draftFilters.recruiter}
+                onChange={handleDraftFilterChange}
+                className="admin-filter-input admin-filter-select"
+              >
+                <option value="">All recruiters</option>
+                {allRecruiterOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           
-          <div className="admin-filter-actions">
-            <button
-              type="button"
-              className="admin-filter-action-btn admin-filter-clear"
-              onClick={handleClearAdvancedFilters}
-            >
-              Clear Filters
-            </button>
-            <button
-              type="button"
-              className="admin-filter-action-btn admin-filter-apply"
-              onClick={handleApplyAdvancedFilters}
-            >
-              Apply Filters
-            </button>
-          </div>
-          
-          <div className="admin-filter-export">
-            <button
-              type="button"
-              className="admin-filter-action-btn admin-filter-export"
-              onClick={handleDownloadAsExcel}
-              disabled={advancedFilteredResumes.length === 0}
-            >
-              📊 Download as Excel
-            </button>
+          <div className="admin-filter-footer-row">
+            <div className="admin-filter-actions">
+              <button
+                type="button"
+                className="admin-filter-action-btn admin-filter-clear"
+                onClick={handleClearAdvancedFilters}
+              >
+                Clear Filters
+              </button>
+              <button
+                type="button"
+                className="admin-filter-action-btn admin-filter-apply"
+                onClick={handleApplyAdvancedFilters}
+              >
+                Apply Filters
+              </button>
+            </div>
+            
+            <div className="admin-filter-export">
+              <button
+                type="button"
+                className="admin-filter-action-btn admin-filter-export"
+                onClick={handleDownloadAsExcel}
+                disabled={advancedFilteredResumes.length === 0}
+              >
+                📊 Download as Excel
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
