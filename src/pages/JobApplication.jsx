@@ -9,6 +9,26 @@ import {
   storeSelectedJob,
 } from "../utils/jobSearch";
 
+const EDUCATION_OPTIONS = [
+  { value: "10th Standard", label: "10th Standard", aliases: ["10th", "secondary"] },
+  { value: "12th Standard", label: "12th Standard", aliases: ["12th", "intermediate", "higher secondary"] },
+  { value: "Undergraduate", label: "Undergraduate / Diploma", aliases: ["undergraduate", "diploma", "polytechnic"] },
+  { value: "Bachelor's", label: "Bachelor's Degree", aliases: ["bachelors", "bachelor", "btech", "b.tech", "be", "b.e", "bca", "bsc", "b.sc", "bcom", "b.com", "ba", "b.a", "degree"] },
+  { value: "Master's", label: "Master's Degree", aliases: ["masters", "master", "mtech", "m.tech", "me", "m.e", "mca", "mba", "msc", "m.sc", "pg", "post graduate"] },
+  { value: "PhD", label: "Doctorate / PhD", aliases: ["phd", "ph.d", "doctorate", "doctor"] },
+];
+
+export const normalizeEducationOption = (value) => {
+  if (!value) return "";
+  const cleaned = String(value).trim().toLowerCase();
+  for (const option of EDUCATION_OPTIONS) {
+    if (option.value.toLowerCase() === cleaned) return option.value;
+    if (option.label.toLowerCase() === cleaned) return option.value;
+    if (option.aliases.some((alias) => cleaned.includes(alias))) return option.value;
+  }
+  return "";
+};
+
 const initialFormData = {
   name: "",
   phone: "",
@@ -202,12 +222,13 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
       }
 
       const autofill = data?.autofill || {};
+      const normalizedEdu = normalizeEducationOption(autofill.latestEducationLevel);
       setFormData((prev) => ({
         ...prev,
         name: autofill.name || prev.name,
         phone: String(autofill.phone || prev.phone).replace(/\D/g, "").slice(0, 10),
         email: autofill.email || prev.email,
-        latestEducationLevel: autofill.latestEducationLevel || prev.latestEducationLevel,
+        latestEducationLevel: prev.latestEducationLevel || normalizedEdu || "",
         boardUniversity: autofill.boardUniversity || prev.boardUniversity,
         institutionName: autofill.institutionName || prev.institutionName,
         age: autofill.age || prev.age,
@@ -698,10 +719,11 @@ export default function JobApplication({ setCurrentPage, routeJobId }) {
                   required
                 >
                   <option value="">Select qualification</option>
-                  <option value="10th">10th Standard</option>
-                  <option value="12th">12th Standard</option>
-                  <option value="bachelors">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree / Doctorate</option>
+                  {EDUCATION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 

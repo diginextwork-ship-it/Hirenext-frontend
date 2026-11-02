@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import {
   displayNote,
   formatResumeCompanyDisplay,
+  getCurrentStatusNote,
 } from "../../utils/dashboardData";
 import {
   formatDateTimeInIndia,
@@ -254,26 +255,46 @@ const getRecruiterDisplayName = (resume, defaultRecruiterName) => {
   );
 };
 
-const buildExcelExportRows = (resumes, defaultRecruiterName, getResumeUrl) =>
-  resumes.map((resume) => ({
-    recruiterName: getRecruiterDisplayName(resume, defaultRecruiterName),
-    candidateName:
-      resume.applicantName || resume.candidateName || "Name not found",
-    phone: resume.applicantPhone || resume.candidatePhone || "N/A",
-    email: resume.applicantEmail || resume.candidateEmail || "N/A",
-    companyName: formatResumeCompanyDisplay(resume) || "N/A",
-    role: resume.job?.roleName || resume.roleName || "N/A",
-    city: resume.city || resume.job?.city || "N/A",
-    education: formatEducationDisplay(resume),
-    age: resume.age ?? "N/A",
-    atsScore: formatPercent(resume.atsScore),
-    latestStatus: formatStatusLabel(getLatestResumeStatus(resume)),
-    recruiterNote: displayNote(resume.submittedReason),
-    submittedAt: formatDateTime(resume.submittedAt || resume.uploadedAt) || "N/A",
-    resumeFileUrl: getResumeUrl(resume) || "N/A",
-  }));
+const buildExcelExportRows = (
+  resumes,
+  defaultRecruiterName,
+  getResumeUrl,
+  showAtsScore = false,
+) =>
+  resumes.map((resume) => {
+    const row = {
+      recruiterName: getRecruiterDisplayName(resume, defaultRecruiterName),
+      candidateName:
+        resume.applicantName || resume.candidateName || "Name not found",
+      phone: resume.applicantPhone || resume.candidatePhone || "N/A",
+      email: resume.applicantEmail || resume.candidateEmail || "N/A",
+      companyName: formatResumeCompanyDisplay(resume) || "N/A",
+      role: resume.job?.roleName || resume.roleName || "N/A",
+      city: resume.city || resume.job?.city || "N/A",
+      education: formatEducationDisplay(resume),
+      age: resume.age ?? "N/A",
+    };
+    if (showAtsScore) {
+      row.atsScore = formatPercent(resume.atsScore);
+    }
+    row.latestStatus = formatStatusLabel(getLatestResumeStatus(resume));
+    row.recruiterNote = displayNote(
+      getCurrentStatusNote(resume) ||
+        resume.recruiterNote ||
+        resume.selectionNote ||
+        resume.submittedReason,
+    );
+    row.submittedAt =
+      formatDateTime(resume.submittedAt || resume.uploadedAt) || "N/A";
+    row.resumeFileUrl = getResumeUrl(resume) || "N/A";
+    return row;
+  });
 
-const downloadExcelFile = (rows) => {
+const downloadExcelFile = (rows, showAtsScore = false) => {
+  const exportColumns = showAtsScore
+    ? EXCEL_EXPORT_COLUMNS
+    : EXCEL_EXPORT_COLUMNS.filter((col) => col !== "ATS Score");
+
   const tableRows = rows
     .map(
       (row) => `
@@ -287,7 +308,7 @@ const downloadExcelFile = (rows) => {
           <td>${escapeHtml(sanitizeExcelValue(row.city))}</td>
           <td>${escapeHtml(sanitizeExcelValue(row.education))}</td>
           <td>${escapeHtml(sanitizeExcelValue(row.age))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.atsScore))}</td>
+          ${showAtsScore ? `<td>${escapeHtml(sanitizeExcelValue(row.atsScore))}</td>` : ""}
           <td>${escapeHtml(sanitizeExcelValue(row.latestStatus))}</td>
           <td>${escapeHtml(sanitizeExcelValue(row.recruiterNote))}</td>
           <td>${escapeHtml(sanitizeExcelValue(row.submittedAt))}</td>
@@ -304,7 +325,7 @@ const downloadExcelFile = (rows) => {
   <body>
     <table border="1">
       <thead>
-        <tr>${EXCEL_EXPORT_COLUMNS.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
+        <tr>${exportColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
       </thead>
       <tbody>${tableRows}</tbody>
     </table>
@@ -341,6 +362,7 @@ export default function SubmittedResumesPanel({
   onQueryChange = null,
   serverTotalCount = null,
   serverFilteredCount = null,
+  showAtsScore = false,
 }) {
   const [sourceFilter, setSourceFilter] = useState(
     sourceOptions[0]?.key || "all",
@@ -651,6 +673,7 @@ export default function SubmittedResumesPanel({
         advancedFilteredResumes,
         defaultRecruiterName,
         getResumeUrl,
+        showAtsScore,
       );
 
       if (!exportRows.length) {
@@ -659,7 +682,7 @@ export default function SubmittedResumesPanel({
         return;
       }
 
-      downloadExcelFile(exportRows);
+      downloadExcelFile(exportRows, showAtsScore);
       setDownloadError("");
       setDownloadMessage(
         `Downloaded ${exportRows.length} submitted resume${exportRows.length === 1 ? "" : "s"}.`,
@@ -978,7 +1001,9 @@ export default function SubmittedResumesPanel({
                 <col className="submitted-resumes-col-city" />
                 <col className="submitted-resumes-col-education" />
                 <col className="submitted-resumes-col-age" />
-                <col className="submitted-resumes-col-ats" />
+                {showAtsScore ? (
+                  <col className="submitted-resumes-col-ats" />
+                ) : null}
                 <col className="submitted-resumes-col-status" />
                 <col className="submitted-resumes-col-note" />
                 <col className="submitted-resumes-col-submitted" />
@@ -998,7 +1023,7 @@ export default function SubmittedResumesPanel({
                   <th>City</th>
                   <th>Education</th>
                   <th>Age</th>
-                  <th>ATS Score</th>
+                  {showAtsScore ? <th>ATS Score</th> : null}
                   <th>Latest Status</th>
                   <th>Recruiter Note</th>
                   <th>Submitted At</th>
@@ -1030,17 +1055,26 @@ export default function SubmittedResumesPanel({
                     <td>{resume.city || resume.job?.city || "N/A"}</td>
                     <td>{formatEducationDisplay(resume)}</td>
                     <td>{resume.age ?? "N/A"}</td>
-                    <td>
-                      <span className="admin-stat-pill">
-                        {formatPercent(resume.atsScore)}
-                      </span>
-                    </td>
+                    {showAtsScore ? (
+                      <td>
+                        <span className="admin-stat-pill">
+                          {formatPercent(resume.atsScore)}
+                        </span>
+                      </td>
+                    ) : null}
                     <td>
                       <span className="admin-candidate-status-badge">
                         {formatStatusLabel(getLatestResumeStatus(resume))}
                       </span>
                     </td>
-                    <td>{displayNote(resume.submittedReason)}</td>
+                    <td>
+                      {displayNote(
+                        getCurrentStatusNote(resume) ||
+                          resume.recruiterNote ||
+                          resume.selectionNote ||
+                          resume.submittedReason,
+                      )}
+                    </td>
                     <td>{formatDateTime(resume.submittedAt || resume.uploadedAt)}</td>
                     <td>
                       {resume.resId ? (

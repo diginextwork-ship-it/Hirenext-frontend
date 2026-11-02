@@ -220,6 +220,7 @@ export default function RecruiterDashboard({ recruiterId }) {
   const [statusError, setStatusError] = useState("");
   const [activeStatus, setActiveStatus] = useState("");
   const [candidateSearch, setCandidateSearch] = useState("");
+  const [selectedTeamTab, setSelectedTeamTab] = useState("all");
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [selectedResumeForAction, setSelectedResumeForAction] = useState(null);
   const [leftModalOpen, setLeftModalOpen] = useState(false);
@@ -520,11 +521,22 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   return (
     <section className="recruiter-performance-dashboard">
-      <div className="perf-dashboard-top-layout" style={{ marginTop: 0 }}>
-        <div className="perf-dashboard-cards-side">
+      {/* Horizontal Employee Ranking & Team Showcase above Performance Dashboard */}
+      <div className="perf-horizontal-ranking-wrap">
+        <EmployeeRankingWidget
+          currentRecruiterRid={recruiterId}
+          team={selectedTeamTab}
+          onSelectTeam={setSelectedTeamTab}
+          layout="horizontal"
+        />
+      </div>
+
+      <div className="perf-dashboard-top-layout perf-dashboard-top-layout-full" style={{ marginTop: 0 }}>
+        <div className="perf-dashboard-cards-side perf-dashboard-cards-side-full">
           <div className="ui-row-between ui-row-wrap">
             <h2>My Performance Dashboard</h2>
           </div>
+
           <div className="dashboard-date-filter">
             <div className="perf-timeline-presets">
               {[
@@ -695,9 +707,6 @@ export default function RecruiterDashboard({ recruiterId }) {
           ) : null}
         </div>
 
-        <div className="perf-dashboard-ranking-side">
-          <EmployeeRankingWidget currentRecruiterRid={recruiterId} />
-        </div>
       </div>
 
       {activeStatus ? (
@@ -1005,7 +1014,6 @@ export default function RecruiterDashboard({ recruiterId }) {
           <div className="points-progress-actions"></div>
         </article>
 
-        <EmployeeRankingWidget currentRecruiterRid={recruiterId} />
       </div>
 
       <ResumeStatusActionModal

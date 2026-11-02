@@ -65,6 +65,20 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
               normalized.atsScore ?? item.atsScore ?? item.ats_score ?? null,
             _source: item._source || (item.source === "candidate" ? "candidate" : "recruiter"),
             _recruiterName: item._recruiterName || item.recruiterName || normalized.recruiterName || "N/A",
+            recruiterNote: item.recruiterNote || normalized.recruiterNote || null,
+            walkInReason: item.walkInReason || normalized.walkInReason || null,
+            verifiedReason: item.verifiedReason || normalized.verifiedReason || null,
+            submittedReason: item.submittedReason || normalized.submittedReason || null,
+            othersReason: item.othersReason || normalized.othersReason || null,
+            selectReason: item.selectReason || normalized.selectReason || null,
+            shortlistedReason: item.shortlistedReason || normalized.shortlistedReason || null,
+            joinedReason: item.joinedReason || normalized.joinedReason || null,
+            dropoutReason: item.dropoutReason || normalized.dropoutReason || null,
+            billedReason: item.billedReason || normalized.billedReason || null,
+            leftReason: item.leftReason || normalized.leftReason || null,
+            rejectReason: item.rejectReason || normalized.rejectReason || null,
+            furtherReason: item.furtherReason || normalized.furtherReason || null,
+            selectionNote: item.selectionNote || normalized.selectionNote || null,
           };
         }),
       );
@@ -199,6 +213,7 @@ export default function AdminCandidateResumes({ setCurrentPage }) {
         onQueryChange={handleQueryChange}
         serverTotalCount={totalCount}
         serverFilteredCount={filteredCount}
+        showAtsScore={false}
         renderRowActions={(resume) => (
           <button
             type="button"

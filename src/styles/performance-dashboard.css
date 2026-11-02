@@ -1961,3 +1961,141 @@
 
 
 
+
+
+/* ==========================================================================
+   Horizontal Employee Ranking Showcase & Team Breakdown
+   ========================================================================== */
+
+.perf-horizontal-ranking-wrap {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.perf-dashboard-cards-side-full {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.employee-ranking-card.employee-ranking-card-horizontal {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 20px;
+  padding: 22px 26px;
+  background: #ffffff;
+  border: 1.5px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.employee-ranking-head-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid #f1f5f9;
+  margin-bottom: 16px;
+}
+
+.employee-team-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+}
+
+.employee-team-btn {
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-team-btn:hover {
+  color: #0f172a;
+}
+
+.employee-team-btn.is-active {
+  background: #c62828;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(198, 40, 40, 0.25);
+}
+
+.employee-team-btn .team-count-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.employee-team-btn:not(.is-active) .team-count-badge {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.employee-ranking-list-horizontal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 4px 2px 8px;
+  list-style: none;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.employee-ranking-list-horizontal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.employee-ranking-list-horizontal::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.employee-ranking-list-horizontal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.employee-ranking-list-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.employee-team-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.team-bpo-pill {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.team-nbfc-pill {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}

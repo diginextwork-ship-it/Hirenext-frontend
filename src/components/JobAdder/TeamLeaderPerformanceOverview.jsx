@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAuthSession } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
 import {
+  formatQualificationDisplay,
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -299,6 +300,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   const [customEnd, setCustomEnd] = useState("");
   const [selectedStatusKey, setSelectedStatusKey] = useState("verified");
   const [recruiterEntrySearch, setRecruiterEntrySearch] = useState("");
+  const [selectedTeamTab, setSelectedTeamTab] = useState("all");
   const [actionModalItem, setActionModalItem] = useState(null);
   const [actionTarget, setActionTarget] = useState("");
   const [actionReason, setActionReason] = useState("");
@@ -658,16 +660,26 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   return (
     <section className="perf-section">
-      <div className="perf-dashboard-top-layout" style={{ marginTop: 0 }}>
-        <div className="perf-dashboard-cards-side">
+      {/* Horizontal Employee Ranking & Team Showcase above Performance Dashboard */}
+      <div className="perf-horizontal-ranking-wrap">
+        <EmployeeRankingWidget
+          currentRecruiterRid={getAuthSession()?.rid}
+          team={selectedTeamTab}
+          onSelectTeam={setSelectedTeamTab}
+          layout="horizontal"
+        />
+      </div>
+
+      <div className="perf-dashboard-top-layout perf-dashboard-top-layout-full" style={{ marginTop: 0 }}>
+        <div className="perf-dashboard-cards-side perf-dashboard-cards-side-full">
           <div className="ui-row-between ui-row-wrap" style={{ gap: 12 }}>
-            <div>
-              <h2 style={{ margin: 0 }}>Performance Dashboard</h2>
-              <p className="admin-muted" style={{ margin: "8px 0 0" }}>
-                Track everyone's activity, including your own, across all team leader jobs.
-              </p>
-            </div>
+          <div>
+            <h2 style={{ margin: 0 }}>Performance Dashboard</h2>
+            <p className="admin-muted" style={{ margin: "8px 0 0" }}>
+              Track everyone's activity, including your own, across all team leader jobs.
+            </p>
           </div>
+        </div>
 
           {error ? (
             <div className="admin-alert admin-alert-error" style={{ marginTop: 16 }}>
@@ -764,9 +776,6 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
           </div>
         </div>
 
-        <div className="perf-dashboard-ranking-side">
-          <EmployeeRankingWidget currentRecruiterRid={getAuthSession()?.rid} />
-        </div>
       </div>
 
       <div className="perf-section">
@@ -820,6 +829,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>Candidate Name</th>
                   <th>Recruiter</th>
                   <th>Contact Number</th>
+                  <th>Highest Qualification</th>
                   <th>Company Name</th>
                   <th>City</th>
                   <th>Resume File</th>
@@ -857,6 +867,13 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                         </a>
                       ) : (
                         "N/A"
+                      )}
+                    </td>
+                    <td>
+                      {formatQualificationDisplay(
+                        item.highestQualification ||
+                          item.latestEducationLevel ||
+                          item.levelOfEdu,
                       )}
                     </td>
                     <td>{formatResumeCompanyDisplay(item) || "N/A"}</td>

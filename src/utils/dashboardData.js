@@ -22,24 +22,48 @@ export const getWorkflowNoteAuthor = (resume, value) => {
 };
 
 export const getCurrentStatusNote = (resume) => {
-  const status = String(resume?.workflowStatus || resume?.status || "")
+  const status = String(
+    resume?.currentStatus || resume?.workflowStatus || resume?.status || ""
+  )
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
+
   const noteByStatus = {
+    submitted: resume?.submittedReason,
     verified: resume?.verifiedReason,
     others: resume?.othersReason,
     walk_in: resume?.walkInReason,
+    further: resume?.furtherReason,
     shortlisted: resume?.shortlistedReason || resume?.pendingJoiningReason,
     pending_joining: resume?.shortlistedReason || resume?.pendingJoiningReason,
     selected: resume?.selectReason,
     rejected: resume?.rejectReason,
-    joined: resume?.joiningNote || resume?.joinedReason,
+    joined: resume?.joinedReason || resume?.joiningNote,
     dropout: resume?.dropoutReason,
     billed: resume?.billedReason,
     left: resume?.leftReason,
   };
-  return noteByStatus[status] || resume?.workflowNote || "";
+
+  const statusNote = noteByStatus[status];
+  if (
+    statusNote !== undefined &&
+    statusNote !== null &&
+    String(statusNote).trim() !== ""
+  ) {
+    return String(statusNote).trim();
+  }
+
+  const fallback =
+    resume?.recruiterNote ||
+    resume?.selectionNote ||
+    resume?.selection_note ||
+    resume?.workflowNote ||
+    resume?.workflow_note ||
+    (status === "submitted" ? resume?.submittedReason : "") ||
+    "";
+
+  return String(fallback || "").trim();
 };
 
 const normalizeDisplayText = (value) => {
@@ -258,6 +282,36 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
       "mobile_number",
       "contactNumber",
       "contact_number",
+    ]),
+  );
+  const highestQualification = pickFirst(
+    pickNested(source, [
+      "highestQualification",
+      "highest_qualification",
+      "latestEducationLevel",
+      "latest_education_level",
+      "levelOfEdu",
+      "level_of_edu",
+      "educationLevel",
+      "education_level",
+      "degree",
+      "qualification",
+      "education.latestEducationLevel",
+      "education.latest_education_level",
+      "education.degree",
+      "education.qualification",
+    ]),
+    pickNested(nestedCandidate, [
+      "highestQualification",
+      "highest_qualification",
+      "latestEducationLevel",
+      "latest_education_level",
+      "levelOfEdu",
+      "level_of_edu",
+      "educationLevel",
+      "education_level",
+      "degree",
+      "qualification",
     ]),
   );
   const resolvedCandidateName = normalizeDisplayText(
@@ -571,6 +625,15 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     applicantPhone: pickFirst(source.applicantPhone, candidatePhone),
     phone: pickFirst(source.phone, candidatePhone),
     mobile: pickFirst(source.mobile, candidatePhone),
+    highestQualification: pickFirst(
+      source.highestQualification,
+      highestQualification,
+    ),
+    latestEducationLevel: pickFirst(
+      source.latestEducationLevel,
+      highestQualification,
+    ),
+    levelOfEdu: pickFirst(source.levelOfEdu, highestQualification),
     status: pickFirst(status, source.status),
     currentStatus: pickFirst(source.currentStatus, currentStatus, status),
     workflowStatus: pickFirst(source.workflowStatus, status),
@@ -607,6 +670,9 @@ export const normalizeResumeData = (resume, fallbackJob = null) => {
     billedAt: pickFirst(source.billedAt, billedAt),
     leftReason: pickFirst(source.leftReason, leftReason),
     leftAt: pickFirst(source.leftAt, leftAt),
+    furtherReason: pickFirst(source.furtherReason, source.further_reason),
+    selectionNote: pickFirst(source.selectionNote, source.selection_note),
+    recruiterNote: pickFirst(source.recruiterNote, source.recruiter_note),
     jobJid: pickFirst(source.jobJid, jobJid),
     companyName: pickFirst(source.companyName, companyName),
     company_name: pickFirst(source.company_name, companyName),
@@ -647,6 +713,24 @@ export const formatResumeCityDisplay = (resume, fallbackJob = null) => {
     normalized.job?.city,
     normalized.job?.jobCity,
   ) || "N/A";
+};
+
+export const formatQualificationDisplay = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (
+    !normalized ||
+    ["n/a", "na", "not set"].includes(normalized.toLowerCase())
+  ) {
+    return "-";
+  }
+  if (normalized.toLowerCase() === "phd") return "PhD";
+  if (normalized === normalized.toLowerCase()) {
+    return normalized
+      .split(/[\s_]+/)
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+      .join(" ");
+  }
+  return normalized;
 };
 
 export const buildCandidatePayloadAliases = (resume, fallbackJob = null) => {

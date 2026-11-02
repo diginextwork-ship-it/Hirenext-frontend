@@ -3,6 +3,7 @@ import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
   adminUpdateRecruiterAccountStatus,
+  adminUpdateRecruiterTeam,
   fetchAdminSalaryHistoryDetail,
   getAdminHeaders,
   readJsonResponse,
@@ -360,6 +361,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
         <div className="admin-salary-history-header">
           <span>Name</span>
           <span>Email</span>
+          <span>Team</span>
           <span>Current Salary</span>
           <span>Action</span>
         </div>
@@ -405,6 +407,26 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                 </div>
                 <div className="admin-salary-history-email">
                   {member.email || "No email available"}
+                </div>
+                <div className="admin-salary-history-team" onClick={(e) => e.stopPropagation()}>
+                  <select
+                    className="admin-team-select"
+                    value={member.team || "Team BPO"}
+                    onChange={async (e) => {
+                      const newTeam = e.target.value;
+                      try {
+                        await adminUpdateRecruiterTeam(member.rid, newTeam);
+                        setStaff((prev) =>
+                          prev.map((s) => (s.rid === member.rid ? { ...s, team: newTeam } : s))
+                        );
+                      } catch (err) {
+                        alert("Failed to update team: " + (err.message || err));
+                      }
+                    }}
+                  >
+                    <option value="Team BPO">Team BPO</option>
+                    <option value="Team NBFC">Team NBFC</option>
+                  </select>
                 </div>
                 <div className="admin-salary-history-amount">
                   {formatCurrency(member.currentSalary)}

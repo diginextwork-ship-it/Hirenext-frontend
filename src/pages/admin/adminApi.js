@@ -165,3 +165,14 @@ export const updateAdminSalaryHistory = async (rid, payload) =>
   );
 
 
+
+export const adminUpdateRecruiterTeam = async (rid, team) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/team`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ team }),
+    },
+    "Failed to update recruiter team.",
+  );

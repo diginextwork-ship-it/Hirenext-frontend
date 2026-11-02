@@ -174,6 +174,7 @@ export const fetchEmployeeLeaderboard = async (params = {}) => {
     const query = new URLSearchParams();
     if (params?.startDate) query.set("startDate", params.startDate);
     if (params?.endDate) query.set("endDate", params.endDate);
+    if (params?.team && params.team !== "all") query.set("team", params.team);
     const queryString = query.toString() ? `?${query.toString()}` : "";
 
     return await authFetch(

@@ -16,6 +16,7 @@ import {
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
+  formatQualificationDisplay,
   formatResumeCompanyDisplay,
   normalizeResumeData,
 } from "../../utils/dashboardData";
@@ -240,19 +241,19 @@ function getPresetRange(preset) {
 const getExistingRevenueAmount = (item) => {
   const revenueValue = Number(
     item?.revenue ??
-      item?.revenueAmount ??
-      item?.candidateRevenue ??
-      item?.companyRevenue ??
-      item?.amount ??
-      item?.companyRev ??
-      item?.company_rev ??
-      item?.job?.revenue ??
-      item?.job?.revenueAmount ??
-      item?.job?.candidateRevenue ??
-      item?.job?.companyRevenue ??
-      item?.job?.companyRev ??
-      item?.job?.company_rev ??
-      0,
+    item?.revenueAmount ??
+    item?.candidateRevenue ??
+    item?.companyRevenue ??
+    item?.amount ??
+    item?.companyRev ??
+    item?.company_rev ??
+    item?.job?.revenue ??
+    item?.job?.revenueAmount ??
+    item?.job?.candidateRevenue ??
+    item?.job?.companyRevenue ??
+    item?.job?.companyRev ??
+    item?.job?.company_rev ??
+    0,
   );
 
   return Number.isFinite(revenueValue) ? Math.trunc(revenueValue) : 0;
@@ -580,6 +581,149 @@ function dedupeItemsByResId(items) {
   return Array.from(map.values());
 }
 
+const LINEAR_STAGES = [
+  "submitted",
+  "verified",
+  "walk_in",
+  "shortlisted",
+  "selected",
+  "joined",
+  "billed",
+];
+
+function hasCandidatePassedStage(item, targetStage) {
+  const target = normalizeStatus(targetStage);
+  if (!target) return false;
+
+  const currentStatus = normalizeStatus(
+    item?.currentStatus || item?.workflowStatus || item?.status,
+  );
+
+  // If candidate is currently at this stage, they belong in this stage
+  if (currentStatus === target) return true;
+
+  // Submitted: All candidates pass through submitted (excluding terminal exclusive statuses like rejected/left)
+  if (target === "submitted") {
+    return !TERMINAL_EXCLUSIVE_STATUSES.has(currentStatus);
+  }
+
+  // Check explicit timestamps or reasons for this stage if recorded
+  const hasStageRecord = (stageKey) => {
+    switch (stageKey) {
+      case "verified":
+        return Boolean(
+          item?.verifiedAt ||
+          item?.verified_at ||
+          item?.verifiedReason ||
+          item?.verified_reason
+        );
+      case "others":
+        return Boolean(
+          item?.othersAt ||
+          item?.others_at ||
+          item?.othersReason ||
+          item?.others_reason
+        );
+      case "walk_in":
+        return Boolean(
+          item?.walkInAt ||
+          item?.walk_in_at ||
+          item?.walkInDate ||
+          item?.walk_in_date ||
+          item?.walkInReason ||
+          item?.walk_in_reason
+        );
+      case "shortlisted":
+        return Boolean(
+          item?.shortlistedAt ||
+          item?.shortlisted_at ||
+          item?.shortlistedReason ||
+          item?.shortlisted_reason
+        );
+      case "selected":
+        return Boolean(
+          item?.selectedAt ||
+          item?.selected_at ||
+          item?.selectReason ||
+          item?.select_reason ||
+          (currentStatus === "selected" && (item?.joiningDate || item?.currentJoiningDate))
+        );
+      case "joined":
+        return Boolean(
+          item?.joinedAt ||
+          item?.joined_at ||
+          item?.joinedReason ||
+          item?.joined_reason ||
+          item?.joiningNote ||
+          (currentStatus === "joined" && (item?.joiningDate || item?.currentJoiningDate))
+        );
+      case "billed":
+        return Boolean(
+          item?.billedAt ||
+          item?.billed_at ||
+          item?.billedReason ||
+          item?.billed_reason
+        );
+      case "dropout":
+        return Boolean(
+          item?.dropoutAt ||
+          item?.dropout_at ||
+          item?.dropoutReason ||
+          item?.dropout_reason ||
+          currentStatus === "dropout"
+        );
+      case "rejected":
+        return Boolean(
+          item?.rejectedAt ||
+          item?.rejected_at ||
+          item?.rejectReason ||
+          item?.reject_reason ||
+          currentStatus === "rejected"
+        );
+      case "left":
+        return Boolean(
+          item?.leftAt ||
+          item?.left_at ||
+          item?.leftReason ||
+          item?.left_reason ||
+          currentStatus === "left"
+        );
+      default:
+        return false;
+    }
+  };
+
+  if (hasStageRecord(target)) return true;
+
+  const targetIndex = LINEAR_STAGES.indexOf(target);
+  if (targetIndex !== -1) {
+    const currentIndex = LINEAR_STAGES.indexOf(currentStatus);
+    if (currentIndex > targetIndex) {
+      if (target === "verified" && hasStageRecord("others") && !hasStageRecord("verified")) {
+        return false;
+      }
+      return true;
+    }
+
+    if (currentStatus === "dropout") {
+      const dropoutMax = (item?.joiningDate || item?.selectedAt) ? 4 : 3;
+      return targetIndex <= dropoutMax;
+    }
+
+    if (currentStatus === "left") {
+      return targetIndex <= 5;
+    }
+
+    if (currentStatus === "rejected") {
+      if (item?.joiningDate && targetIndex <= 4) return true;
+      if ((item?.walkInDate || item?.walkInReason || item?.walkInAt) && targetIndex <= 2) return true;
+      if ((item?.verifiedReason || item?.verifiedAt) && targetIndex <= 1) return true;
+    }
+  }
+
+  return false;
+}
+
 export default function AdminPerformance({ setCurrentPage }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -746,6 +890,11 @@ export default function AdminPerformance({ setCurrentPage }) {
           const normalized = normalizeResumeData(item);
           return {
             ...normalized,
+            highestQualification:
+              normalized.highestQualification ||
+              item.highestQualification ||
+              item.latestEducationLevel ||
+              null,
             recruiterName: normalized.recruiterName || "-",
             recruiterRid: normalized.rid || "-",
             teamLeaderRid:
@@ -865,11 +1014,11 @@ export default function AdminPerformance({ setCurrentPage }) {
         if (!resId || String(resId).trim() === "") continue;
         const itemStatus = normalizeStatus(
           item?.workflowStatus ||
-            item?.workflow_status ||
-            item?.status ||
-            normalizedItem?.workflowStatus ||
-            normalizedItem?.status ||
-            bucketStatus,
+          item?.workflow_status ||
+          item?.status ||
+          normalizedItem?.workflowStatus ||
+          normalizedItem?.status ||
+          bucketStatus,
         );
         const itemRank = getStatusRank(itemStatus);
         if (itemRank < 0) continue;
@@ -914,12 +1063,12 @@ export default function AdminPerformance({ setCurrentPage }) {
           : null;
         const sourceStatus = normalizeStatus(
           normalized?.workflowStatus ||
-            normalized?.workflow_status ||
-            normalized?.status ||
-            item?.workflowStatus ||
-            item?.workflow_status ||
-            item?.status ||
-            fallbackStatus,
+          normalized?.workflow_status ||
+          normalized?.status ||
+          item?.workflowStatus ||
+          item?.workflow_status ||
+          item?.status ||
+          fallbackStatus,
         );
         const bucketStatus = normalizeStatus(fallbackStatus);
         const currentStatus = normalizeStatus(
@@ -946,21 +1095,9 @@ export default function AdminPerformance({ setCurrentPage }) {
       });
 
       const dedupedItems = dedupeItemsByResId(normalizedItems);
-      if (fallbackStatus === "submitted") {
-        return dedupedItems.filter((item) => {
-          const effectiveStatus = normalizeStatus(
-            item?.currentStatus || item?.status,
-          );
-          return !TERMINAL_EXCLUSIVE_STATUSES.has(effectiveStatus);
-        });
-      }
-
       const targetStatus = normalizeStatus(fallbackStatus);
       return dedupedItems.filter((item) => {
-        const effectiveStatus = normalizeStatus(
-          item?.currentStatus || item?.workflowStatus || item?.status,
-        );
-        return effectiveStatus === targetStatus;
+        return hasCandidatePassedStage(item, targetStatus);
       });
     };
 
@@ -991,7 +1128,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     const postSubmissionPool = Array.from(allCandidateItemsMap.values());
 
     return {
-      submitted: buildItems(submittedRawItems, "submitted"),
+      submitted: buildItems(postSubmissionPool, "submitted"),
       verified: buildItems(postSubmissionPool, "verified"),
       others: buildItems(postSubmissionPool, "others"),
       walk_in: buildItems(postSubmissionPool, "walk_in"),
@@ -1419,37 +1556,37 @@ export default function AdminPerformance({ setCurrentPage }) {
         actionTarget === "billed" && actionAttachmentFile
           ? buildBilledFormData(actionModalItem, actionAttachmentFile)
           : {
-              status: actionTarget,
-              ...buildCandidatePayloadAliases(actionModalItem),
-              ...(!["selected"].includes(actionTarget)
-                ? {
-                    reason: normalizedReason || null,
-                    ...(actionTarget === "others"
-                      ? { othersReason: normalizedReason || null, others_reason: normalizedReason || null }
-                      : {}),
-                  }
-                : {}),
-              ...(actionTarget === "selected"
-                ? {
-                    selection_reason: normalizedReason || null,
-                    select_reason: normalizedReason || null,
-                    selectReason: normalizedReason || null,
-                  }
-                : {}),
-              ...((actionTarget === "selected" || actionTarget === "joined") &&
+            status: actionTarget,
+            ...buildCandidatePayloadAliases(actionModalItem),
+            ...(!["selected"].includes(actionTarget)
+              ? {
+                reason: normalizedReason || null,
+                ...(actionTarget === "others"
+                  ? { othersReason: normalizedReason || null, others_reason: normalizedReason || null }
+                  : {}),
+              }
+              : {}),
+            ...(actionTarget === "selected"
+              ? {
+                selection_reason: normalizedReason || null,
+                select_reason: normalizedReason || null,
+                selectReason: normalizedReason || null,
+              }
+              : {}),
+            ...((actionTarget === "selected" || actionTarget === "joined") &&
               actionJoiningDate
-                ? { joining_date: actionJoiningDate }
-                : {}),
-              ...(actionTarget === "joined" && actionJoiningNote.trim()
-                ? {
-                    joining_note: actionJoiningNote.trim(),
-                    joined_reason: actionJoiningNote.trim(),
-                  }
-                : {}),
-              ...(actionTarget === "joined" && String(actionRevenue || "").trim()
-                ? { revenue: Number(String(actionRevenue).trim()) }
-                : {}),
-            };
+              ? { joining_date: actionJoiningDate }
+              : {}),
+            ...(actionTarget === "joined" && actionJoiningNote.trim()
+              ? {
+                joining_note: actionJoiningNote.trim(),
+                joined_reason: actionJoiningNote.trim(),
+              }
+              : {}),
+            ...(actionTarget === "joined" && String(actionRevenue || "").trim()
+              ? { revenue: Number(String(actionRevenue).trim()) }
+              : {}),
+          };
 
       const advanceResponse = await adminAdvanceStatus(
         actionModalItem.resId,
@@ -1463,9 +1600,9 @@ export default function AdminPerformance({ setCurrentPage }) {
       if (actionTarget === "billed") {
         const syncRevenueAmount = getExistingRevenueAmount(
           advanceResponse?.resume ||
-            advanceResponse?.candidate ||
-            advanceResponse ||
-            actionModalItem,
+          advanceResponse?.candidate ||
+          advanceResponse ||
+          actionModalItem,
         );
         try {
           if (syncRevenueAmount <= 0) {
@@ -1599,10 +1736,10 @@ export default function AdminPerformance({ setCurrentPage }) {
         const applyStatus = (items) =>
           Array.isArray(items)
             ? items.map((item) =>
-                item.rid === statusTarget.rid
-                  ? { ...item, accountStatus: statusTarget.nextStatus }
-                  : item,
-              )
+              item.rid === statusTarget.rid
+                ? { ...item, accountStatus: statusTarget.nextStatus }
+                : item,
+            )
             : items;
         return {
           ...prev,
@@ -1657,13 +1794,11 @@ export default function AdminPerformance({ setCurrentPage }) {
             <button
               key={`${roleLabel}-${person.rid}-${card.key}`}
               type="button"
-              className={`perf-stat-card ${
-                card.key === "points"
+              className={`perf-stat-card ${card.key === "points"
                   ? `perf-stat-card-${card.tone}`
-                  : `perf-stat-card-button perf-stat-card-${card.tone}${
-                      selectedStatusKey === card.key ? " perf-stat-card-active" : ""
-                    }`
-              }`}
+                  : `perf-stat-card-button perf-stat-card-${card.tone}${selectedStatusKey === card.key ? " perf-stat-card-active" : ""
+                  }`
+                }`}
               onClick={
                 card.key === "points"
                   ? undefined
@@ -1709,6 +1844,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Recruiter</th>
                     <th>Team Leader</th>
                     <th>Contact Number</th>
+                    <th>Highest Qualification</th>
                     <th>Company Name</th>
                     <th>City</th>
                     <th>Resume File</th>
@@ -1722,14 +1858,14 @@ export default function AdminPerformance({ setCurrentPage }) {
                       "billed",
                       "left",
                     ].includes(selectedStatusKey) && (
-                      <th>
-                        {selectedStatusKey === "dropout"
-                          ? "Dropout Reason"
-                          : selectedStatusKey === "selected"
-                            ? "Joining Date"
-                            : "Joining Info"}
-                      </th>
-                    )}
+                        <th>
+                          {selectedStatusKey === "dropout"
+                            ? "Dropout Reason"
+                            : selectedStatusKey === "selected"
+                              ? "Joining Date"
+                              : "Joining Info"}
+                        </th>
+                      )}
                     {hasAnyRowActions && <th>Actions</th>}
                   </tr>
                 </thead>
@@ -1758,6 +1894,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                             </a>
                           ) : (
                             "-"
+                          )}
+                        </td>
+                        <td className="admin-performance-key-cell">
+                          {formatQualificationDisplay(
+                            item.highestQualification ||
+                              item.latestEducationLevel ||
+                              item.levelOfEdu,
                           )}
                         </td>
                         <td className="admin-performance-key-cell">
@@ -1796,41 +1939,41 @@ export default function AdminPerformance({ setCurrentPage }) {
                           "billed",
                           "left",
                         ].includes(selectedStatusKey) && (
-                          <td>
-                            {selectedStatusKey === "dropout" ? (
-                              renderNoteButton(
-                                item,
-                                item.dropoutReason || item.reason,
-                                "dropout",
-                              )
-                            ) : selectedStatusKey === "selected" ? (
-                              formatDate(item.joiningDate)
-                            ) : item.joiningDate ||
-                              item.joiningNote ||
-                              item.joinedReason ? (
-                              <>
-                                {item.joiningDate ? (
-                                  <div>
-                                    <strong>Date:</strong>{" "}
-                                    {formatDate(item.joiningDate)}
-                                  </div>
-                                ) : null}
-                                {item.joiningNote || item.joinedReason ? (
-                                  <div>
-                                    <strong>Note:</strong>{" "}
-                                    {renderNoteButton(
-                                      item,
-                                      item.joiningNote || item.joinedReason,
-                                      "joined",
-                                    )}
-                                  </div>
-                                ) : null}
-                              </>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        )}
+                            <td>
+                              {selectedStatusKey === "dropout" ? (
+                                renderNoteButton(
+                                  item,
+                                  item.dropoutReason || item.reason,
+                                  "dropout",
+                                )
+                              ) : selectedStatusKey === "selected" ? (
+                                formatDate(item.joiningDate)
+                              ) : item.joiningDate ||
+                                item.joiningNote ||
+                                item.joinedReason ? (
+                                <>
+                                  {item.joiningDate ? (
+                                    <div>
+                                      <strong>Date:</strong>{" "}
+                                      {formatDate(item.joiningDate)}
+                                    </div>
+                                  ) : null}
+                                  {item.joiningNote || item.joinedReason ? (
+                                    <div>
+                                      <strong>Note:</strong>{" "}
+                                      {renderNoteButton(
+                                        item,
+                                        item.joiningNote || item.joinedReason,
+                                        "joined",
+                                      )}
+                                    </div>
+                                  ) : null}
+                                </>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          )}
                         {hasAnyRowActions && (
                           <td>
                             {rowHasActions ? (
@@ -2070,6 +2213,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Candidate Name</th>
                       <th>Recruiter</th>
                       <th>Contact Number</th>
+                      <th>Highest Qualification</th>
                       <th>Company Name</th>
                       <th>City</th>
                       <th>Resume File</th>
@@ -2090,118 +2234,125 @@ export default function AdminPerformance({ setCurrentPage }) {
                         rowActionState.availableActions.length > 0 ||
                         rowActionState.canRollback;
                       return (
-                      <tr
-                        key={`${selectedStatusKey}-${item.resId}`}
-                        style={{
-                          backgroundColor:
-                            selectedStatusKey === "verified" &&
-                            item.verifiedReason &&
-                            item.verifiedReason.includes("[Not Contacted]")
-                              ? "lightpink"
-                              : "inherit",
-                        }}
-                      >
-                        <td className="admin-performance-key-cell">
-                          <strong>{getCandidateDisplayName(item)}</strong>
-                        </td>
-                        <td>
-                          <strong>{displayValue(item.recruiterName)}</strong>
-                          <div className="admin-muted">
-                            {displayValue(item.recruiterRid)}
-                          </div>
-                        </td>
-                        <td className="admin-performance-key-cell">
-                          {item.candidatePhone || item.phone ? (
-                            <a
-                              href={`tel:${item.candidatePhone || item.phone}`}
-                            >
-                              {item.candidatePhone || item.phone}
-                            </a>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="admin-performance-key-cell">
-                          {displayValue(formatResumeCompanyDisplay(item))}
-                        </td>
-                        <td className="admin-performance-key-cell">
-                          {displayValue(item.city || item.job?.city)}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="admin-refresh-btn admin-resume-file-btn"
-                            onClick={() => handleResumeOpen(item.resId)}
-                            title={item.resumeFilename || item.resId || "View resume"}
-                          >
-                            <span className="admin-resume-file-btn-label">
-                              {truncateResumeFilename(
-                                item.resumeFilename || item.resId || "View resume",
-                              )}
-                            </span>
-                          </button>
-                        </td>
-                        <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                        <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
-                        {selectedStatusKey === "walk_in" && (
-                          <td>{formatDate(item.walkInDate)}</td>
-                        )}
-                        {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
-                          <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
-                        )}
-                        <td>
-                          {renderNoteButton(
-                            item,
-                            getPerformanceNoteForStatus(item, selectedStatusKey),
-                            selectedStatusKey,
-                          )}
-                        </td>
-                        {hasAnyRowActions && (
-                          <td>
-                            {rowHasActions ? (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "6px",
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                {rowActionState.availableActions.map((action) => (
-                                  <button
-                                    key={action.value}
-                                    type="button"
-                                    className="admin-refresh-btn"
-                                    style={{
-                                      backgroundColor: action.color,
-                                      color: "#fff",
-                                      border: "none",
-                                    }}
-                                    onClick={() =>
-                                      openActionModal(item, action.value)
-                                    }
-                                  >
-                                    {action.label}
-                                  </button>
-                                ))}
-                                {rowActionState.canRollback && (
-                                  <button
-                                    type="button"
-                                    className="admin-refresh-btn"
-                                    style={{
-                                      backgroundColor: "#111827",
-                                      color: "#fff",
-                                      border: "none",
-                                    }}
-                                    onClick={() => handleAdminRollback(item)}
-                                  >
-                                    Rollback
-                                  </button>
-                                )}
-                              </div>
-                            ) : null}
+                        <tr
+                          key={`${selectedStatusKey}-${item.resId}`}
+                          style={{
+                            backgroundColor:
+                              selectedStatusKey === "verified" &&
+                                item.verifiedReason &&
+                                item.verifiedReason.includes("[Not Contacted]")
+                                ? "lightpink"
+                                : "inherit",
+                          }}
+                        >
+                          <td className="admin-performance-key-cell">
+                            <strong>{getCandidateDisplayName(item)}</strong>
                           </td>
-                        )}
-                      </tr>
+                          <td>
+                            <strong>{displayValue(item.recruiterName)}</strong>
+                            <div className="admin-muted">
+                              {displayValue(item.recruiterRid)}
+                            </div>
+                          </td>
+                          <td className="admin-performance-key-cell">
+                            {item.candidatePhone || item.phone ? (
+                              <a
+                                href={`tel:${item.candidatePhone || item.phone}`}
+                              >
+                                {item.candidatePhone || item.phone}
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                          <td className="admin-performance-key-cell">
+                            {formatQualificationDisplay(
+                              item.highestQualification ||
+                                item.latestEducationLevel ||
+                                item.levelOfEdu,
+                            )}
+                          </td>
+                          <td className="admin-performance-key-cell">
+                            {displayValue(formatResumeCompanyDisplay(item))}
+                          </td>
+                          <td className="admin-performance-key-cell">
+                            {displayValue(item.city || item.job?.city)}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="admin-refresh-btn admin-resume-file-btn"
+                              onClick={() => handleResumeOpen(item.resId)}
+                              title={item.resumeFilename || item.resId || "View resume"}
+                            >
+                              <span className="admin-resume-file-btn-label">
+                                {truncateResumeFilename(
+                                  item.resumeFilename || item.resId || "View resume",
+                                )}
+                              </span>
+                            </button>
+                          </td>
+                          <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
+                          <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
+                          {selectedStatusKey === "walk_in" && (
+                            <td>{formatDate(item.walkInDate)}</td>
+                          )}
+                          {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
+                            <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
+                          )}
+                          <td>
+                            {renderNoteButton(
+                              item,
+                              getPerformanceNoteForStatus(item, selectedStatusKey),
+                              selectedStatusKey,
+                            )}
+                          </td>
+                          {hasAnyRowActions && (
+                            <td>
+                              {rowHasActions ? (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "6px",
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {rowActionState.availableActions.map((action) => (
+                                    <button
+                                      key={action.value}
+                                      type="button"
+                                      className="admin-refresh-btn"
+                                      style={{
+                                        backgroundColor: action.color,
+                                        color: "#fff",
+                                        border: "none",
+                                      }}
+                                      onClick={() =>
+                                        openActionModal(item, action.value)
+                                      }
+                                    >
+                                      {action.label}
+                                    </button>
+                                  ))}
+                                  {rowActionState.canRollback && (
+                                    <button
+                                      type="button"
+                                      className="admin-refresh-btn"
+                                      style={{
+                                        backgroundColor: "#111827",
+                                        color: "#fff",
+                                        border: "none",
+                                      }}
+                                      onClick={() => handleAdminRollback(item)}
+                                    >
+                                      Rollback
+                                    </button>
+                                  )}
+                                </div>
+                              ) : null}
+                            </td>
+                          )}
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -2504,11 +2655,10 @@ export default function AdminPerformance({ setCurrentPage }) {
               </button>
               <button
                 type="button"
-                className={`admin-back-btn ${
-                  statusTarget.nextStatus === "inactive"
+                className={`admin-back-btn ${statusTarget.nextStatus === "inactive"
                     ? "admin-deactivate-btn"
                     : "admin-activate-btn"
-                }`}
+                  }`}
                 onClick={handleStatusConfirm}
                 disabled={statusSubmitting}
               >
@@ -2901,8 +3051,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                       : actionTarget === "shortlisted"
                         ? "Shortlist Reason (optional)"
                         : actionTarget === "selected"
-                        ? "Selection Reason (optional)"
-                        : actionTarget === "dropout"
+                          ? "Selection Reason (optional)"
+                          : actionTarget === "dropout"
                             ? "Dropout Reason (optional)"
                             : actionTarget === "left"
                               ? "Reason for Leaving (optional)"

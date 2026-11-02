@@ -10,6 +10,7 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
   const phoneRef = useRef(null);
   const passwordRef = useRef(null);
   const roleRef = useRef(null);
+  const teamRef = useRef(null);
   const salaryRef = useRef(null);
   const submitRef = useRef(null);
   const [name, setName] = useState("");
@@ -18,6 +19,7 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
   const [password, setPassword] = useState("");
   const [monthlySalary, setMonthlySalary] = useState("");
   const [role, setRole] = useState("recruiter");
+  const [team, setTeam] = useState("Team BPO");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -82,6 +84,7 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
       setPassword("");
       setMonthlySalary("");
       setRole("recruiter");
+      setTeam("Team BPO");
     } catch (error) {
       if (error instanceof TypeError) {
         setMessageType("error");
@@ -217,6 +220,19 @@ export default function AdminCreateRecruiter({ setCurrentPage }) {
           >
             <option value="team leader">Team Leader</option>
             <option value="recruiter">Recruiter</option>
+          </select>
+
+          <label htmlFor="recruiterTeam">Team</label>
+          <select
+            ref={teamRef}
+            id="recruiterTeam"
+            value={team}
+            onChange={(e) => setTeam(e.target.value)}
+            onKeyDown={(event) => handleAdvanceOnEnter(event, teamRef)}
+            required
+          >
+            <option value="Team BPO">Team BPO</option>
+            <option value="Team NBFC">Team NBFC</option>
           </select>
 
           <label htmlFor="newRecruiterSalary">Monthly Salary</label>

@@ -44,11 +44,26 @@ function getSixMonthsAgoStr() {
   return toDateStr(d);
 }
 
-export default function EmployeeRankingWidget({ currentRecruiterRid }) {
+export default function EmployeeRankingWidget({
+  currentRecruiterRid,
+  team: controlledTeam,
+  onSelectTeam,
+  layout = "horizontal",
+}) {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [internalTeam, setInternalTeam] = useState("all");
+
+  const activeTeam = controlledTeam !== undefined ? controlledTeam : internalTeam;
+
+  const handleTeamClick = (selectedTeamKey) => {
+    if (onSelectTeam) {
+      onSelectTeam(selectedTeamKey);
+    }
+    setInternalTeam(selectedTeamKey);
+  };
 
   const [filterPreset, setFilterPreset] = useState(FILTER_PRESETS.ALL_TIME);
   const [customStart, setCustomStart] = useState("");
@@ -86,13 +101,14 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
       if (!isBackground) setLoading(true);
       setError("");
       try {
-        const params =
-          activeDateParams?.startDate && activeDateParams?.endDate
+        const params = {
+          ...(activeDateParams?.startDate && activeDateParams?.endDate
             ? {
                 startDate: activeDateParams.startDate,
                 endDate: activeDateParams.endDate,
               }
-            : {};
+            : {}),
+        };
         const data = await fetchEmployeeLeaderboard(params);
         if (isMounted) {
           setRankings(Array.isArray(data?.rankings) ? data.rankings : []);
@@ -127,36 +143,62 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
     };
   }, [activeDateParams, filterPreset]);
 
+  // Team counts across all fetched rankings
+  const teamCounts = useMemo(() => {
+    let bpo = 0;
+    let nbfc = 0;
+    for (const emp of rankings) {
+      const t = String(emp.team || "").toLowerCase();
+      if (t.includes("nbfc")) {
+        nbfc += 1;
+      } else {
+        bpo += 1;
+      }
+    }
+    return { all: rankings.length, bpo, nbfc };
+  }, [rankings]);
+
+  // Filter rankings by selected team and search query
   const filteredRankings = useMemo(() => {
-    if (!searchQuery.trim()) return rankings;
-    const query = searchQuery.toLowerCase().trim();
-    return rankings.filter(
-      (emp) =>
-        (emp.name && emp.name.toLowerCase().includes(query)) ||
-        (emp.email && emp.email.toLowerCase().includes(query))
-    );
-  }, [rankings, searchQuery]);
+    return rankings.filter((emp) => {
+      if (activeTeam && activeTeam !== "all") {
+        const empTeam = String(emp.team || "Team BPO").toLowerCase();
+        if (activeTeam === "Team NBFC" && !empTeam.includes("nbfc")) return false;
+        if (activeTeam === "Team BPO" && empTeam.includes("nbfc")) return false;
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const name = String(emp.name || "").toLowerCase();
+        const rid = String(emp.rid || "").toLowerCase();
+        return name.includes(query) || rid.includes(query);
+      }
+      return true;
+    });
+  }, [rankings, activeTeam, searchQuery]);
 
   const dynamicSubtitle = useMemo(() => {
-    const count = rankings.length;
+    const total = filteredRankings.length;
+    const teamSuffix =
+      activeTeam && activeTeam !== "all" ? ` in ${activeTeam}` : "";
+
     switch (filterPreset) {
       case FILTER_PRESETS.TODAY:
-        return `Today's Joined Candidates (${count} Employees)`;
+        return `Today's Joined Candidates (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
       case FILTER_PRESETS.THIS_MONTH:
-        return `This Month's Joined Candidates (${count} Employees)`;
+        return `This Month's Joined Candidates (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
       case FILTER_PRESETS.LAST_MONTH:
-        return `Last Month's Joined Candidates (${count} Employees)`;
+        return `Last Month's Joined Candidates (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
       case FILTER_PRESETS.CUSTOM: {
         if (activeDateParams?.startDate && activeDateParams?.endDate) {
-          return `Joined: ${activeDateParams.startDate} to ${activeDateParams.endDate} (${count} Employees)`;
+          return `Joined: ${activeDateParams.startDate} to ${activeDateParams.endDate} (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
         }
-        return `Select custom date range (${count} Employees)`;
+        return `Select custom date range (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
       }
       case FILTER_PRESETS.ALL_TIME:
       default:
-        return `All-Time Joined Candidates (${count} Total Employees)`;
+        return `All-Time Joined Candidates (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
     }
-  }, [filterPreset, activeDateParams, rankings.length]);
+  }, [filterPreset, activeDateParams, filteredRankings.length, activeTeam]);
 
   const getRankBadge = (rank) => {
     if (rank === 1) return <span className="rank-badge rank-badge-gold" title="1st Place">🥇 1st</span>;
@@ -174,9 +216,16 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
     return parts[0].substring(0, 2).toUpperCase();
   };
 
+  const isHorizontal = layout === "horizontal";
+
   return (
-    <article className="employee-ranking-card employee-ranking-card-prominent">
-      <div className="employee-ranking-head">
+    <article
+      className={`employee-ranking-card employee-ranking-card-prominent ${
+        isHorizontal ? "employee-ranking-card-horizontal" : ""
+      }`}
+    >
+      {/* Header with Title and Team Switcher Tabs */}
+      <div className={`employee-ranking-head ${isHorizontal ? "employee-ranking-head-horizontal" : ""}`}>
         <div className="employee-ranking-title-wrap">
           <div className="employee-ranking-icon-box">🏆</div>
           <div>
@@ -191,10 +240,38 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
             </p>
           </div>
         </div>
+
+        {/* Team Switcher Tabs */}
+        <div className="employee-team-switcher" role="tablist" aria-label="Filter members by team">
+          <button
+            type="button"
+            className={`employee-team-btn ${activeTeam === "all" ? "is-active" : ""}`}
+            onClick={() => handleTeamClick("all")}
+          >
+            All Teams <span className="team-count-badge">{teamCounts.all}</span>
+          </button>
+          <button
+            type="button"
+            className={`employee-team-btn ${activeTeam === "Team BPO" ? "is-active" : ""}`}
+            onClick={() => handleTeamClick("Team BPO")}
+          >
+            Team BPO <span className="team-count-badge">{teamCounts.bpo}</span>
+          </button>
+          <button
+            type="button"
+            className={`employee-team-btn ${activeTeam === "Team NBFC" ? "is-active" : ""}`}
+            onClick={() => handleTeamClick("Team NBFC")}
+          >
+            Team NBFC <span className="team-count-badge">{teamCounts.nbfc}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Date Filter Bar */}
-      <div className="employee-ranking-filter-bar">
+      {/* Date Filter Bar & Search */}
+      <div
+        className="employee-ranking-filter-bar"
+        style={isHorizontal ? { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 } : {}}
+      >
         <div className="employee-ranking-presets">
           {[
             { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
@@ -242,59 +319,69 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
             </label>
           </div>
         ) : null}
-      </div>
 
-      {rankings.length > 5 ? (
-        <div className="employee-ranking-search-box">
-          <input
-            type="text"
-            className="employee-ranking-search-input"
-            placeholder="Search employee by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              className="employee-ranking-search-clear"
-              onClick={() => setSearchQuery("")}
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+        {rankings.length > 5 ? (
+          <div className="employee-ranking-search-box" style={{ margin: 0, minWidth: "220px" }}>
+            <input
+              type="text"
+              className="employee-ranking-search-input"
+              placeholder="Search member by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                className="employee-ranking-search-clear"
+                onClick={() => setSearchQuery("")}
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
       {loading ? (
         <div className="employee-ranking-loading">
           <div className="employee-ranking-spinner"></div>
-          <p>Loading employee leaderboard...</p>
+          <p>Loading members...</p>
         </div>
       ) : error ? (
         <p className="job-message job-message-error">{error}</p>
       ) : filteredRankings.length === 0 ? (
-        <p className="chart-empty">
+        <p className="chart-empty" style={{ padding: "24px 0", textAlign: "center" }}>
           {searchQuery
             ? "No employees match your search."
+            : activeTeam !== "all"
+            ? `No members found in ${activeTeam}.`
             : "No ranking data available for this timeframe."}
         </p>
       ) : (
         <div className="employee-ranking-list-wrap">
-          <ul className="employee-ranking-list">
-            {filteredRankings.map((emp) => {
+          <ul
+            className={
+              isHorizontal
+                ? "employee-ranking-list-horizontal"
+                : "employee-ranking-list"
+            }
+          >
+            {filteredRankings.map((emp, index) => {
               const isCurrentRecruiter =
                 currentRecruiterRid &&
                 String(emp.rid).trim() === String(currentRecruiterRid).trim();
+              const isNbfc = String(emp.team || "").toLowerCase().includes("nbfc");
+              const displayRank = activeTeam !== "all" ? index + 1 : emp.rank;
 
               return (
                 <li
                   key={emp.rid || emp.rank}
                   className={`employee-ranking-item ${
                     isCurrentRecruiter ? "is-current-user" : ""
-                  } ${emp.rank <= 3 ? "is-top-three" : ""}`}
+                  } ${displayRank <= 3 ? "is-top-three" : ""}`}
                 >
                   <div className="employee-ranking-rank-col">
-                    {getRankBadge(emp.rank)}
+                    {getRankBadge(displayRank)}
                   </div>
 
                   <div className="employee-ranking-avatar">
@@ -302,12 +389,19 @@ export default function EmployeeRankingWidget({ currentRecruiterRid }) {
                   </div>
 
                   <div className="employee-ranking-info">
-                    <span className="employee-ranking-name">
-                      {emp.name || "Employee"}
-                    </span>
-                    {isCurrentRecruiter ? (
-                      <span className="current-user-tag">YOU</span>
-                    ) : null}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span className="employee-ranking-name">
+                          {emp.name || "Employee"}
+                        </span>
+                        {isCurrentRecruiter ? (
+                          <span className="current-user-tag">YOU</span>
+                        ) : null}
+                      </div>
+                      <span className={`employee-team-pill ${isNbfc ? "team-nbfc-pill" : "team-bpo-pill"}`}>
+                        {isNbfc ? "Team NBFC" : "Team BPO"}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="employee-ranking-stat">
