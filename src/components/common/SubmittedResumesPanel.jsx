@@ -533,7 +533,10 @@ export default function SubmittedResumesPanel({
     return (
       (!companyQuery || company.includes(companyQuery)) &&
       (!cityQuery || city.includes(cityQuery)) &&
-      (!recruiterQuery || recruiter.includes(recruiterQuery)) &&
+      (!recruiterQuery ||
+        recruiter.includes(recruiterQuery) ||
+        String(resume?.rid || "").toLowerCase().includes(recruiterQuery) ||
+        String(resume?.recruiterRid || "").toLowerCase().includes(recruiterQuery)) &&
       (!statusQueries.length || statusQueries.includes(status)) &&
       isWithinDateRange
     );
@@ -587,6 +590,13 @@ export default function SubmittedResumesPanel({
   const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
     setDraftFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRecruiterSelectChange = (event) => {
+    const value = event.target.value;
+    setDraftFilters((prev) => ({ ...prev, recruiter: value }));
+    setAppliedFilters((prev) => ({ ...prev, recruiter: value }));
+    notifyQueryChange({ recruiter: value });
   };
 
   const handleDraftStatusToggle = (statusValue) => {
@@ -667,16 +677,28 @@ export default function SubmittedResumesPanel({
   const handleDownloadAsExcel = async () => {
     const effectiveCompany = draftFilters.company || appliedFilters.company || "";
     const effectiveCity = draftFilters.city || appliedFilters.city || "";
+    const effectiveRecruiter = draftFilters.recruiter || appliedFilters.recruiter || "";
     const effectiveStartDate = draftFilters.startDate || appliedFilters.startDate || "";
     const effectiveEndDate = draftFilters.endDate || appliedFilters.endDate || "";
     const effectiveStatuses = (draftFilters.statuses && draftFilters.statuses.length)
       ? draftFilters.statuses
       : (appliedFilters.statuses || []);
 
+    const effectiveFilters = {
+      company: effectiveCompany,
+      city: effectiveCity,
+      recruiter: effectiveRecruiter,
+      startDate: effectiveStartDate,
+      endDate: effectiveEndDate,
+      statuses: effectiveStatuses,
+    };
+
     const activeFilterParams = {
       source: activeSourceFilter,
       company: effectiveCompany,
       city: effectiveCity,
+      recruiter: effectiveRecruiter,
+      recruiterName: effectiveRecruiter,
       startDate: effectiveStartDate,
       endDate: effectiveEndDate,
       statuses: effectiveStatuses,
@@ -698,8 +720,12 @@ export default function SubmittedResumesPanel({
     }
 
     try {
+      const exportResumes = candidateFilteredResumes.filter((resume) =>
+        matchesAdvancedFilters(resume, effectiveFilters),
+      );
+
       const exportRows = buildExcelExportRows(
-        advancedFilteredResumes,
+        exportResumes,
         defaultRecruiterName,
         getResumeUrl,
         showAtsScore,
@@ -982,7 +1008,7 @@ export default function SubmittedResumesPanel({
               <select
                 name="recruiter"
                 value={draftFilters.recruiter}
-                onChange={handleDraftFilterChange}
+                onChange={handleRecruiterSelectChange}
                 className="admin-filter-input admin-filter-select"
               >
                 <option value="">All recruiters</option>
