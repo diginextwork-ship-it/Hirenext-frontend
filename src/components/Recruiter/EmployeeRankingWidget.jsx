@@ -70,6 +70,21 @@ export default function EmployeeRankingWidget({
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
+  const [showRecruiterModal, setShowRecruiterModal] = useState(false);
+  const [modalTeamFilter, setModalTeamFilter] = useState("all");
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (!showRecruiterModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowRecruiterModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showRecruiterModal]);
+
   const activeDateParams = useMemo(() => {
     if (filterPreset === FILTER_PRESETS.CUSTOM) {
       if (customStart && customEnd && customStart <= customEnd) {
@@ -201,6 +216,49 @@ export default function EmployeeRankingWidget({
     }
   }, [filterPreset, activeDateParams, filteredRankings.length, activeTeam]);
 
+  // List of only active recruiters
+  const activeRecruitersList = useMemo(() => {
+    return rankings.filter((emp) => {
+      const status = String(emp.accountStatus || "").toLowerCase().trim();
+      return status !== "inactive" && status !== "disabled" && status !== "deactivated";
+    });
+  }, [rankings]);
+
+  // Counts of active recruiters by team
+  const activeCounts = useMemo(() => {
+    let bpo = 0;
+    let nbfc = 0;
+    activeRecruitersList.forEach((emp) => {
+      const t = String(emp.team || "").toLowerCase();
+      if (t.includes("nbfc")) {
+        nbfc += 1;
+      } else {
+        bpo += 1;
+      }
+    });
+    return { all: activeRecruitersList.length, bpo, nbfc };
+  }, [activeRecruitersList]);
+
+  // Filtered active recruiters for modal
+  const filteredModalRecruiters = useMemo(() => {
+    return activeRecruitersList.filter((emp) => {
+      if (modalTeamFilter !== "all") {
+        const empTeam = String(emp.team || "Team BPO").toLowerCase();
+        if (modalTeamFilter === "Team NBFC" && !empTeam.includes("nbfc")) return false;
+        if (modalTeamFilter === "Team BPO" && empTeam.includes("nbfc")) return false;
+      }
+      if (modalSearchQuery.trim()) {
+        const q = modalSearchQuery.toLowerCase().trim();
+        const name = String(emp.name || "").toLowerCase();
+        const rid = String(emp.rid || "").toLowerCase();
+        const email = String(emp.email || "").toLowerCase();
+        const phone = String(emp.phone || "").toLowerCase();
+        return name.includes(q) || rid.includes(q) || email.includes(q) || phone.includes(q);
+      }
+      return true;
+    });
+  }, [activeRecruitersList, modalTeamFilter, modalSearchQuery]);
+
   const getRankBadge = (rank) => {
     if (rank === 1) return <span className="rank-badge rank-badge-gold" title="1st Place">🥇 1st</span>;
     if (rank === 2) return <span className="rank-badge rank-badge-silver" title="2nd Place">🥈 2nd</span>;
@@ -230,11 +288,26 @@ export default function EmployeeRankingWidget({
         <div className="employee-ranking-title-wrap">
           <div className="employee-ranking-icon-box">🏆</div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h3 style={{ margin: 0 }}>Employee Ranking</h3>
               <span className="leaderboard-live-tag" title="Auto-updating in real time">
                 <span className="live-dot" /> REAL-TIME
               </span>
+              <button
+                type="button"
+                className="view-active-recruiters-btn"
+                onClick={() => setShowRecruiterModal(true)}
+                title="View all current active recruiters"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>View Recruiter</span>
+                <span className="view-recruiters-count-badge">{activeRecruitersList.length}</span>
+              </button>
             </div>
             <p className="employee-ranking-subtitle">
               {dynamicSubtitle}
@@ -415,6 +488,219 @@ export default function EmployeeRankingWidget({
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {/* Smooth Active Recruiters Modal */}
+      {showRecruiterModal && (
+        <div
+          className="active-recruiters-modal-backdrop"
+          onClick={() => setShowRecruiterModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="active-recruiters-modal-title"
+        >
+          <div
+            className="active-recruiters-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="active-recruiters-modal-head">
+              <div className="active-recruiters-modal-title-wrap">
+                <div className="active-recruiters-icon-badge">
+                  👥
+                </div>
+                <div>
+                  <h3 id="active-recruiters-modal-title" className="active-recruiters-modal-title">
+                    <span>Current Active Recruiters</span>
+                    <span className="active-recruiters-live-badge">
+                      <span className="active-recruiters-live-dot" />
+                      {activeRecruitersList.length} Active
+                    </span>
+                  </h3>
+                  <p className="active-recruiters-modal-sub">
+                    Viewing verified active recruiters and team leaders currently working on HireNext
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="active-recruiters-modal-close"
+                onClick={() => setShowRecruiterModal(false)}
+                aria-label="Close active recruiters modal"
+                title="Close (Esc)"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="active-recruiters-modal-body">
+              {/* Toolbar: Search and Team Filter Pills */}
+              <div className="active-recruiters-toolbar">
+                <div className="active-recruiters-search-wrap">
+                  <svg
+                    className="active-recruiters-search-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    className="active-recruiters-search-input"
+                    placeholder="Search by name, ID, email, or phone..."
+                    value={modalSearchQuery}
+                    onChange={(e) => setModalSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="active-recruiters-team-pills">
+                  <button
+                    type="button"
+                    className={`active-recruiters-team-btn ${modalTeamFilter === "all" ? "is-active" : ""}`}
+                    onClick={() => setModalTeamFilter("all")}
+                  >
+                    All ({activeCounts.all})
+                  </button>
+                  <button
+                    type="button"
+                    className={`active-recruiters-team-btn ${modalTeamFilter === "Team BPO" ? "is-active" : ""}`}
+                    onClick={() => setModalTeamFilter("Team BPO")}
+                  >
+                    Team BPO ({activeCounts.bpo})
+                  </button>
+                  <button
+                    type="button"
+                    className={`active-recruiters-team-btn ${modalTeamFilter === "Team NBFC" ? "is-active" : ""}`}
+                    onClick={() => setModalTeamFilter("Team NBFC")}
+                  >
+                    Team NBFC ({activeCounts.nbfc})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid of Active Recruiters */}
+              {filteredModalRecruiters.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b" }}>
+                  <p style={{ margin: 0, fontSize: "0.95rem" }}>
+                    No active recruiters found matching "{modalSearchQuery}".
+                  </p>
+                </div>
+              ) : (
+                <div className="active-recruiters-grid">
+                  {filteredModalRecruiters.map((recruiter) => {
+                    const isNbfc = String(recruiter.team || "").toLowerCase().includes("nbfc");
+                    const roleLabel =
+                      String(recruiter.role || "").toLowerCase().includes("leader")
+                        ? "Team Leader"
+                        : "Recruiter";
+
+                    return (
+                      <div key={recruiter.rid} className="active-recruiter-card">
+                        <div className="active-recruiter-head">
+                          <div className="active-recruiter-avatar-wrap">
+                            {getInitials(recruiter.name)}
+                            <span className="active-recruiter-online-dot" title="Active Account" />
+                          </div>
+                          <div className="active-recruiter-info">
+                            <div className="active-recruiter-name" title={recruiter.name}>
+                              {recruiter.name || "Unnamed"}
+                            </div>
+                            <div className="active-recruiter-rid">{recruiter.rid}</div>
+                          </div>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              color: "#16a34a",
+                              background: "#f0fdf4",
+                              padding: "2px 8px",
+                              borderRadius: "9999px",
+                              border: "1px solid #bbf7d0",
+                            }}
+                          >
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="active-recruiter-badges">
+                          <span
+                            className={`active-recruiter-team-badge ${
+                              isNbfc ? "active-recruiter-team-nbfc" : "active-recruiter-team-bpo"
+                            }`}
+                          >
+                            {recruiter.team || (isNbfc ? "Team NBFC" : "Team BPO")}
+                          </span>
+                          <span className="active-recruiter-role-badge">{roleLabel}</span>
+                        </div>
+
+                        {(recruiter.email || recruiter.phone) && (
+                          <div className="active-recruiter-meta">
+                            {recruiter.email && (
+                              <div className="active-recruiter-meta-item" title={recruiter.email}>
+                                <span>✉</span>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {recruiter.email}
+                                </span>
+                              </div>
+                            )}
+                            {recruiter.phone && (
+                              <div className="active-recruiter-meta-item">
+                                <span>📞</span>
+                                <span>{recruiter.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="active-recruiter-stats">
+                          <span style={{ color: "#64748b" }}>
+                            Joined:{" "}
+                            <strong className="active-recruiter-stat-pill">
+                              {recruiter.joined ?? 0}
+                            </strong>
+                          </span>
+                          <span style={{ color: "#64748b" }}>
+                            Points:{" "}
+                            <strong className="active-recruiter-stat-pill">
+                              {recruiter.points ?? 0}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="active-recruiters-modal-foot">
+              <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                Showing {filteredModalRecruiters.length} of {activeRecruitersList.length} active members
+              </span>
+              <button
+                type="button"
+                className="active-recruiters-close-btn"
+                onClick={() => setShowRecruiterModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </article>
