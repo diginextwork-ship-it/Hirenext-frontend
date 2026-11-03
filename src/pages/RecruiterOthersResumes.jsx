@@ -30,12 +30,19 @@ const getInitials = (name) => {
 };
 
 export default function RecruiterOthersResumes({ setCurrentPage }) {
-  const [resumes, setResumes] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasFetched, setHasFetched] = useState(false);
+  const [recruiterGroups, setRecruiterGroups] = useState([]);
+  const [totalSharedResumes, setTotalSharedResumes] = useState(0);
+  const [isLoadingRecruiters, setIsLoadingRecruiters] = useState(true);
+  const [hasFetchedRecruiters, setHasFetchedRecruiters] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
   const [selectedRecruiterKey, setSelectedRecruiterKey] = useState(null);
   const [searchRecruiterQuery, setSearchRecruiterQuery] = useState("");
+
+  // Cache resumes on-demand per recruiter: { [recruiterKey]: resumesArray }
+  const [resumesCache, setResumesCache] = useState({});
+  const [isLoadingResumes, setIsLoadingResumes] = useState(false);
+  const [detailErrorMessage, setDetailErrorMessage] = useState("");
 
   const recruiterInfo = useMemo(() => {
     const session = getAuthSession();
@@ -59,120 +66,141 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
     return { token: session.token, rid, role, name };
   }, []);
 
-  const fetchOthersResumes = useCallback(async (rid) => {
+  // 1. Fetch ONLY the recruiters list summary (fast, tiny payload, milliseconds)
+  const fetchRecruitersSummary = useCallback(async (rid) => {
     if (!rid) {
-      setIsLoading(false);
-      setHasFetched(true);
+      setIsLoadingRecruiters(false);
+      setHasFetchedRecruiters(true);
       return;
     }
-    setIsLoading(true);
+    setIsLoadingRecruiters(true);
     setErrorMessage("");
     try {
       const data = await authFetch(
-        `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/resumes?scope=others`,
+        `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/others-recruiters`,
         {},
-        "Failed to fetch others resumes.",
+        "Failed to fetch recruiters list.",
       );
 
-      const normalizedList = Array.isArray(data?.resumes)
-        ? data.resumes.map((item) => {
-            const normalized = normalizeResumeData(item);
-            const latestStatus =
-              normalized.currentStatus ||
-              normalized.workflowStatus ||
-              normalized.workflow_status ||
-              normalized.status ||
-              item?.currentStatus ||
-              item?.current_status ||
-              item?.workflowStatus ||
-              item?.workflow_status ||
-              item?.status ||
-              "submitted";
-
-            return {
-              ...normalized,
-              rid: item.rid || null,
-              _source: "others",
-              _recruiterName:
-                normalized.recruiterName || item.recruiterName || "Other Recruiter",
-              recruiterName:
-                normalized.recruiterName || item.recruiterName || "Other Recruiter",
-              currentStatus: latestStatus,
-              workflowStatus: latestStatus,
-              status: latestStatus,
-            };
-          })
-        : [];
-
-      setResumes(normalizedList);
+      const list = Array.isArray(data?.recruiters) ? data.recruiters : [];
+      setRecruiterGroups(list);
+      setTotalSharedResumes(
+        typeof data?.totalResumes === "number"
+          ? data.totalResumes
+          : list.reduce((acc, r) => acc + (r.count || 0), 0),
+      );
     } catch (error) {
       setErrorMessage(
-        error.message || "Failed to fetch candidate resumes from other recruiters.",
+        error.message || "Failed to fetch recruiters list for shared pool.",
       );
-      setResumes([]);
+      setRecruiterGroups([]);
+      setTotalSharedResumes(0);
     } finally {
-      setIsLoading(false);
-      setHasFetched(true);
+      setIsLoadingRecruiters(false);
+      setHasFetchedRecruiters(true);
     }
   }, []);
 
   useEffect(() => {
     if (recruiterInfo?.rid) {
-      fetchOthersResumes(recruiterInfo.rid);
+      fetchRecruitersSummary(recruiterInfo.rid);
     } else {
-      setIsLoading(false);
-      setHasFetched(true);
+      setIsLoadingRecruiters(false);
+      setHasFetchedRecruiters(true);
     }
-  }, [recruiterInfo?.rid, fetchOthersResumes]);
+  }, [recruiterInfo?.rid, fetchRecruitersSummary]);
 
-  // Group resumes by recruiter
-  const recruiterGroups = useMemo(() => {
-    const map = new Map();
+  // 2. Fetch specific recruiter's candidate resumes ON-DEMAND when clicked
+  const fetchRecruiterResumes = useCallback(
+    async (recruiter) => {
+      if (!recruiterInfo?.rid || !recruiter) return;
+      const cacheKey = recruiter.key || recruiter.rid || recruiter.name;
 
-    resumes.forEach((resume) => {
-      const rawName =
-        resume.recruiterName ||
-        resume._recruiterName ||
-        "Other Recruiter";
-      const cleanName = String(rawName).trim();
-      const recRid = String(resume.rid || resume.recruiterRid || "").trim();
-      const groupKey = recRid ? recRid.toLowerCase() : cleanName.toLowerCase();
+      setIsLoadingResumes(true);
+      setDetailErrorMessage("");
 
-      if (!map.has(groupKey)) {
-        map.set(groupKey, {
-          key: groupKey,
-          rid: recRid || null,
-          name: cleanName,
-          resumes: [],
-          companies: new Set(),
-          latestUpload: resume.uploadedAt || resume.submittedAt || null,
-        });
+      try {
+        let url = `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes?scope=others`;
+        if (cacheKey !== "__all__") {
+          if (recruiter.rid) {
+            url += `&targetRecruiterRid=${encodeURIComponent(recruiter.rid)}`;
+          } else if (recruiter.name) {
+            url += `&targetRecruiterName=${encodeURIComponent(recruiter.name)}`;
+          }
+        }
+
+        const data = await authFetch(
+          url,
+          {},
+          "Failed to fetch candidate resumes.",
+        );
+
+        const normalizedList = Array.isArray(data?.resumes)
+          ? data.resumes.map((item) => {
+              const normalized = normalizeResumeData(item);
+              const latestStatus =
+                normalized.currentStatus ||
+                normalized.workflowStatus ||
+                normalized.workflow_status ||
+                normalized.status ||
+                item?.currentStatus ||
+                item?.current_status ||
+                item?.workflowStatus ||
+                item?.workflow_status ||
+                item?.status ||
+                "submitted";
+
+              return {
+                ...normalized,
+                rid: item.rid || null,
+                _source: "others",
+                _recruiterName:
+                  normalized.recruiterName || item.recruiterName || recruiter.name || "Other Recruiter",
+                recruiterName:
+                  normalized.recruiterName || item.recruiterName || recruiter.name || "Other Recruiter",
+                currentStatus: latestStatus,
+                workflowStatus: latestStatus,
+                status: latestStatus,
+              };
+            })
+          : [];
+
+        setResumesCache((prev) => ({
+          ...prev,
+          [cacheKey]: normalizedList,
+        }));
+      } catch (error) {
+        setDetailErrorMessage(
+          error.message || "Failed to load candidate resumes.",
+        );
+      } finally {
+        setIsLoadingResumes(false);
       }
+    },
+    [recruiterInfo?.rid],
+  );
 
-      const group = map.get(groupKey);
-      group.resumes.push(resume);
+  const handleSelectRecruiter = useCallback(
+    (group) => {
+      const key = group.key || group.rid || group.name;
+      setSelectedRecruiterKey(key);
 
-      const comp = resume.companyName || resume.job?.companyName;
-      if (comp && comp !== "N/A" && comp !== "Unknown company") {
-        group.companies.add(comp);
+      // If not yet in cache, fetch this recruiter's candidate resumes now
+      if (!resumesCache[key]) {
+        fetchRecruiterResumes(group);
       }
+    },
+    [resumesCache, fetchRecruiterResumes],
+  );
 
-      const uploadTime = resume.uploadedAt || resume.submittedAt;
-      if (uploadTime && (!group.latestUpload || new Date(uploadTime) > new Date(group.latestUpload))) {
-        group.latestUpload = uploadTime;
-      }
-    });
+  const handleSelectAll = useCallback(() => {
+    setSelectedRecruiterKey("__all__");
+    if (!resumesCache["__all__"]) {
+      fetchRecruiterResumes({ key: "__all__", name: "All Recruiters" });
+    }
+  }, [resumesCache, fetchRecruiterResumes]);
 
-    return Array.from(map.values())
-      .map((g) => ({
-        ...g,
-        count: g.resumes.length,
-        companiesList: Array.from(g.companies).slice(0, 3).join(", "),
-      }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [resumes]);
-
-  // Filter recruiter cards by user search
+  // Filter recruiter cards by user search query
   const filteredRecruiterGroups = useMemo(() => {
     const q = searchRecruiterQuery.trim().toLowerCase();
     if (!q) return recruiterGroups;
@@ -190,12 +218,11 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
     return recruiterGroups.find((g) => g.key === selectedRecruiterKey) || null;
   }, [selectedRecruiterKey, recruiterGroups]);
 
-  // Active resumes to display in the table
+  // Active candidate resumes for the table view
   const displayedResumes = useMemo(() => {
-    if (selectedRecruiterKey === "__all__") return resumes;
-    if (selectedRecruiter) return selectedRecruiter.resumes;
-    return [];
-  }, [selectedRecruiterKey, selectedRecruiter, resumes]);
+    if (!selectedRecruiterKey) return [];
+    return resumesCache[selectedRecruiterKey] || [];
+  }, [selectedRecruiterKey, resumesCache]);
 
   // Handle unauthenticated state cleanly without crashing or blank screen
   if (!recruiterInfo?.token) {
@@ -267,7 +294,10 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                   <button
                     type="button"
                     className="admin-back-btn"
-                    onClick={() => setSelectedRecruiterKey(null)}
+                    onClick={() => {
+                      setSelectedRecruiterKey(null);
+                      setDetailErrorMessage("");
+                    }}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -318,10 +348,18 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
               <button
                 type="button"
                 className="admin-refresh-btn"
-                onClick={() => fetchOthersResumes(recruiterInfo.rid)}
-                disabled={isLoading}
+                onClick={() => {
+                  if (selectedRecruiterKey) {
+                    fetchRecruiterResumes(
+                      selectedRecruiter || { key: selectedRecruiterKey, name: "All Recruiters" },
+                    );
+                  } else {
+                    fetchRecruitersSummary(recruiterInfo.rid);
+                  }
+                }}
+                disabled={isLoadingRecruiters || isLoadingResumes}
               >
-                {isLoading ? "Refreshing..." : "Refresh"}
+                {isLoadingRecruiters || isLoadingResumes ? "Refreshing..." : "Refresh"}
               </button>
               <img
                 src={logo}
@@ -353,15 +391,15 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
               <button
                 type="button"
                 className="admin-refresh-btn"
-                onClick={() => fetchOthersResumes(recruiterInfo.rid)}
+                onClick={() => fetchRecruitersSummary(recruiterInfo.rid)}
               >
                 Retry
               </button>
             </div>
           ) : null}
 
-          {/* Loading View */}
-          {isLoading ? (
+          {/* Loading Recruiters Directory View */}
+          {isLoadingRecruiters ? (
             <div
               style={{
                 textAlign: "center",
@@ -373,13 +411,13 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
               }}
             >
               <p style={{ fontSize: "1.1rem", fontWeight: 600, color: "#1e293b", margin: "0 0 8px" }}>
-                Loading Candidate Resumes...
+                Loading Recruiters Directory...
               </p>
               <p style={{ color: "#64748b", margin: 0, fontSize: "0.9rem" }}>
-                Checking shared candidate pool older than 15 days.
+                Fetching recruiters with available resumes older than 15 days.
               </p>
             </div>
-          ) : hasFetched && resumes.length === 0 ? (
+          ) : hasFetchedRecruiters && recruiterGroups.length === 0 ? (
             /* Empty State */
             <div
               style={{
@@ -441,10 +479,10 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                   type="button"
                   className="admin-refresh-btn"
                   style={{ padding: "8px 22px" }}
-                  onClick={() => fetchOthersResumes(recruiterInfo.rid)}
-                  disabled={isLoading}
+                  onClick={() => fetchRecruitersSummary(recruiterInfo.rid)}
+                  disabled={isLoadingRecruiters}
                 >
-                  {isLoading ? "Refreshing..." : "Refresh"}
+                  {isLoadingRecruiters ? "Refreshing..." : "Refresh"}
                 </button>
                 <button
                   type="button"
@@ -459,29 +497,87 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
           ) : selectedRecruiterKey ? (
             /* VIEW 2: Selected Recruiter's Resumes Detail View */
             <div style={{ marginTop: 12 }}>
-              <SubmittedResumesPanel
-                resumes={displayedResumes}
-                subtitle={`Showing ${displayedResumes.length} candidate resume${displayedResumes.length === 1 ? "" : "s"} submitted by ${selectedRecruiter ? selectedRecruiter.name : "other recruiters"}.`}
-                isLoading={isLoading}
-                headerActions={
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <button
-                      type="button"
-                      className="admin-back-btn"
-                      onClick={() => setSelectedRecruiterKey(null)}
-                      style={{ padding: "6px 14px", fontWeight: 600 }}
-                    >
-                      ← Back to Recruiters List
-                    </button>
-                  </div>
-                }
-                defaultRecruiterName={selectedRecruiter ? selectedRecruiter.name : "Other Recruiter"}
-                getResumeUrl={(resume) => {
-                  const token = getAuthSession()?.token;
-                  if (!token || !resume?.resId || !recruiterInfo?.rid) return "";
-                  return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
-                }}
-              />
+              {isLoadingResumes && (!displayedResumes || displayedResumes.length === 0) ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "60px 24px",
+                    background: "#fff",
+                    borderRadius: 16,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <p style={{ fontSize: "1.1rem", fontWeight: 600, color: "#1e293b", margin: "0 0 8px" }}>
+                    Loading {selectedRecruiter ? `${selectedRecruiter.name}'s` : "Candidate"} Resumes...
+                  </p>
+                  <p style={{ color: "#64748b", margin: 0, fontSize: "0.9rem" }}>
+                    Fetching resumes older than 15 days (excluding shortlisted, selected, joined, billed).
+                  </p>
+                </div>
+              ) : detailErrorMessage ? (
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: 10,
+                    color: "#dc2626",
+                    marginBottom: 20,
+                  }}
+                >
+                  <p style={{ margin: "0 0 10px", fontWeight: 600 }}>{detailErrorMessage}</p>
+                  <button
+                    type="button"
+                    className="admin-refresh-btn"
+                    onClick={() =>
+                      fetchRecruiterResumes(
+                        selectedRecruiter || { key: selectedRecruiterKey, name: "All Recruiters" },
+                      )
+                    }
+                  >
+                    Retry Loading Resumes
+                  </button>
+                </div>
+              ) : (
+                <SubmittedResumesPanel
+                  resumes={displayedResumes}
+                  subtitle={`Showing ${displayedResumes.length} candidate resume${displayedResumes.length === 1 ? "" : "s"} submitted by ${selectedRecruiter ? selectedRecruiter.name : "other recruiters"}.`}
+                  isLoading={isLoadingResumes}
+                  headerActions={
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <button
+                        type="button"
+                        className="admin-back-btn"
+                        onClick={() => {
+                          setSelectedRecruiterKey(null);
+                          setDetailErrorMessage("");
+                        }}
+                        style={{ padding: "6px 14px", fontWeight: 600 }}
+                      >
+                        ← Back to All Recruiters
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-refresh-btn"
+                        onClick={() =>
+                          fetchRecruiterResumes(
+                            selectedRecruiter || { key: selectedRecruiterKey, name: "All Recruiters" },
+                          )
+                        }
+                        disabled={isLoadingResumes}
+                      >
+                        {isLoadingResumes ? "Refreshing..." : "Refresh"}
+                      </button>
+                    </div>
+                  }
+                  defaultRecruiterName={selectedRecruiter ? selectedRecruiter.name : "Other Recruiter"}
+                  getResumeUrl={(resume) => {
+                    const token = getAuthSession()?.token;
+                    if (!token || !resume?.resId || !recruiterInfo?.rid) return "";
+                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+                  }}
+                />
+              )}
             </div>
           ) : (
             /* VIEW 1: All Recruiters List / Grid */
@@ -522,7 +618,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                       fontWeight: 600,
                     }}
                   >
-                    Total Shared Resumes: <strong>{resumes.length.toLocaleString()}</strong>
+                    Total Shared Resumes: <strong>{totalSharedResumes.toLocaleString()}</strong>
                   </span>
                 </div>
 
@@ -544,14 +640,14 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                   <button
                     type="button"
                     className="click-here-btn"
-                    onClick={() => setSelectedRecruiterKey("__all__")}
+                    onClick={handleSelectAll}
                     style={{
                       fontSize: "0.85rem",
                       padding: "8px 16px",
                       background: "#334155",
                     }}
                   >
-                    View All ({resumes.length})
+                    View All ({totalSharedResumes.toLocaleString()})
                   </button>
                 </div>
               </div>
@@ -585,7 +681,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                     return (
                       <div
                         key={group.key}
-                        onClick={() => setSelectedRecruiterKey(group.key)}
+                        onClick={() => handleSelectRecruiter(group)}
                         style={{
                           background: "#ffffff",
                           border: "1px solid #e2e8f0",
