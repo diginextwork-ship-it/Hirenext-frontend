@@ -38,6 +38,9 @@ const AdminTasks = lazy(() => import("./pages/admin/AdminTasks"));
 const AdminSalaryHistory = lazy(
   () => import("./pages/admin/AdminSalaryHistory"),
 );
+const RecruiterOthersResumes = lazy(
+  () => import("./pages/RecruiterOthersResumes"),
+);
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 const ScheduleCall = lazy(() => import("./pages/ScheduleCall"));
 
@@ -50,6 +53,7 @@ const PAGE_TO_PATH = {
   gallery: "/gallery",
   schedulecall: "/schedule-call",
   recruiterlogin: "/recruiter-login",
+  recruiterothersresumes: "/recruiter/others-resumes",
   adminlogin: "/admin-login",
   adminpanel: "/admin-panel",
   admincreate: "/admin-panel/create-recruiter",
@@ -115,6 +119,9 @@ const getRouteFromPath = (pathname) => {
   if (normalizedPath === "/recruiter-login") {
     return { page: "recruiterlogin", params: {} };
   }
+  if (normalizedPath === "/recruiter/others-resumes") {
+    return { page: "recruiterothersresumes", params: {} };
+  }
   if (normalizedPath === "/admin-login") return { page: "adminlogin", params: {} };
   if (normalizedPath === "/admin-panel") return { page: "adminpanel", params: {} };
   if (normalizedPath === "/admin-panel/create-recruiter")
@@ -172,7 +179,8 @@ export default function App() {
   const hideHeaderAndFooter =
     ADMIN_ONLY_PAGES.has(currentPage) ||
     currentPage === "adminlogin" ||
-    currentPage === "recruiterlogin";
+    currentPage === "recruiterlogin" ||
+    currentPage === "recruiterothersresumes";
   const guardedPage =
     ADMIN_ONLY_PAGES.has(currentPage) && !isAdmin ? "adminlogin" : currentPage;
 
@@ -261,6 +269,8 @@ export default function App() {
         return <ScheduleCall setCurrentPage={setCurrentPage} />;
       case "recruiterlogin":
         return <RecruiterLogin setCurrentPage={setCurrentPage} />;
+      case "recruiterothersresumes":
+        return <RecruiterOthersResumes setCurrentPage={setCurrentPage} />;
       case "adminlogin":
         return (
           <AdminLogin

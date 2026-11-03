@@ -678,20 +678,14 @@ export default function RecruiterLogin({ setCurrentPage }) {
                   </button>
                   <button
                     type="button"
-                    className={`click-here-btn recruiter-tasks-toggle ${
-                      showOthersResumesPanel ? "is-active" : ""
-                    }`}
+                    className="click-here-btn recruiter-tasks-toggle"
                     onClick={() => {
-                      const next = !showOthersResumesPanel;
-                      setShowOthersResumesPanel(next);
-                      if (next && othersResumes.length === 0) {
-                        fetchOthersResumes(recruiter.rid);
+                      if (typeof setCurrentPage === "function") {
+                        setCurrentPage("recruiterothersresumes");
                       }
                     }}
                   >
-                    {showOthersResumesPanel
-                      ? "Hide Others Resume"
-                      : "Others Resume"}
+                    Others Resume
                   </button>
                 </>
               ) : null}
@@ -724,33 +718,6 @@ export default function RecruiterLogin({ setCurrentPage }) {
                     </button>
                   }
                   defaultRecruiterName={recruiter.name}
-                  getResumeUrl={(resume) => {
-                    const token = getAuthSession()?.token;
-                    if (!token || !resume?.resId) return "";
-                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiter.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
-                  }}
-                />
-              </section>
-            ) : null}
-
-            {canUploadResumes && showOthersResumesPanel ? (
-              <section className="ui-mt-md">
-                <SubmittedResumesPanel
-                  resumes={othersResumes}
-                  title="Others Resume"
-                  subtitle="Candidate resumes submitted by other recruiters older than 15 days (excluding shortlisted, selected, joined, and billed)."
-                  isLoading={isLoadingOthersResumes}
-                  headerActions={
-                    <button
-                      type="button"
-                      className="admin-refresh-btn"
-                      onClick={() => fetchOthersResumes(recruiter.rid)}
-                      disabled={isLoadingOthersResumes}
-                    >
-                      {isLoadingOthersResumes ? "Loading..." : "Refresh"}
-                    </button>
-                  }
-                  defaultRecruiterName="Other Recruiter"
                   getResumeUrl={(resume) => {
                     const token = getAuthSession()?.token;
                     if (!token || !resume?.resId) return "";
