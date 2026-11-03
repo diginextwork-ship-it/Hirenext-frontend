@@ -207,8 +207,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
     return recruiterGroups.filter(
       (g) =>
         g.name.toLowerCase().includes(q) ||
-        (g.rid && g.rid.toLowerCase().includes(q)) ||
-        (g.companiesList && g.companiesList.toLowerCase().includes(q)),
+        (g.rid && g.rid.toLowerCase().includes(q)),
     );
   }, [recruiterGroups, searchRecruiterQuery]);
 
@@ -625,7 +624,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <input
                     type="text"
-                    placeholder="Search recruiter name or company..."
+                    placeholder="Search recruiter name or ID..."
                     value={searchRecruiterQuery}
                     onChange={(e) => setSearchRecruiterQuery(e.target.value)}
                     style={{
@@ -769,31 +768,6 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                               {group.count} Resumes
                             </span>
                           </div>
-
-                          {/* Company Tags */}
-                          {group.companiesList ? (
-                            <p
-                              style={{
-                                margin: "0 0 16px",
-                                fontSize: "0.85rem",
-                                color: "#64748b",
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              <strong style={{ color: "#475569" }}>Companies: </strong>
-                              {group.companiesList}
-                            </p>
-                          ) : (
-                            <p
-                              style={{
-                                margin: "0 0 16px",
-                                fontSize: "0.85rem",
-                                color: "#94a3b8",
-                              }}
-                            >
-                              Candidate pool available
-                            </p>
-                          )}
                         </div>
 
                         {/* Card Action Button */}
