@@ -904,6 +904,18 @@ export default function AdminPerformance({ setCurrentPage }) {
     return Array.from(map.values()).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [allStaffList, data?.recruiters]);
 
+  const activeRecruiterRids = useMemo(() => {
+    if (!allStaffList || allStaffList.length === 0) return null;
+    const s = new Set();
+    allStaffList.forEach((r) => {
+      const st = String(r?.accountStatus || r?.account_status || "active").trim().toLowerCase();
+      if (st !== "inactive" && st !== "disabled" && st !== "deactivated" && st !== "blocked") {
+        if (r?.rid) s.add(String(r.rid).trim());
+      }
+    });
+    return s;
+  }, [allStaffList]);
+
   const handleViewInactiveResumes = async () => {
     if (!selectedInactiveRid) return;
     const rec = inactiveRecruiters.find((r) => String(r.rid) === String(selectedInactiveRid));
@@ -2173,7 +2185,7 @@ export default function AdminPerformance({ setCurrentPage }) {
 
       {/* Horizontal Employee Ranking & Team Breakdown Showcase */}
       <div className="perf-horizontal-ranking-wrap" style={{ marginTop: 8, marginBottom: 24 }}>
-        <EmployeeRankingWidget layout="horizontal" />
+        <EmployeeRankingWidget layout="horizontal" activeRecruiterRids={activeRecruiterRids} />
       </div>
 
       {/* Inactive Recruiters Resumes Section (Directly above timeline filter) */}

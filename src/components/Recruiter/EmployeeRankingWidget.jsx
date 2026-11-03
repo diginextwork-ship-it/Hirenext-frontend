@@ -50,6 +50,7 @@ export default function EmployeeRankingWidget({
   team: controlledTeam,
   onSelectTeam,
   layout = "horizontal",
+  activeRecruiterRids,
 }) {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -159,11 +160,25 @@ export default function EmployeeRankingWidget({
     };
   }, [activeDateParams, filterPreset]);
 
-  // Team counts across all fetched rankings
+  // List of only active recruiters
+  const activeRecruitersList = useMemo(() => {
+    return rankings.filter((emp) => {
+      const status = String(emp.accountStatus || "").toLowerCase().trim();
+      if (status === "inactive" || status === "disabled" || status === "deactivated" || status === "blocked") {
+        return false;
+      }
+      if (activeRecruiterRids && activeRecruiterRids.size > 0) {
+        return activeRecruiterRids.has(String(emp.rid || "").trim());
+      }
+      return true;
+    });
+  }, [rankings, activeRecruiterRids]);
+
+  // Team counts across active recruiters
   const teamCounts = useMemo(() => {
     let bpo = 0;
     let nbfc = 0;
-    for (const emp of rankings) {
+    for (const emp of activeRecruitersList) {
       const t = String(emp.team || "").toLowerCase();
       if (t.includes("nbfc")) {
         nbfc += 1;
@@ -171,12 +186,12 @@ export default function EmployeeRankingWidget({
         bpo += 1;
       }
     }
-    return { all: rankings.length, bpo, nbfc };
-  }, [rankings]);
+    return { all: activeRecruitersList.length, bpo, nbfc };
+  }, [activeRecruitersList]);
 
   // Filter rankings by selected team and search query
   const filteredRankings = useMemo(() => {
-    return rankings.filter((emp) => {
+    return activeRecruitersList.filter((emp) => {
       if (activeTeam && activeTeam !== "all") {
         const empTeam = String(emp.team || "Team BPO").toLowerCase();
         if (activeTeam === "Team NBFC" && !empTeam.includes("nbfc")) return false;
@@ -190,7 +205,7 @@ export default function EmployeeRankingWidget({
       }
       return true;
     });
-  }, [rankings, activeTeam, searchQuery]);
+  }, [activeRecruitersList, activeTeam, searchQuery]);
 
   const dynamicSubtitle = useMemo(() => {
     const total = filteredRankings.length;
@@ -215,14 +230,6 @@ export default function EmployeeRankingWidget({
         return `All-Time Joined Candidates (${total} Employee${total === 1 ? "" : "s"}${teamSuffix})`;
     }
   }, [filterPreset, activeDateParams, filteredRankings.length, activeTeam]);
-
-  // List of only active recruiters
-  const activeRecruitersList = useMemo(() => {
-    return rankings.filter((emp) => {
-      const status = String(emp.accountStatus || "").toLowerCase().trim();
-      return status !== "inactive" && status !== "disabled" && status !== "deactivated";
-    });
-  }, [rankings]);
 
   // Counts of active recruiters by team
   const activeCounts = useMemo(() => {
