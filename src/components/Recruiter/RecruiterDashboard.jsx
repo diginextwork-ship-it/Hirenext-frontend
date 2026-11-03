@@ -249,7 +249,7 @@ export default function RecruiterDashboard({ recruiterId }) {
 
   const fetchRecruiterResumes = useCallback(async () => {
     const payload = await authFetch(
-      `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterId)}/resumes`,
+      `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterId)}/resumes?own=true`,
       {},
       "Failed to fetch recruiter resumes.",
     );

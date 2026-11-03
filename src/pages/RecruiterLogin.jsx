@@ -87,6 +87,12 @@ const isTeamLeaderRole = (role) => {
   );
 };
 
+const RECRUITER_SOURCE_OPTIONS = [
+  { key: "all", label: "All" },
+  { key: "mine", label: "My Submissions" },
+  { key: "pool", label: "Talent Pool (15+ days)" },
+];
+
 export default function RecruiterLogin({ setCurrentPage }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -210,17 +216,20 @@ export default function RecruiterLogin({ setCurrentPage }) {
               item?.status ||
               "submitted";
 
+            const isMine =
+              !item.rid ||
+              String(item.rid).trim() === String(recruiter?.rid || "").trim();
+
             return {
               ...normalized,
-              _source: "recruiter",
+              rid: item.rid || recruiter?.rid || null,
+              _source: isMine ? "mine" : "pool",
               _recruiterName:
                 normalized.recruiterName ||
-                recruiter?.name ||
-                "N/A",
+                (isMine ? recruiter?.name : "Shared Pool"),
               recruiterName:
                 normalized.recruiterName ||
-                recruiter?.name ||
-                "N/A",
+                (isMine ? recruiter?.name : "Shared Pool"),
               currentStatus: latestStatus,
               workflowStatus: latestStatus,
               status: latestStatus,
@@ -615,8 +624,8 @@ export default function RecruiterLogin({ setCurrentPage }) {
                   onClick={() => setShowSubmissionsPanel((prev) => !prev)}
                 >
                   {showSubmissionsPanel
-                    ? "Hide My Submissions"
-                    : "My Submissions"}
+                    ? "Hide Candidate Resumes"
+                    : "Candidate Resumes"}
                 </button>
               ) : null}
             </div>
@@ -636,8 +645,9 @@ export default function RecruiterLogin({ setCurrentPage }) {
               <section className="ui-mt-md">
                 <SubmittedResumesPanel
                   resumes={uploadedResumes}
-                  title="My Submissions"
-                  subtitle="See resumes submitted by you."
+                  title="Candidate Resumes"
+                  subtitle="View your submissions and available candidates from the talent pool."
+                  sourceOptions={RECRUITER_SOURCE_OPTIONS}
                   headerActions={
                     <button
                       type="button"
