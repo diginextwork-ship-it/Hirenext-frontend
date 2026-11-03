@@ -105,6 +105,9 @@ export default function RecruiterLogin({ setCurrentPage }) {
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showSubmissionsPanel, setShowSubmissionsPanel] = useState(false);
+  const [showOthersResumesPanel, setShowOthersResumesPanel] = useState(false);
+  const [othersResumes, setOthersResumes] = useState([]);
+  const [isLoadingOthersResumes, setIsLoadingOthersResumes] = useState(false);
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -196,7 +199,7 @@ export default function RecruiterLogin({ setCurrentPage }) {
   const fetchRecruiterResumes = async (rid) => {
     try {
       const data = await authFetch(
-        `${API_BASE_URL}/api/recruiters/${rid}/resumes`,
+        `${API_BASE_URL}/api/recruiters/${rid}/resumes?scope=own`,
         {},
         "Failed to fetch resumes.",
       );
@@ -216,20 +219,14 @@ export default function RecruiterLogin({ setCurrentPage }) {
               item?.status ||
               "submitted";
 
-            const isMine =
-              !item.rid ||
-              String(item.rid).trim() === String(recruiter?.rid || "").trim();
-
             return {
               ...normalized,
               rid: item.rid || recruiter?.rid || null,
-              _source: isMine ? "mine" : "pool",
+              _source: "mine",
               _recruiterName:
-                normalized.recruiterName ||
-                (isMine ? recruiter?.name : "Shared Pool"),
+                normalized.recruiterName || recruiter?.name || "Me",
               recruiterName:
-                normalized.recruiterName ||
-                (isMine ? recruiter?.name : "Shared Pool"),
+                normalized.recruiterName || recruiter?.name || "Me",
               currentStatus: latestStatus,
               workflowStatus: latestStatus,
               status: latestStatus,
@@ -242,6 +239,55 @@ export default function RecruiterLogin({ setCurrentPage }) {
       setJobMessageType("error");
       setJobMessage(error.message || "Failed to fetch resumes.");
       return [];
+    }
+  };
+
+  const fetchOthersResumes = async (rid) => {
+    setIsLoadingOthersResumes(true);
+    try {
+      const data = await authFetch(
+        `${API_BASE_URL}/api/recruiters/${rid}/resumes?scope=others`,
+        {},
+        "Failed to fetch others resumes.",
+      );
+
+      const resumes = Array.isArray(data.resumes)
+        ? data.resumes.map((item) => {
+            const normalized = normalizeResumeData(item);
+            const latestStatus =
+              normalized.currentStatus ||
+              normalized.workflowStatus ||
+              normalized.workflow_status ||
+              normalized.status ||
+              item?.currentStatus ||
+              item?.current_status ||
+              item?.workflowStatus ||
+              item?.workflow_status ||
+              item?.status ||
+              "submitted";
+
+            return {
+              ...normalized,
+              rid: item.rid || null,
+              _source: "others",
+              _recruiterName:
+                normalized.recruiterName || item.recruiterName || "Other Recruiter",
+              recruiterName:
+                normalized.recruiterName || item.recruiterName || "Other Recruiter",
+              currentStatus: latestStatus,
+              workflowStatus: latestStatus,
+              status: latestStatus,
+            };
+          })
+        : [];
+      setOthersResumes(resumes);
+      return resumes;
+    } catch (error) {
+      setJobMessageType("error");
+      setJobMessage(error.message || "Failed to fetch others resumes.");
+      return [];
+    } finally {
+      setIsLoadingOthersResumes(false);
     }
   };
 
@@ -539,9 +585,11 @@ export default function RecruiterLogin({ setCurrentPage }) {
     setRecruiter(null);
     setShowTasksPanel(false);
     setShowSubmissionsPanel(false);
+    setShowOthersResumesPanel(false);
     setApplications([]);
     setJobs([]);
     setUploadedResumes([]);
+    setOthersResumes([]);
     setAvailableRecruiters([]);
     setIsAccessModalOpen(false);
     setActiveAccessJobId(null);
@@ -616,17 +664,36 @@ export default function RecruiterLogin({ setCurrentPage }) {
                 </button>
               ) : null}
               {canUploadResumes ? (
-                <button
-                  type="button"
-                  className={`click-here-btn recruiter-tasks-toggle ${
-                    showSubmissionsPanel ? "is-active" : ""
-                  }`}
-                  onClick={() => setShowSubmissionsPanel((prev) => !prev)}
-                >
-                  {showSubmissionsPanel
-                    ? "Hide Candidate Resumes"
-                    : "Candidate Resumes"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className={`click-here-btn recruiter-tasks-toggle ${
+                      showSubmissionsPanel ? "is-active" : ""
+                    }`}
+                    onClick={() => setShowSubmissionsPanel((prev) => !prev)}
+                  >
+                    {showSubmissionsPanel
+                      ? "Hide Candidate Resumes"
+                      : "Candidate Resumes"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`click-here-btn recruiter-tasks-toggle ${
+                      showOthersResumesPanel ? "is-active" : ""
+                    }`}
+                    onClick={() => {
+                      const next = !showOthersResumesPanel;
+                      setShowOthersResumesPanel(next);
+                      if (next && othersResumes.length === 0) {
+                        fetchOthersResumes(recruiter.rid);
+                      }
+                    }}
+                  >
+                    {showOthersResumesPanel
+                      ? "Hide Others Resume"
+                      : "Others Resume"}
+                  </button>
+                </>
               ) : null}
             </div>
 
@@ -646,8 +713,7 @@ export default function RecruiterLogin({ setCurrentPage }) {
                 <SubmittedResumesPanel
                   resumes={uploadedResumes}
                   title="Candidate Resumes"
-                  subtitle="View your submissions and available candidates from the talent pool."
-                  sourceOptions={RECRUITER_SOURCE_OPTIONS}
+                  subtitle="See resumes submitted by you."
                   headerActions={
                     <button
                       type="button"
@@ -658,6 +724,33 @@ export default function RecruiterLogin({ setCurrentPage }) {
                     </button>
                   }
                   defaultRecruiterName={recruiter.name}
+                  getResumeUrl={(resume) => {
+                    const token = getAuthSession()?.token;
+                    if (!token || !resume?.resId) return "";
+                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiter.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+                  }}
+                />
+              </section>
+            ) : null}
+
+            {canUploadResumes && showOthersResumesPanel ? (
+              <section className="ui-mt-md">
+                <SubmittedResumesPanel
+                  resumes={othersResumes}
+                  title="Others Resume"
+                  subtitle="Candidate resumes submitted by other recruiters older than 15 days (excluding shortlisted, selected, joined, and billed)."
+                  isLoading={isLoadingOthersResumes}
+                  headerActions={
+                    <button
+                      type="button"
+                      className="admin-refresh-btn"
+                      onClick={() => fetchOthersResumes(recruiter.rid)}
+                      disabled={isLoadingOthersResumes}
+                    >
+                      {isLoadingOthersResumes ? "Loading..." : "Refresh"}
+                    </button>
+                  }
+                  defaultRecruiterName="Other Recruiter"
                   getResumeUrl={(resume) => {
                     const token = getAuthSession()?.token;
                     if (!token || !resume?.resId) return "";
