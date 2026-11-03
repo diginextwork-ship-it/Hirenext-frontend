@@ -20,11 +20,22 @@ const decodeTokenPayload = (token) => {
   }
 };
 
+const getInitials = (name) => {
+  if (!name) return "R";
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return String(name).slice(0, 2).toUpperCase();
+};
+
 export default function RecruiterOthersResumes({ setCurrentPage }) {
   const [resumes, setResumes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedRecruiterKey, setSelectedRecruiterKey] = useState(null);
+  const [searchRecruiterQuery, setSearchRecruiterQuery] = useState("");
 
   const recruiterInfo = useMemo(() => {
     const session = getAuthSession();
@@ -114,6 +125,78 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
     }
   }, [recruiterInfo?.rid, fetchOthersResumes]);
 
+  // Group resumes by recruiter
+  const recruiterGroups = useMemo(() => {
+    const map = new Map();
+
+    resumes.forEach((resume) => {
+      const rawName =
+        resume.recruiterName ||
+        resume._recruiterName ||
+        "Other Recruiter";
+      const cleanName = String(rawName).trim();
+      const recRid = String(resume.rid || resume.recruiterRid || "").trim();
+      const groupKey = recRid ? recRid.toLowerCase() : cleanName.toLowerCase();
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          key: groupKey,
+          rid: recRid || null,
+          name: cleanName,
+          resumes: [],
+          companies: new Set(),
+          latestUpload: resume.uploadedAt || resume.submittedAt || null,
+        });
+      }
+
+      const group = map.get(groupKey);
+      group.resumes.push(resume);
+
+      const comp = resume.companyName || resume.job?.companyName;
+      if (comp && comp !== "N/A" && comp !== "Unknown company") {
+        group.companies.add(comp);
+      }
+
+      const uploadTime = resume.uploadedAt || resume.submittedAt;
+      if (uploadTime && (!group.latestUpload || new Date(uploadTime) > new Date(group.latestUpload))) {
+        group.latestUpload = uploadTime;
+      }
+    });
+
+    return Array.from(map.values())
+      .map((g) => ({
+        ...g,
+        count: g.resumes.length,
+        companiesList: Array.from(g.companies).slice(0, 3).join(", "),
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [resumes]);
+
+  // Filter recruiter cards by user search
+  const filteredRecruiterGroups = useMemo(() => {
+    const q = searchRecruiterQuery.trim().toLowerCase();
+    if (!q) return recruiterGroups;
+    return recruiterGroups.filter(
+      (g) =>
+        g.name.toLowerCase().includes(q) ||
+        (g.rid && g.rid.toLowerCase().includes(q)) ||
+        (g.companiesList && g.companiesList.toLowerCase().includes(q)),
+    );
+  }, [recruiterGroups, searchRecruiterQuery]);
+
+  // Find currently selected recruiter
+  const selectedRecruiter = useMemo(() => {
+    if (!selectedRecruiterKey || selectedRecruiterKey === "__all__") return null;
+    return recruiterGroups.find((g) => g.key === selectedRecruiterKey) || null;
+  }, [selectedRecruiterKey, recruiterGroups]);
+
+  // Active resumes to display in the table
+  const displayedResumes = useMemo(() => {
+    if (selectedRecruiterKey === "__all__") return resumes;
+    if (selectedRecruiter) return selectedRecruiter.resumes;
+    return [];
+  }, [selectedRecruiterKey, selectedRecruiter, resumes]);
+
   // Handle unauthenticated state cleanly without crashing or blank screen
   if (!recruiterInfo?.token) {
     return (
@@ -159,6 +242,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
         style={{ maxWidth: 1400, margin: "0 auto", padding: "16px" }}
       >
         <div className="recruiter-login-card recruiter-job-card">
+          {/* Top Bar Header */}
           <div
             className="recruiter-dashboard-header"
             style={{
@@ -175,24 +259,46 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 14,
+                  gap: 12,
                   flexWrap: "wrap",
                 }}
               >
-                <PageBackButton
-                  setCurrentPage={setCurrentPage}
-                  fallbackPage="recruiterlogin"
-                  label="Back to Dashboard"
-                />
+                {selectedRecruiterKey ? (
+                  <button
+                    type="button"
+                    className="admin-back-btn"
+                    onClick={() => setSelectedRecruiterKey(null)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontWeight: 600,
+                      padding: "6px 14px",
+                    }}
+                  >
+                    ← Back to All Recruiters
+                  </button>
+                ) : (
+                  <PageBackButton
+                    setCurrentPage={setCurrentPage}
+                    fallbackPage="recruiterlogin"
+                    label="Back to Dashboard"
+                  />
+                )}
                 <h1
                   style={{
                     margin: 0,
                     textTransform: "capitalize",
                     fontSize: "1.75rem",
                     fontWeight: 700,
+                    color: "#0f172a",
                   }}
                 >
-                  Others Resume
+                  {selectedRecruiter
+                    ? `${selectedRecruiter.name}'s Resumes`
+                    : selectedRecruiterKey === "__all__"
+                      ? "All Others Candidate Resumes"
+                      : "Others Resume"}
                 </h1>
               </div>
               <p
@@ -203,10 +309,20 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                   lineHeight: 1.5,
                 }}
               >
-                Candidate resumes submitted by other recruiters older than 15 days (excluding shortlisted, selected, joined, and billed).
+                {selectedRecruiter
+                  ? `Showing candidate resumes submitted by ${selectedRecruiter.name} older than 15 days (excluding shortlisted, selected, joined, and billed).`
+                  : "Candidate resumes submitted by other recruiters older than 15 days (excluding shortlisted, selected, joined, and billed)."}
               </p>
             </div>
-            <div className="recruiter-dashboard-header-actions">
+            <div className="recruiter-dashboard-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button
+                type="button"
+                className="admin-refresh-btn"
+                onClick={() => fetchOthersResumes(recruiterInfo.rid)}
+                disabled={isLoading}
+              >
+                {isLoading ? "Refreshing..." : "Refresh"}
+              </button>
               <img
                 src={logo}
                 alt="HireNext logo"
@@ -244,6 +360,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
             </div>
           ) : null}
 
+          {/* Loading View */}
           {isLoading ? (
             <div
               style={{
@@ -263,6 +380,7 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
               </p>
             </div>
           ) : hasFetched && resumes.length === 0 ? (
+            /* Empty State */
             <div
               style={{
                 textAlign: "center",
@@ -338,29 +456,282 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                 </button>
               </div>
             </div>
+          ) : selectedRecruiterKey ? (
+            /* VIEW 2: Selected Recruiter's Resumes Detail View */
+            <div style={{ marginTop: 12 }}>
+              <SubmittedResumesPanel
+                resumes={displayedResumes}
+                subtitle={`Showing ${displayedResumes.length} candidate resume${displayedResumes.length === 1 ? "" : "s"} submitted by ${selectedRecruiter ? selectedRecruiter.name : "other recruiters"}.`}
+                isLoading={isLoading}
+                headerActions={
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <button
+                      type="button"
+                      className="admin-back-btn"
+                      onClick={() => setSelectedRecruiterKey(null)}
+                      style={{ padding: "6px 14px", fontWeight: 600 }}
+                    >
+                      ← Back to Recruiters List
+                    </button>
+                  </div>
+                }
+                defaultRecruiterName={selectedRecruiter ? selectedRecruiter.name : "Other Recruiter"}
+                getResumeUrl={(resume) => {
+                  const token = getAuthSession()?.token;
+                  if (!token || !resume?.resId || !recruiterInfo?.rid) return "";
+                  return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+                }}
+              />
+            </div>
           ) : (
-            <SubmittedResumesPanel
-              resumes={resumes}
-              title="Others Resume"
-              subtitle="Candidate resumes submitted by other recruiters older than 15 days (excluding shortlisted, selected, joined, and billed)."
-              isLoading={isLoading}
-              headerActions={
-                <button
-                  type="button"
-                  className="admin-refresh-btn"
-                  onClick={() => fetchOthersResumes(recruiterInfo.rid)}
-                  disabled={isLoading}
+            /* VIEW 1: All Recruiters List / Grid */
+            <div style={{ marginTop: 12 }}>
+              {/* Summary and Search Bar */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 16,
+                  padding: "16px 20px",
+                  background: "#f8fafc",
+                  borderRadius: 14,
+                  border: "1px solid #e2e8f0",
+                  marginBottom: 24,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span
+                    style={{
+                      background: "#b91c1c",
+                      color: "#fff",
+                      padding: "4px 12px",
+                      borderRadius: 20,
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.3px",
+                    }}
+                  >
+                    {recruiterGroups.length} Recruiters Available
+                  </span>
+                  <span
+                    style={{
+                      color: "#475569",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Total Shared Resumes: <strong>{resumes.length.toLocaleString()}</strong>
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    placeholder="Search recruiter name or company..."
+                    value={searchRecruiterQuery}
+                    onChange={(e) => setSearchRecruiterQuery(e.target.value)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.9rem",
+                      minWidth: 260,
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="click-here-btn"
+                    onClick={() => setSelectedRecruiterKey("__all__")}
+                    style={{
+                      fontSize: "0.85rem",
+                      padding: "8px 16px",
+                      background: "#334155",
+                    }}
+                  >
+                    View All ({resumes.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid of Recruiter Cards */}
+              {filteredRecruiterGroups.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "48px 24px",
+                    background: "#fff",
+                    borderRadius: 12,
+                    border: "1px dashed #cbd5e1",
+                    color: "#64748b",
+                  }}
                 >
-                  {isLoading ? "Loading..." : "Refresh"}
-                </button>
-              }
-              defaultRecruiterName="Other Recruiter"
-              getResumeUrl={(resume) => {
-                const token = getAuthSession()?.token;
-                if (!token || !resume?.resId || !recruiterInfo?.rid) return "";
-                return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
-              }}
-            />
+                  <p style={{ margin: 0, fontSize: "1rem" }}>
+                    No recruiters found matching <strong>"{searchRecruiterQuery}"</strong>.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                    gap: 18,
+                  }}
+                >
+                  {filteredRecruiterGroups.map((group) => {
+                    const initials = getInitials(group.name);
+                    return (
+                      <div
+                        key={group.key}
+                        onClick={() => setSelectedRecruiterKey(group.key)}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 14,
+                          padding: "20px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease-in-out",
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "space-between",
+                          position: "relative",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-3px)";
+                          e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)";
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.03)";
+                          e.currentTarget.style.borderColor = "#e2e8f0";
+                        }}
+                      >
+                        <div>
+                          {/* Card Header with Avatar and Count Badge */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              marginBottom: 14,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 46,
+                                  height: 46,
+                                  borderRadius: "50%",
+                                  background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)",
+                                  color: "#ffffff",
+                                  fontWeight: 700,
+                                  fontSize: "1rem",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  letterSpacing: "0.5px",
+                                }}
+                              >
+                                {initials}
+                              </div>
+                              <div>
+                                <h3
+                                  style={{
+                                    margin: 0,
+                                    fontSize: "1.1rem",
+                                    fontWeight: 700,
+                                    color: "#0f172a",
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {group.name}
+                                </h3>
+                                {group.rid ? (
+                                  <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                                    ID: {group.rid}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <span
+                              style={{
+                                background: "#fef2f2",
+                                color: "#b91c1c",
+                                border: "1px solid #fecaca",
+                                fontWeight: 700,
+                                fontSize: "0.85rem",
+                                padding: "4px 10px",
+                                borderRadius: 16,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {group.count} Resumes
+                            </span>
+                          </div>
+
+                          {/* Company Tags */}
+                          {group.companiesList ? (
+                            <p
+                              style={{
+                                margin: "0 0 16px",
+                                fontSize: "0.85rem",
+                                color: "#64748b",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              <strong style={{ color: "#475569" }}>Companies: </strong>
+                              {group.companiesList}
+                            </p>
+                          ) : (
+                            <p
+                              style={{
+                                margin: "0 0 16px",
+                                fontSize: "0.85rem",
+                                color: "#94a3b8",
+                              }}
+                            >
+                              Candidate pool available
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Card Action Button */}
+                        <div
+                          style={{
+                            paddingTop: 12,
+                            borderTop: "1px solid #f1f5f9",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
+                            Older than 15 days
+                          </span>
+                          <span
+                            style={{
+                              color: "#b91c1c",
+                              fontSize: "0.9rem",
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
+                            View Resumes →
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </section>
