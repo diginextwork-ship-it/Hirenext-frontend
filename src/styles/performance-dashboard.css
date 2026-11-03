@@ -2381,6 +2381,16 @@
   color: #0369a1;
 }
 
+.employee-ranking-card-compact {
+  padding: 16px 24px !important;
+}
+
+.employee-ranking-head-compact {
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+
 /* ─────────────────────────────────────────────────────────────
    View Active Recruiters Button & Modal Styles
    ───────────────────────────────────────────────────────────── */

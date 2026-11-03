@@ -281,10 +281,10 @@ export default function EmployeeRankingWidget({
     <article
       className={`employee-ranking-card employee-ranking-card-prominent ${
         isHorizontal ? "employee-ranking-card-horizontal" : ""
-      }`}
+      } employee-ranking-card-compact`}
     >
       {/* Header with Title and Team Switcher Tabs */}
-      <div className={`employee-ranking-head ${isHorizontal ? "employee-ranking-head-horizontal" : ""}`}>
+      <div className={`employee-ranking-head ${isHorizontal ? "employee-ranking-head-horizontal" : ""} employee-ranking-head-compact`}>
         <div className="employee-ranking-title-wrap">
           <div className="employee-ranking-icon-box">🏆</div>
           <div>
@@ -296,7 +296,10 @@ export default function EmployeeRankingWidget({
               <button
                 type="button"
                 className="view-active-recruiters-btn"
-                onClick={() => setShowRecruiterModal(true)}
+                onClick={() => {
+                  setModalTeamFilter(activeTeam || "all");
+                  setShowRecruiterModal(true);
+                }}
                 title="View all current active recruiters"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -310,7 +313,7 @@ export default function EmployeeRankingWidget({
               </button>
             </div>
             <p className="employee-ranking-subtitle">
-              {dynamicSubtitle}
+              Active Team Members ({activeRecruitersList.length} Active Employee{activeRecruitersList.length === 1 ? "" : "s"} across teams)
             </p>
           </div>
         </div>
@@ -340,156 +343,6 @@ export default function EmployeeRankingWidget({
           </button>
         </div>
       </div>
-
-      {/* Date Filter Bar & Search */}
-      <div
-        className="employee-ranking-filter-bar"
-        style={isHorizontal ? { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 } : {}}
-      >
-        <div className="employee-ranking-presets">
-          {[
-            { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
-            { key: FILTER_PRESETS.TODAY, label: "Today" },
-            { key: FILTER_PRESETS.THIS_MONTH, label: "This Month" },
-            { key: FILTER_PRESETS.LAST_MONTH, label: "Last Month" },
-            { key: FILTER_PRESETS.CUSTOM, label: "Custom" },
-          ].map((preset) => (
-            <button
-              key={preset.key}
-              type="button"
-              className={`employee-ranking-filter-btn ${
-                filterPreset === preset.key ? "is-active" : ""
-              }`}
-              onClick={() => handlePresetClick(preset.key)}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-
-        {filterPreset === FILTER_PRESETS.CUSTOM ? (
-          <div className="employee-ranking-custom-range">
-            <label className="employee-ranking-date-label">
-              <span>From:</span>
-              <input
-                type="date"
-                className="employee-ranking-date-input"
-                value={customStart}
-                min={getSixMonthsAgoStr()}
-                max={customEnd || toDateStr(new Date())}
-                onChange={(e) => setCustomStart(e.target.value)}
-              />
-            </label>
-            <label className="employee-ranking-date-label">
-              <span>To:</span>
-              <input
-                type="date"
-                className="employee-ranking-date-input"
-                value={customEnd}
-                min={customStart || getSixMonthsAgoStr()}
-                max={toDateStr(new Date())}
-                onChange={(e) => setCustomEnd(e.target.value)}
-              />
-            </label>
-          </div>
-        ) : null}
-
-        {rankings.length > 5 ? (
-          <div className="employee-ranking-search-box" style={{ margin: 0, minWidth: "220px" }}>
-            <input
-              type="text"
-              className="employee-ranking-search-input"
-              placeholder="Search member by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                className="employee-ranking-search-clear"
-                onClick={() => setSearchQuery("")}
-              >
-                ✕
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {loading ? (
-        <div className="employee-ranking-loading">
-          <div className="employee-ranking-spinner"></div>
-          <p>Loading members...</p>
-        </div>
-      ) : error ? (
-        <p className="job-message job-message-error">{error}</p>
-      ) : filteredRankings.length === 0 ? (
-        <p className="chart-empty" style={{ padding: "24px 0", textAlign: "center" }}>
-          {searchQuery
-            ? "No employees match your search."
-            : activeTeam !== "all"
-            ? `No members found in ${activeTeam}.`
-            : "No ranking data available for this timeframe."}
-        </p>
-      ) : (
-        <div className="employee-ranking-list-wrap">
-          <ul
-            className={
-              isHorizontal
-                ? "employee-ranking-list-horizontal"
-                : "employee-ranking-list"
-            }
-          >
-            {filteredRankings.map((emp, index) => {
-              const isCurrentRecruiter =
-                currentRecruiterRid &&
-                String(emp.rid).trim() === String(currentRecruiterRid).trim();
-              const isNbfc = String(emp.team || "").toLowerCase().includes("nbfc");
-              const displayRank = activeTeam !== "all" ? index + 1 : emp.rank;
-
-              return (
-                <li
-                  key={emp.rid || emp.rank}
-                  className={`employee-ranking-item ${
-                    isCurrentRecruiter ? "is-current-user" : ""
-                  } ${displayRank <= 3 ? "is-top-three" : ""}`}
-                >
-                  <div className="employee-ranking-rank-col">
-                    {getRankBadge(displayRank)}
-                  </div>
-
-                  <div className="employee-ranking-avatar">
-                    {getInitials(emp.name)}
-                  </div>
-
-                  <div className="employee-ranking-info">
-                    <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span className="employee-ranking-name">
-                          {emp.name || "Employee"}
-                        </span>
-                        {isCurrentRecruiter ? (
-                          <span className="current-user-tag">YOU</span>
-                        ) : null}
-                      </div>
-                      <span className={`employee-team-pill ${isNbfc ? "team-nbfc-pill" : "team-bpo-pill"}`}>
-                        {isNbfc ? "Team NBFC" : "Team BPO"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="employee-ranking-stat">
-                    <strong className="stat-count">{emp.joined}</strong>
-                    <span className="stat-label">
-                      joined
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
 
       {/* Smooth Active Recruiters Modal */}
       {showRecruiterModal && (
@@ -588,8 +441,64 @@ export default function EmployeeRankingWidget({
                 </div>
               </div>
 
+              {/* Timeline Preset Filter Bar in Modal */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+                <div className="employee-ranking-presets" style={{ margin: 0 }}>
+                  {[
+                    { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
+                    { key: FILTER_PRESETS.TODAY, label: "Today" },
+                    { key: FILTER_PRESETS.THIS_MONTH, label: "This Month" },
+                    { key: FILTER_PRESETS.LAST_MONTH, label: "Last Month" },
+                    { key: FILTER_PRESETS.CUSTOM, label: "Custom" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      className={`employee-ranking-filter-btn ${
+                        filterPreset === preset.key ? "is-active" : ""
+                      }`}
+                      onClick={() => handlePresetClick(preset.key)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {filterPreset === FILTER_PRESETS.CUSTOM ? (
+                  <div className="employee-ranking-custom-range" style={{ margin: 0 }}>
+                    <label className="employee-ranking-date-label">
+                      <span>From:</span>
+                      <input
+                        type="date"
+                        className="employee-ranking-date-input"
+                        value={customStart}
+                        min={getSixMonthsAgoStr()}
+                        max={customEnd || toDateStr(new Date())}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                      />
+                    </label>
+                    <label className="employee-ranking-date-label">
+                      <span>To:</span>
+                      <input
+                        type="date"
+                        className="employee-ranking-date-input"
+                        value={customEnd}
+                        min={customStart || getSixMonthsAgoStr()}
+                        max={toDateStr(new Date())}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+
               {/* Grid of Active Recruiters */}
-              {filteredModalRecruiters.length === 0 ? (
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b" }}>
+                  <div className="employee-ranking-spinner" style={{ margin: "0 auto 12px" }}></div>
+                  <p style={{ margin: 0, fontSize: "0.95rem" }}>Updating member stats...</p>
+                </div>
+              ) : filteredModalRecruiters.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b" }}>
                   <p style={{ margin: 0, fontSize: "0.95rem" }}>
                     No active recruiters found matching "{modalSearchQuery}".
@@ -597,7 +506,7 @@ export default function EmployeeRankingWidget({
                 </div>
               ) : (
                 <div className="active-recruiters-grid">
-                  {filteredModalRecruiters.map((recruiter) => {
+                  {filteredModalRecruiters.map((recruiter, idx) => {
                     const isNbfc = String(recruiter.team || "").toLowerCase().includes("nbfc");
                     const roleLabel =
                       String(recruiter.role || "").toLowerCase().includes("leader")
@@ -617,23 +526,26 @@ export default function EmployeeRankingWidget({
                             </div>
                             <div className="active-recruiter-rid">{recruiter.rid}</div>
                           </div>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontSize: "0.72rem",
-                              fontWeight: 700,
-                              color: "#16a34a",
-                              background: "#f0fdf4",
-                              padding: "2px 8px",
-                              borderRadius: "9999px",
-                              border: "1px solid #bbf7d0",
-                            }}
-                          >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
-                            Active
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {getRankBadge(idx + 1)}
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: "0.72rem",
+                                fontWeight: 700,
+                                color: "#16a34a",
+                                background: "#f0fdf4",
+                                padding: "2px 8px",
+                                borderRadius: "9999px",
+                                border: "1px solid #bbf7d0",
+                              }}
+                            >
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
+                              Active
+                            </span>
+                          </div>
                         </div>
 
                         <div className="active-recruiter-badges">
