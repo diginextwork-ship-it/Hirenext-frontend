@@ -571,9 +571,12 @@ export default function RecruiterOthersResumes({ setCurrentPage }) {
                   }
                   defaultRecruiterName={selectedRecruiter ? selectedRecruiter.name : "Other Recruiter"}
                   getResumeUrl={(resume) => {
-                    const token = getAuthSession()?.token;
-                    if (!token || !resume?.resId || !recruiterInfo?.rid) return "";
-                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(recruiterInfo.rid)}/resumes/${encodeURIComponent(resume.resId)}/file?token=${encodeURIComponent(token)}`;
+                    const session = getAuthSession();
+                    const token = session?.token;
+                    const resId = resume?.resId || resume?.res_id;
+                    const rid = recruiterInfo?.rid || session?.rid || session?.user?.rid;
+                    if (!token || !resId || !rid) return "";
+                    return `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`;
                   }}
                 />
               )}

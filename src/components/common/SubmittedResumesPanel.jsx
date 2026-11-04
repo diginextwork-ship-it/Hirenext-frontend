@@ -1,4 +1,6 @@
 import { useDeferredValue, useMemo, useState } from "react";
+import { getAuthSession } from "../../auth/session";
+import { API_BASE_URL } from "../../config/api";
 import {
   displayNote,
   formatResumeCompanyDisplay,
@@ -669,8 +671,20 @@ export default function SubmittedResumesPanel({
   };
 
   const handleResumeOpen = (resume) => {
-    const url = getResumeUrl(resume);
-    if (!url) return;
+    let url = typeof getResumeUrl === "function" ? getResumeUrl(resume) : "";
+    if (!url) {
+      const session = getAuthSession();
+      const token = session?.token;
+      const resId = resume?.resId || resume?.res_id;
+      const rid = session?.rid || session?.user?.rid || resume?.rid;
+      if (token && resId && rid) {
+        url = `${API_BASE_URL}/api/recruiters/${encodeURIComponent(rid)}/resumes/${encodeURIComponent(resId)}/file?token=${encodeURIComponent(token)}`;
+      }
+    }
+    if (!url) {
+      alert("Resume file link is not available.");
+      return;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -1070,6 +1084,7 @@ export default function SubmittedResumesPanel({
               <colgroup>
                 <col className="submitted-resumes-col-recruiter" />
                 <col className="submitted-resumes-col-candidate" />
+                <col className="submitted-resumes-col-file" />
                 <col className="submitted-resumes-col-phone" />
                 <col className="submitted-resumes-col-email" />
                 <col className="submitted-resumes-col-company" />
@@ -1083,7 +1098,6 @@ export default function SubmittedResumesPanel({
                 <col className="submitted-resumes-col-status" />
                 <col className="submitted-resumes-col-note" />
                 <col className="submitted-resumes-col-submitted" />
-                <col className="submitted-resumes-col-file" />
                 {showActionsColumn ? (
                   <col className="submitted-resumes-col-actions" />
                 ) : null}
@@ -1092,6 +1106,7 @@ export default function SubmittedResumesPanel({
                 <tr>
                   <th>Recruiter Name</th>
                   <th>Candidate Name</th>
+                  <th>Resume</th>
                   <th>Phone</th>
                   <th>Email</th>
                   <th>Job Company Name</th>
@@ -1103,7 +1118,6 @@ export default function SubmittedResumesPanel({
                   <th>Latest Status</th>
                   <th>Recruiter Note</th>
                   <th>Submitted At</th>
-                  <th>Resume File</th>
                   {showActionsColumn ? <th>Actions</th> : null}
                 </tr>
               </thead>
@@ -1115,10 +1129,61 @@ export default function SubmittedResumesPanel({
                     "Name not found";
 
                   return (
-                  <tr key={`${resume._source || "resume"}-${resume.resId}`}>
+                  <tr key={`${resume._source || "resume"}-${resume.resId || resume.res_id}`}>
                     <td>{getRecruiterDisplayName(resume, defaultRecruiterName)}</td>
                     <td className="submitted-resumes-candidate-name" title={candidateName}>
                       {truncateDisplayName(candidateName)}
+                    </td>
+                    <td>
+                      {resume.resId || resume.res_id ? (
+                        <div className="admin-resume-file-cell" style={{ minWidth: 120 }}>
+                          <button
+                            type="button"
+                            className="admin-refresh-btn admin-resume-file-btn"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              backgroundColor: "#b91c1c",
+                              color: "#ffffff",
+                              border: "none",
+                              padding: "6px 14px",
+                              borderRadius: 6,
+                              fontWeight: 600,
+                              fontSize: "0.82rem",
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                              boxShadow: "0 2px 4px rgba(185, 28, 28, 0.2)",
+                            }}
+                            onClick={() => handleResumeOpen(resume)}
+                            title="Click to view candidate resume"
+                          >
+                            <span>📄</span>
+                            <span>View Resume</span>
+                          </button>
+                          {resume.resumeFilename ? (
+                            <span
+                              className="admin-resume-file-name"
+                              style={{
+                                fontSize: "0.76rem",
+                                color: "#64748b",
+                                maxWidth: 140,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                display: "block",
+                              }}
+                              title={resume.resumeFilename}
+                            >
+                              {resume.resumeFilename}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="admin-muted" style={{ fontSize: "0.82rem" }}>
+                          No file
+                        </span>
+                      )}
                     </td>
                     <td>
                       {resume.applicantPhone || resume.candidatePhone || "N/A"}
@@ -1152,32 +1217,6 @@ export default function SubmittedResumesPanel({
                       )}
                     </td>
                     <td>{formatDateTime(resume.submittedAt || resume.uploadedAt)}</td>
-                    <td>
-                      {resume.resId ? (
-                        <div className="admin-resume-file-cell">
-                          <button
-                            type="button"
-                            className="admin-refresh-btn admin-resume-file-btn"
-                            onClick={() => handleResumeOpen(resume)}
-                          >
-                            View Resume
-                          </button>
-                          <span className="admin-resume-file-name">
-                            {resume.resumeFilename || "N/A"}
-                            {resume.resumeType
-                              ? ` (${String(resume.resumeType).toUpperCase()})`
-                              : ""}
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          {resume.resumeFilename || "N/A"}
-                          {resume.resumeType
-                            ? ` (${String(resume.resumeType).toUpperCase()})`
-                            : ""}
-                        </>
-                      )}
-                    </td>
                     {showActionsColumn ? (
                       <td>
                         <div className="admin-actions-cell">
