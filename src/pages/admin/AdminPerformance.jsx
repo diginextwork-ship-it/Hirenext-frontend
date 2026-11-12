@@ -289,11 +289,14 @@ function getConfirmBilledDisabledReason(candidate, billedFile) {
   return "";
 }
 
-const buildBilledFormData = (resume, attachmentFile) => {
+const buildBilledFormData = (resume, attachmentFile, customDate = null) => {
   const normalized = normalizeResumeData(resume);
   const formData = new FormData();
 
   formData.append("status", "billed");
+  if (customDate) {
+    formData.append("custom_date", String(customDate));
+  }
   if (normalized.candidateName) {
     formData.append("candidate_name", String(normalized.candidateName));
   }
@@ -751,6 +754,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionContacted, setActionContacted] = useState("Yes");
   const [actionSituation, setActionSituation] = useState("");
   const [actionJoiningDate, setActionJoiningDate] = useState("");
+  const [actionCustomDate, setActionCustomDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
   const [actionRevenue, setActionRevenue] = useState("");
   const [actionAttachmentFile, setActionAttachmentFile] = useState(null);
@@ -1247,17 +1251,22 @@ export default function AdminPerformance({ setCurrentPage }) {
     const postSubmissionPool = Array.from(allCandidateItemsMap.values());
 
     return {
-      submitted: buildItems(postSubmissionPool, "submitted"),
-      verified: buildItems(postSubmissionPool, "verified"),
-      others: buildItems(postSubmissionPool, "others"),
-      walk_in: buildItems(postSubmissionPool, "walk_in"),
-      shortlisted: buildItems(postSubmissionPool, "shortlisted"),
-      selected: buildItems(postSubmissionPool, "selected"),
-      rejected: buildItems(postSubmissionPool, "rejected"),
-      joined: buildItems(postSubmissionPool, "joined"),
-      dropout: buildItems(postSubmissionPool, "dropout"),
-      billed: buildItems(postSubmissionPool, "billed"),
-      left: buildItems(postSubmissionPool, "left"),
+      submitted: buildItems(
+        (statusDrilldown?.submitted && statusDrilldown.submitted.length > 0)
+          ? statusDrilldown.submitted
+          : (performanceSubmittedItems.length > 0 ? performanceSubmittedItems : submittedResumes),
+        "submitted",
+      ),
+      verified: buildItems(statusDrilldown?.verified || [], "verified"),
+      others: buildItems(statusDrilldown?.others || [], "others"),
+      walk_in: buildItems(statusDrilldown?.walk_in || [], "walk_in"),
+      shortlisted: buildItems(statusDrilldown?.shortlisted || [], "shortlisted"),
+      selected: buildItems(statusDrilldown?.selected || [], "selected"),
+      rejected: buildItems(statusDrilldown?.rejected || [], "rejected"),
+      joined: buildItems(statusDrilldown?.joined || [], "joined"),
+      dropout: buildItems(statusDrilldown?.dropout || [], "dropout"),
+      billed: buildItems(statusDrilldown?.billed || [], "billed"),
+      left: buildItems(statusDrilldown?.left || [], "left"),
     };
   }, [
     latestStatusByResId,
@@ -1511,6 +1520,11 @@ export default function AdminPerformance({ setCurrentPage }) {
     );
     setActionAttachmentFile(null);
     setActionError("");
+    const stageDefaultDate =
+      (targetStatus === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
+      (targetStatus === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
+      toDateStr(new Date());
+    setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
   };
 
   const closeActionModal = () => {
@@ -1525,6 +1539,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionRevenue("");
     setActionAttachmentFile(null);
     setActionError("");
+    setActionCustomDate("");
   };
 
   const ensureBilledIntakeEntry = async ({
@@ -1673,9 +1688,10 @@ export default function AdminPerformance({ setCurrentPage }) {
 
       const payload =
         actionTarget === "billed" && actionAttachmentFile
-          ? buildBilledFormData(actionModalItem, actionAttachmentFile)
+          ? buildBilledFormData(actionModalItem, actionAttachmentFile, actionCustomDate)
           : {
             status: actionTarget,
+            custom_date: actionCustomDate || null,
             ...buildCandidatePayloadAliases(actionModalItem),
             ...(!["selected"].includes(actionTarget)
               ? {
@@ -1693,8 +1709,11 @@ export default function AdminPerformance({ setCurrentPage }) {
               }
               : {}),
             ...((actionTarget === "selected" || actionTarget === "joined") &&
-              actionJoiningDate
-              ? { joining_date: actionJoiningDate }
+              (actionJoiningDate || actionCustomDate)
+              ? { joining_date: actionJoiningDate || actionCustomDate }
+              : {}),
+            ...(actionTarget === "walk_in" && actionCustomDate
+              ? { walk_in_date: actionCustomDate, walkIn: actionCustomDate }
               : {}),
             ...(actionTarget === "joined" && actionJoiningNote.trim()
               ? {
@@ -1735,6 +1754,7 @@ export default function AdminPerformance({ setCurrentPage }) {
             reason: "",
             attachmentFile: actionAttachmentFile,
             createdAt:
+              actionCustomDate ||
               actionModalItem?.joiningDate ||
               actionModalItem?.currentJoiningDate ||
               actionJoiningDate ||
@@ -1969,7 +1989,29 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <th>Resume File</th>
                     <th>Status</th>
                     <th>Submitted At</th>
-                    {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
+                    {selectedStatusKey !== "submitted" && (
+                      <th>
+                        {selectedStatusKey === "verified"
+                          ? "Verification Date"
+                          : selectedStatusKey === "walk_in"
+                            ? "Walk-in Date"
+                            : selectedStatusKey === "shortlisted"
+                              ? "Shortlist Date"
+                              : selectedStatusKey === "selected"
+                                ? "Selection Date"
+                                : selectedStatusKey === "joined"
+                                  ? "Joining Date"
+                                  : selectedStatusKey === "rejected"
+                                    ? "Rejection Date"
+                                    : selectedStatusKey === "dropout"
+                                      ? "Dropout Date"
+                                      : selectedStatusKey === "billed"
+                                        ? "Billing Date"
+                                        : selectedStatusKey === "left"
+                                          ? "Exit Date"
+                                          : `${formatStatusLabel(selectedStatusKey)} Date`}
+                      </th>
+                    )}
                     {[
                       "dropout",
                       "selected",
@@ -1981,7 +2023,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           {selectedStatusKey === "dropout"
                             ? "Dropout Reason"
                             : selectedStatusKey === "selected"
-                              ? "Joining Date"
+                              ? "Tentative Joining Date"
                               : "Joining Info"}
                         </th>
                       )}
@@ -2043,12 +2085,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </button>
                         </td>
                         <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                        <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
-                        {selectedStatusKey === "walk_in" && (
+                        <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                        {selectedStatusKey !== "submitted" && (
                           <td>
-                            {item.walkInReason
-                              ? renderNoteButton(item, item.walkInReason, "walk_in")
-                              : formatDate(item.walkInDate)}
+                            {formatDate(
+                              (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                              (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
+                              (selectedStatusKey === "selected" ? item.selectedAt : null) ||
+                              item.eventAt ||
+                              item[`${selectedStatusKey}At`]
+                            )}
                           </td>
                         )}
                         {[
@@ -2066,7 +2112,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                                   "dropout",
                                 )
                               ) : selectedStatusKey === "selected" ? (
-                                formatDate(item.joiningDate)
+                                item.joiningDate ? formatDate(item.joiningDate) : "-"
                               ) : item.joiningDate ||
                                 item.joiningNote ||
                                 item.joinedReason ? (
@@ -2382,9 +2428,31 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th>Resume File</th>
                       <th>Status</th>
                       <th>Submitted At</th>
-                      {selectedStatusKey === "walk_in" && <th>Walk-in Date</th>}
+                      {selectedStatusKey !== "submitted" && (
+                        <th>
+                          {selectedStatusKey === "verified"
+                            ? "Verification Date"
+                            : selectedStatusKey === "walk_in"
+                              ? "Walk-in Date"
+                              : selectedStatusKey === "shortlisted"
+                                ? "Shortlist Date"
+                                : selectedStatusKey === "selected"
+                                  ? "Selection Date"
+                                  : selectedStatusKey === "joined"
+                                    ? "Joining Date"
+                                    : selectedStatusKey === "rejected"
+                                      ? "Rejection Date"
+                                      : selectedStatusKey === "dropout"
+                                        ? "Dropout Date"
+                                        : selectedStatusKey === "billed"
+                                          ? "Billing Date"
+                                          : selectedStatusKey === "left"
+                                            ? "Exit Date"
+                                            : `${formatStatusLabel(selectedStatusKey)} Date`}
+                        </th>
+                      )}
                       {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
-                        <th>Joining Date</th>
+                        <th>{selectedStatusKey === "selected" ? "Tentative Joining Date" : "Joining Date"}</th>
                       )}
                       <th>Note / Reason</th>
                       {hasAnyRowActions && <th>Actions</th>}
@@ -2456,9 +2524,17 @@ export default function AdminPerformance({ setCurrentPage }) {
                             </button>
                           </td>
                           <td>{formatStatusLabel(item.currentStatus || item.status)}</td>
-                          <td>{formatDateTime(item.submittedAt || item.uploadedAt || item.eventAt)}</td>
-                          {selectedStatusKey === "walk_in" && (
-                            <td>{formatDate(item.walkInDate)}</td>
+                          <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
+                          {selectedStatusKey !== "submitted" && (
+                            <td>
+                              {formatDate(
+                                (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                                (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
+                                (selectedStatusKey === "selected" ? item.selectedAt : null) ||
+                                item.eventAt ||
+                                item[`${selectedStatusKey}At`]
+                              )}
+                            </td>
                           )}
                           {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
                             <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
@@ -2925,6 +3001,60 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
             </div>
 
+            {/* Custom Date Input for Every Stage */}
+            <div style={{ marginBottom: "10px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontWeight: 600,
+                  marginBottom: "4px",
+                }}
+              >
+                {actionTarget === "verified"
+                  ? "Verification Date"
+                  : actionTarget === "walk_in"
+                    ? "Walk-in Date"
+                    : actionTarget === "shortlisted"
+                      ? "Shortlist Date"
+                      : actionTarget === "selected"
+                        ? "Selection Date"
+                        : actionTarget === "joined"
+                          ? "Joining Date"
+                          : actionTarget === "rejected"
+                            ? "Rejection Date"
+                            : actionTarget === "dropout"
+                              ? "Dropout Date"
+                              : actionTarget === "billed"
+                                ? "Billing Date"
+                                : actionTarget === "left"
+                                  ? "Exit Date"
+                                  : "Date"}
+              </label>
+              <input
+                type="date"
+                value={actionCustomDate}
+                onChange={(e) => {
+                  setActionCustomDate(e.target.value);
+                  if (actionTarget === "joined") {
+                    setActionJoiningDate(e.target.value);
+                  }
+                }}
+                disabled={actionSubmitting}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  border: "1px solid #ccc",
+                }}
+              />
+              <span
+                className="admin-muted"
+                style={{ fontSize: "0.82em", marginTop: "2px", display: "block" }}
+              >
+                Candidate will be recorded and shown on this date in performance reports.
+              </span>
+            </div>
+
             {actionTarget === "selected" ? (
               <>
                 <div style={{ marginBottom: "10px" }}>
@@ -2978,29 +3108,6 @@ export default function AdminPerformance({ setCurrentPage }) {
               </>
             ) : actionTarget === "joined" ? (
               <>
-                <div style={{ marginBottom: "10px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Joining Date
-                  </label>
-                  <input
-                    type="date"
-                    value={actionJoiningDate}
-                    onChange={(e) => setActionJoiningDate(e.target.value)}
-                    disabled={actionSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
                 <div style={{ marginBottom: "10px" }}>
                   <label
                     style={{
