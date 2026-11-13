@@ -1079,7 +1079,7 @@ export default function SubmittedResumesPanel({
         ) : (
           <div className="admin-table-wrap">
             <table
-              className={`admin-table admin-table-wide admin-candidate-resumes-table${showActionsColumn ? "" : " submitted-resumes-table-no-actions"}`}
+              className={`admin-table admin-table-wide admin-candidate-resumes-table${showActionsColumn ? "" : " submitted-resumes-table-no-actions"}${showAtsScore ? " has-ats-score" : ""}`}
             >
               <colgroup>
                 <col className="submitted-resumes-col-recruiter" />
@@ -1130,11 +1130,13 @@ export default function SubmittedResumesPanel({
 
                   return (
                   <tr key={`${resume._source || "resume"}-${resume.resId || resume.res_id}`}>
-                    <td>{getRecruiterDisplayName(resume, defaultRecruiterName)}</td>
-                    <td className="submitted-resumes-candidate-name" title={candidateName}>
+                    <td className="submitted-resumes-recruiter-cell">
+                      {getRecruiterDisplayName(resume, defaultRecruiterName)}
+                    </td>
+                    <td className="submitted-resumes-candidate-cell submitted-resumes-candidate-name" title={candidateName}>
                       {truncateDisplayName(candidateName)}
                     </td>
-                    <td>
+                    <td className="submitted-resumes-file-cell">
                       {resume.resId || resume.res_id ? (
                         <div className="admin-resume-file-cell" style={{ minWidth: 120 }}>
                           <button
@@ -1185,30 +1187,30 @@ export default function SubmittedResumesPanel({
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td className="submitted-resumes-phone-cell">
                       {resume.applicantPhone || resume.candidatePhone || "N/A"}
                     </td>
-                    <td>
+                    <td className="submitted-resumes-email-cell">
                       {resume.applicantEmail || resume.candidateEmail || "N/A"}
                     </td>
-                    <td>{formatResumeCompanyDisplay(resume) || "N/A"}</td>
-                    <td>{resume.job?.roleName || resume.roleName || "N/A"}</td>
-                    <td>{resume.city || resume.job?.city || "N/A"}</td>
-                    <td>{formatEducationDisplay(resume)}</td>
-                    <td>{resume.age ?? "N/A"}</td>
+                    <td className="submitted-resumes-company-cell">{formatResumeCompanyDisplay(resume) || "N/A"}</td>
+                    <td className="submitted-resumes-role-cell">{resume.job?.roleName || resume.roleName || "N/A"}</td>
+                    <td className="submitted-resumes-city-cell">{resume.city || resume.job?.city || "N/A"}</td>
+                    <td className="submitted-resumes-education-cell">{formatEducationDisplay(resume)}</td>
+                    <td className="submitted-resumes-age-cell">{resume.age ?? "N/A"}</td>
                     {showAtsScore ? (
-                      <td>
+                      <td className="submitted-resumes-ats-cell">
                         <span className="admin-stat-pill">
                           {formatPercent(resume.atsScore)}
                         </span>
                       </td>
                     ) : null}
-                    <td>
+                    <td className="submitted-resumes-status-cell">
                       <span className="admin-candidate-status-badge">
                         {formatStatusLabel(getLatestResumeStatus(resume))}
                       </span>
                     </td>
-                    <td>
+                    <td className="submitted-resumes-note-cell">
                       {displayNote(
                         getCurrentStatusNote(resume) ||
                           resume.recruiterNote ||
@@ -1216,9 +1218,9 @@ export default function SubmittedResumesPanel({
                           resume.submittedReason,
                       )}
                     </td>
-                    <td>{formatDateTime(resume.submittedAt || resume.uploadedAt)}</td>
+                    <td className="submitted-resumes-submitted-cell">{formatDateTime(resume.submittedAt || resume.uploadedAt)}</td>
                     {showActionsColumn ? (
-                      <td>
+                      <td className="submitted-resumes-actions-cell">
                         <div className="admin-actions-cell">
                           {renderRowActions(resume, deletingResId)}
                         </div>

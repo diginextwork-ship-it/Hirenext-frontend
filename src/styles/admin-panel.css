@@ -681,112 +681,7 @@
   border-bottom: none;
 }
 
-/* ── Candidate resumes table — per-column sizing ────────────────── */
-.admin-candidate-resumes-table th {
-  white-space: nowrap;
-  /* never let any header letter-stack */
-}
-
-/* Resume ID */
-.admin-candidate-resumes-table th:nth-child(1),
-.admin-candidate-resumes-table td:nth-child(1) {
-  min-width: 100px;
-  max-width: 140px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-/* Source badge */
-.admin-candidate-resumes-table th:nth-child(2),
-.admin-candidate-resumes-table td:nth-child(2) {
-  min-width: 110px;
-  white-space: nowrap;
-}
-
-/* Candidate / Recruiter */
-.admin-candidate-resumes-table th:nth-child(3),
-.admin-candidate-resumes-table td:nth-child(3) {
-  min-width: 200px;
-  max-width: 260px;
-}
-
-/* Job */
-.admin-candidate-resumes-table th:nth-child(4),
-.admin-candidate-resumes-table td:nth-child(4) {
-  min-width: 190px;
-  max-width: 240px;
-}
-
-/* JD */
-.admin-candidate-resumes-table th:nth-child(5),
-.admin-candidate-resumes-table td:nth-child(5) {
-  min-width: 260px;
-  max-width: 320px;
-}
-
-/* ATS Score / ATS Match */
-.admin-candidate-resumes-table th:nth-child(6),
-.admin-candidate-resumes-table td:nth-child(6),
-.admin-candidate-resumes-table th:nth-child(7),
-.admin-candidate-resumes-table td:nth-child(7) {
-  min-width: 110px;
-  text-align: center;
-}
-
-/* Recruiter Note */
-.admin-candidate-resumes-table th:nth-child(8),
-.admin-candidate-resumes-table td:nth-child(8) {
-  min-width: 200px;
-  max-width: 280px;
-}
-
-/* Team Leader Note */
-.admin-candidate-resumes-table th:nth-child(9),
-.admin-candidate-resumes-table td:nth-child(9) {
-  min-width: 210px;
-  max-width: 290px;
-}
-
-/* Experience */
-.admin-candidate-resumes-table th:nth-child(10),
-.admin-candidate-resumes-table td:nth-child(10) {
-  min-width: 220px;
-  max-width: 280px;
-}
-
-/* File */
-.admin-candidate-resumes-table th:nth-child(11),
-.admin-candidate-resumes-table td:nth-child(11) {
-  min-width: 160px;
-  max-width: 220px;
-}
-
-/* Submitted At */
-.admin-candidate-resumes-table th:nth-child(12),
-.admin-candidate-resumes-table td:nth-child(12) {
-  min-width: 170px;
-  white-space: nowrap;
-}
-
-/* Status */
-.admin-candidate-resumes-table th:nth-child(13),
-.admin-candidate-resumes-table td:nth-child(13) {
-  min-width: 110px;
-  white-space: nowrap;
-}
-
-/* Joining Info */
-.admin-candidate-resumes-table th:nth-child(14),
-.admin-candidate-resumes-table td:nth-child(14) {
-  min-width: 200px;
-}
-
-/* Actions */
-.admin-candidate-resumes-table th:nth-child(15),
-.admin-candidate-resumes-table td:nth-child(15) {
-  min-width: 160px;
-}
+/* ── Candidate resumes table: see dedicated styling at line ~2800 ── */
 
 /* ── Candidate resumes: actions cell ────────────────────────────── */
 .admin-actions-cell {
@@ -2810,158 +2705,196 @@
   background: linear-gradient(135deg, #16a34a, #15803d);
 }
 
-.admin-candidate-resumes-table th,
-.admin-candidate-resumes-table td {
-  word-break: normal;
-  overflow-wrap: anywhere;
-}
-
+/* ── Submitted Resumes Table (Admin & Recruiter) ────────────────────────── */
 .admin-candidate-resumes-table {
   table-layout: fixed;
-  width: 2386px;
-  min-width: 2386px;
-  max-width: 2386px;
+  width: 2320px;
+  min-width: 2320px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .admin-candidate-resumes-table.submitted-resumes-table-no-actions {
-  width: 2231px;
-  min-width: 2231px;
-  max-width: 2231px;
+  width: 2175px;
+  min-width: 2175px;
 }
 
+.admin-candidate-resumes-table.has-ats-score {
+  width: 2425px;
+  min-width: 2425px;
+}
+
+.admin-candidate-resumes-table.submitted-resumes-table-no-actions.has-ats-score {
+  width: 2280px;
+  min-width: 2280px;
+}
+
+/* Colgroup column widths */
 .admin-candidate-resumes-table .submitted-resumes-col-recruiter {
+  width: 165px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-candidate {
+  width: 200px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-file {
+  width: 155px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-phone {
   width: 130px;
 }
-
-.admin-candidate-resumes-table .submitted-resumes-col-candidate {
-  width: 215px;
+.admin-candidate-resumes-table .submitted-resumes-col-email {
+  width: 220px;
 }
-
-.admin-candidate-resumes-table .submitted-resumes-col-phone {
+.admin-candidate-resumes-table .submitted-resumes-col-company {
+  width: 175px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-role {
+  width: 265px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-city {
   width: 125px;
 }
-
-.admin-candidate-resumes-table .submitted-resumes-col-email {
-  width: 210px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-company {
-  width: 170px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-role {
-  width: 240px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-city {
-  width: 110px;
-}
-
 .admin-candidate-resumes-table .submitted-resumes-col-education {
-  width: 190px;
+  width: 180px;
 }
-
 .admin-candidate-resumes-table .submitted-resumes-col-age {
-  width: 64px;
+  width: 65px;
 }
-
 .admin-candidate-resumes-table .submitted-resumes-col-ats {
-  width: 112px;
+  width: 105px;
 }
-
 .admin-candidate-resumes-table .submitted-resumes-col-status {
+  width: 150px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-note {
+  width: 180px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-submitted {
+  width: 160px;
+}
+.admin-candidate-resumes-table .submitted-resumes-col-actions {
   width: 145px;
 }
 
-.admin-candidate-resumes-table .submitted-resumes-col-note {
-  width: 160px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-submitted {
-  width: 180px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-file {
-  width: 215px;
-}
-
-.admin-candidate-resumes-table .submitted-resumes-col-actions {
-  width: 155px;
+/* Table cells base styling */
+.admin-candidate-resumes-table th,
+.admin-candidate-resumes-table td {
+  padding: 0.75rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: #1e293b;
+  text-align: left;
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .admin-candidate-resumes-table th {
   white-space: nowrap;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
 }
 
-.admin-candidate-resumes-table th:nth-child(1),
-.admin-candidate-resumes-table td:nth-child(1) {
-  min-width: 88px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table th:nth-child(2),
-.admin-candidate-resumes-table td:nth-child(2) {
-  min-width: 110px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table th:nth-child(3),
-.admin-candidate-resumes-table td:nth-child(3) {
-  min-width: 125px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table th:nth-child(6),
-.admin-candidate-resumes-table th:nth-child(7),
-.admin-candidate-resumes-table td:nth-child(7) {
-  min-width: 110px;
-  white-space: nowrap;
-}
-
-.admin-candidate-resumes-table td:nth-child(6) {
-  min-width: 240px;
+/* Individual Cell Styling - no collapsing / overlapping */
+.admin-candidate-resumes-table .submitted-resumes-recruiter-cell {
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #1e293b;
   white-space: normal;
-  overflow-wrap: anywhere;
   word-break: break-word;
-  line-height: 1.45;
+  overflow-wrap: break-word;
+  line-height: 1.35;
 }
 
-.admin-candidate-resumes-table th:nth-child(8),
-.admin-candidate-resumes-table td:nth-child(8) {
-  min-width: 180px;
+.admin-candidate-resumes-table .submitted-resumes-candidate-cell,
+.admin-candidate-resumes-table .submitted-resumes-candidate-name {
+  font-weight: 500;
+  color: #0f172a;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
 }
 
-.admin-candidate-resumes-table th:nth-child(9),
-.admin-candidate-resumes-table td:nth-child(9) {
-  min-width: 150px;
-}
-
-.admin-candidate-resumes-table th,
-.admin-candidate-resumes-table td {
-  min-width: 0;
-  max-width: none;
-  text-align: left;
+.admin-candidate-resumes-table .submitted-resumes-phone-cell {
+  white-space: nowrap;
   font-family: inherit;
 }
 
-.admin-candidate-resumes-table th:nth-child(1),
-.admin-candidate-resumes-table td:nth-child(1),
-.admin-candidate-resumes-table th:nth-child(2),
-.admin-candidate-resumes-table td:nth-child(2),
-.admin-candidate-resumes-table th:nth-child(7),
-.admin-candidate-resumes-table td:nth-child(7),
-.admin-candidate-resumes-table th:nth-child(10),
-.admin-candidate-resumes-table td:nth-child(10),
-.admin-candidate-resumes-table th:nth-child(11),
-.admin-candidate-resumes-table td:nth-child(11),
-.admin-candidate-resumes-table th:nth-child(13),
-.admin-candidate-resumes-table td:nth-child(13) {
+.admin-candidate-resumes-table .submitted-resumes-email-cell {
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-company-cell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  color: #334155;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-role-cell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  color: #1e293b;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-city-cell {
+  white-space: normal;
+  word-break: break-word;
+  color: #475569;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-education-cell {
+  white-space: normal;
+  word-break: break-word;
+  color: #475569;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-age-cell {
+  text-align: center;
+  white-space: nowrap;
+  color: #475569;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-ats-cell {
+  text-align: center;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-status-cell {
   white-space: nowrap;
 }
 
-.admin-candidate-resumes-table .submitted-resumes-candidate-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.admin-candidate-resumes-table .submitted-resumes-note-cell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  font-size: 0.84rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-submitted-cell {
+  white-space: nowrap;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.admin-candidate-resumes-table .submitted-resumes-actions-cell {
   white-space: nowrap;
 }
 
@@ -3024,8 +2957,8 @@
 }
 
 .admin-candidate-resumes-table .admin-actions-cell {
-  min-width: 170px;
-  max-width: 170px;
+  min-width: 140px;
+  max-width: 140px;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
