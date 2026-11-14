@@ -14,6 +14,8 @@ import {
   updateTeamLeaderNote,
   fetchAdminRecruiterResumes,
   fetchAdminRecruitersList,
+  fetchAdminRecruiterTargets,
+  fetchAdminRecruiterTargetsHistory,
   adminUpdateRecruiterTarget,
   adminUpdateRecruitersTargetsBulk,
 } from "./adminApi";
@@ -793,15 +795,107 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [inactiveResumeSearch, setInactiveResumeSearch] = useState("");
   const [inactiveResumeStatusFilter, setInactiveResumeStatusFilter] = useState("all");
 
-  // Set recruiter targets state
+  // Set recruiter targets state & custom period tracking
+  const [targetPreset, setTargetPreset] = useState("this_month");
+  const [targetCustomStart, setTargetCustomStart] = useState("");
+  const [targetCustomEnd, setTargetCustomEnd] = useState("");
+  const [targetRecruiters, setTargetRecruiters] = useState([]);
+  const [targetLoading, setTargetLoading] = useState(false);
+  const [targetError, setTargetError] = useState("");
   const [targetInputs, setTargetInputs] = useState({});
   const [targetSavingRid, setTargetSavingRid] = useState("");
   const [savingAllTargets, setSavingAllTargets] = useState(false);
   const [targetMessage, setTargetMessage] = useState({ type: "", text: "" });
   const [targetSearch, setTargetSearch] = useState("");
 
+  // Target History Modal State
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyList, setHistoryList] = useState([]);
+  const [historyError, setHistoryError] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historySelectedRid, setHistorySelectedRid] = useState("");
+
+  const targetDateRange = useMemo(() => {
+    const now = new Date();
+    const toYmd = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    switch (targetPreset) {
+      case "this_month": {
+        const first = new Date(now.getFullYear(), now.getMonth(), 1);
+        const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return { start: toYmd(first), end: toYmd(last), label: "This Month" };
+      }
+      case "last_month": {
+        const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const last = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { start: toYmd(first), end: toYmd(last), label: "Last Month" };
+      }
+      case "last_20_days": {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 19);
+        return { start: toYmd(start), end: toYmd(now), label: "Last 20 Days" };
+      }
+      case "last_7_days": {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 6);
+        return { start: toYmd(start), end: toYmd(now), label: "Last 7 Days" };
+      }
+      case "custom": {
+        return {
+          start: targetCustomStart || toYmd(now),
+          end: targetCustomEnd || toYmd(now),
+          label: "Custom Period",
+        };
+      }
+      default: {
+        const first = new Date(now.getFullYear(), now.getMonth(), 1);
+        const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return { start: toYmd(first), end: toYmd(last), label: "This Month" };
+      }
+    }
+  }, [targetPreset, targetCustomStart, targetCustomEnd]);
+
+  const fetchTargetsForRange = useCallback(async (start, end) => {
+    setTargetLoading(true);
+    setTargetError("");
+    try {
+      const res = await fetchAdminRecruiterTargets(start, end);
+      if (Array.isArray(res?.recruiters)) {
+        setTargetRecruiters(res.recruiters);
+      }
+    } catch (err) {
+      setTargetError(err.message || "Failed to load targets for selected period.");
+    } finally {
+      setTargetLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (targetDateRange?.start && targetDateRange?.end) {
+      setTargetInputs({});
+      fetchTargetsForRange(targetDateRange.start, targetDateRange.end);
+    }
+  }, [targetDateRange.start, targetDateRange.end, fetchTargetsForRange]);
+
+  const openTargetHistory = async (rid = "") => {
+    setHistorySelectedRid(rid);
+    setHistoryModalOpen(true);
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const res = await fetchAdminRecruiterTargetsHistory(rid);
+      setHistoryList(Array.isArray(res?.history) ? res.history : []);
+    } catch (err) {
+      setHistoryError(err.message || "Failed to load target history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const filteredTargetRecruiters = useMemo(() => {
-    const list = Array.isArray(data?.recruiters) ? data.recruiters : [];
+    const list = Array.isArray(targetRecruiters) ? targetRecruiters : [];
     if (!targetSearch.trim()) return list;
     const q = targetSearch.toLowerCase().trim();
     return list.filter(
@@ -810,47 +904,57 @@ export default function AdminPerformance({ setCurrentPage }) {
         String(r.rid || "").toLowerCase().includes(q) ||
         String(r.team || "").toLowerCase().includes(q)
     );
-  }, [data?.recruiters, targetSearch]);
+  }, [targetRecruiters, targetSearch]);
 
   const hasAnyTargetChanges = useMemo(() => {
-    if (!Array.isArray(data?.recruiters)) return false;
+    if (!Array.isArray(targetRecruiters)) return false;
     return Object.entries(targetInputs).some(([rid, val]) => {
-      const rec = data.recruiters.find((r) => r.rid === rid);
+      const rec = targetRecruiters.find((r) => r.rid === rid);
       return (
         rec &&
         val !== "" &&
-        Number(val) !== Number(rec.joiningTarget ?? rec.target ?? 0)
+        Number(val) !== Number(rec.target ?? rec.joiningTarget ?? 0)
       );
     });
-  }, [targetInputs, data?.recruiters]);
+  }, [targetInputs, targetRecruiters]);
 
   const handleSaveTarget = async (recruiter) => {
     const rid = recruiter.rid;
     const currentVal =
       targetInputs[rid] !== undefined
         ? targetInputs[rid]
-        : (recruiter.joiningTarget ?? recruiter.target ?? 0);
+        : (recruiter.target ?? recruiter.joiningTarget ?? 0);
     const numVal = Math.max(0, parseInt(currentVal, 10) || 0);
 
     setTargetSavingRid(rid);
     setTargetMessage({ type: "", text: "" });
     try {
-      await adminUpdateRecruiterTarget(rid, numVal);
+      await adminUpdateRecruiterTarget(
+        rid,
+        numVal,
+        targetDateRange.start,
+        targetDateRange.end,
+      );
       setTargetMessage({
         type: "success",
-        text: `Target (${numVal} joins) saved for ${recruiter.name || rid}.`,
+        text: `Target (${numVal} joins) saved for ${recruiter.name || rid} (${targetDateRange.label || `${targetDateRange.start} to ${targetDateRange.end}`}).`,
       });
-      setData((prev) => {
-        if (!prev || !Array.isArray(prev.recruiters)) return prev;
-        return {
-          ...prev,
-          recruiters: prev.recruiters.map((rec) =>
-            rec.rid === rid
-              ? { ...rec, joiningTarget: numVal, target: numVal }
-              : rec
-          ),
-        };
-      });
+      setTargetRecruiters((prev) =>
+        prev.map((rec) =>
+          rec.rid === rid
+            ? {
+                ...rec,
+                target: numVal,
+                progressPct:
+                  numVal > 0
+                    ? Math.min(100, Math.round(((rec.joined || 0) / numVal) * 100))
+                    : (rec.joined || 0) > 0
+                    ? 100
+                    : 0,
+              }
+            : rec
+        )
+      );
       setTargetInputs((prev) => {
         const next = { ...prev };
         delete next[rid];
@@ -868,13 +972,13 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const handleSaveAllTargets = async () => {
-    if (!Array.isArray(data?.recruiters)) return;
+    if (!Array.isArray(targetRecruiters)) return;
     const changed = Object.entries(targetInputs).filter(([rid, val]) => {
-      const rec = data.recruiters.find((r) => r.rid === rid);
+      const rec = targetRecruiters.find((r) => r.rid === rid);
       return (
         rec &&
         val !== "" &&
-        Number(val) !== Number(rec.joiningTarget ?? rec.target ?? 0)
+        Number(val) !== Number(rec.target ?? rec.joiningTarget ?? 0)
       );
     });
     if (changed.length === 0) return;
@@ -886,27 +990,32 @@ export default function AdminPerformance({ setCurrentPage }) {
         rid,
         target: Math.max(0, parseInt(val, 10) || 0),
       }));
-      await adminUpdateRecruitersTargetsBulk(targets);
+      await adminUpdateRecruitersTargetsBulk(
+        targets,
+        targetDateRange.start,
+        targetDateRange.end,
+      );
       setTargetMessage({
         type: "success",
-        text: `Successfully saved targets for ${targets.length} recruiter${targets.length === 1 ? "" : "s"}.`,
+        text: `Successfully saved targets for ${targets.length} recruiter${targets.length === 1 ? "" : "s"} (${targetDateRange.label || `${targetDateRange.start} to ${targetDateRange.end}`}).`,
       });
-      setData((prev) => {
-        if (!prev || !Array.isArray(prev.recruiters)) return prev;
-        const targetMap = new Map(targets.map((t) => [t.rid, t.target]));
-        return {
-          ...prev,
-          recruiters: prev.recruiters.map((rec) =>
-            targetMap.has(rec.rid)
-              ? {
-                  ...rec,
-                  joiningTarget: targetMap.get(rec.rid),
-                  target: targetMap.get(rec.rid),
-                }
-              : rec
-          ),
-        };
-      });
+      const targetMap = new Map(targets.map((t) => [t.rid, t.target]));
+      setTargetRecruiters((prev) =>
+        prev.map((rec) => {
+          if (!targetMap.has(rec.rid)) return rec;
+          const newTarget = targetMap.get(rec.rid);
+          return {
+            ...rec,
+            target: newTarget,
+            progressPct:
+              newTarget > 0
+                ? Math.min(100, Math.round(((rec.joined || 0) / newTarget) * 100))
+                : (rec.joined || 0) > 0
+                ? 100
+                : 0,
+          };
+        })
+      );
       setTargetInputs({});
       setTimeout(() => setTargetMessage({ type: "", text: "" }), 3500);
     } catch (err) {
@@ -2755,12 +2864,20 @@ export default function AdminPerformance({ setCurrentPage }) {
                     Set Recruiter Targets
                   </h3>
                   <p className="recruiter-targets-subtitle">
-                    Set joining targets for recruiters and track achievements in real-time.
+                    Set joining targets for custom date ranges and monitor real-time & historical progress.
                   </p>
                 </div>
               </div>
 
               <div className="recruiter-targets-controls">
+                <button
+                  type="button"
+                  className="target-history-trigger-btn"
+                  onClick={() => openTargetHistory("")}
+                  title="View previous target periods and progress history"
+                >
+                  <span>📜</span> View Target History
+                </button>
                 <input
                   type="text"
                   className="recruiter-targets-search"
@@ -2781,6 +2898,93 @@ export default function AdminPerformance({ setCurrentPage }) {
               </div>
             </div>
 
+            {/* Target Period Selector Bar */}
+            <div className="recruiter-targets-period-bar">
+              <div className="target-preset-group">
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", marginRight: "4px" }}>
+                  PERIOD:
+                </span>
+                <button
+                  type="button"
+                  className={`target-preset-btn ${targetPreset === "this_month" ? "active" : ""}`}
+                  onClick={() => setTargetPreset("this_month")}
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  className={`target-preset-btn ${targetPreset === "last_month" ? "active" : ""}`}
+                  onClick={() => setTargetPreset("last_month")}
+                >
+                  Last Month
+                </button>
+                <button
+                  type="button"
+                  className={`target-preset-btn ${targetPreset === "last_20_days" ? "active" : ""}`}
+                  onClick={() => setTargetPreset("last_20_days")}
+                >
+                  Last 20 Days
+                </button>
+                <button
+                  type="button"
+                  className={`target-preset-btn ${targetPreset === "last_7_days" ? "active" : ""}`}
+                  onClick={() => setTargetPreset("last_7_days")}
+                >
+                  Last 7 Days
+                </button>
+                <button
+                  type="button"
+                  className={`target-preset-btn ${targetPreset === "custom" ? "active" : ""}`}
+                  onClick={() => {
+                    setTargetPreset("custom");
+                    if (!targetCustomStart) setTargetCustomStart(targetDateRange.start);
+                    if (!targetCustomEnd) setTargetCustomEnd(targetDateRange.end);
+                  }}
+                >
+                  Custom Range
+                </button>
+              </div>
+
+              {targetPreset === "custom" && (
+                <div className="target-custom-inputs-wrap">
+                  <span style={{ fontSize: "12px", color: "#475569", fontWeight: 600 }}>From:</span>
+                  <input
+                    type="date"
+                    className="target-date-picker"
+                    value={targetCustomStart}
+                    onChange={(e) => setTargetCustomStart(e.target.value)}
+                  />
+                  <span style={{ fontSize: "12px", color: "#475569", fontWeight: 600 }}>To:</span>
+                  <input
+                    type="date"
+                    className="target-date-picker"
+                    value={targetCustomEnd}
+                    onChange={(e) => setTargetCustomEnd(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    style={{ padding: "4px 10px", fontSize: "12px" }}
+                    onClick={() => {
+                      if (targetCustomStart && targetCustomEnd) {
+                        fetchTargetsForRange(targetCustomStart, targetCustomEnd);
+                      }
+                    }}
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              <div className="target-period-badge">
+                <span>📅</span>
+                <span>
+                  {targetDateRange.start} to {targetDateRange.end}
+                  {targetDateRange.label ? ` (${targetDateRange.label})` : ""}
+                </span>
+              </div>
+            </div>
+
             {targetMessage.text && (
               <div
                 className={`admin-alert ${
@@ -2794,7 +2998,11 @@ export default function AdminPerformance({ setCurrentPage }) {
               </div>
             )}
 
-            {filteredTargetRecruiters.length > 0 ? (
+            {targetLoading ? (
+              <p className="admin-chart-empty" style={{ padding: "30px 0" }}>
+                Loading targets & progress for {targetDateRange.label || "selected period"}...
+              </p>
+            ) : filteredTargetRecruiters.length > 0 ? (
               <div className="admin-table-wrap">
                 <table className="admin-table recruiter-targets-table">
                   <thead>
@@ -2807,13 +3015,12 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th style={{ minWidth: "140px" }}>Progress</th>
                       <th>Submissions</th>
                       <th>Walk-in</th>
-                      <th>Points</th>
-                      <th style={{ textAlign: "center", width: "110px" }}>Action</th>
+                      <th style={{ textAlign: "center", width: "120px" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTargetRecruiters.map((r, i) => {
-                      const currentSaved = Number(r.joiningTarget ?? r.target ?? 0);
+                      const currentSaved = Number(r.target ?? r.joiningTarget ?? 0);
                       const inputVal =
                         targetInputs[r.rid] !== undefined
                           ? targetInputs[r.rid]
@@ -2909,7 +3116,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                           </td>
                           <td>{r.submitted ?? 0}</td>
                           <td>{r.walk_in ?? 0}</td>
-                          <td style={{ fontWeight: 700, color: "#2563eb" }}>{r.points ?? 0}</td>
                           <td style={{ textAlign: "center" }}>
                             <button
                               type="button"
@@ -2941,6 +3147,200 @@ export default function AdminPerformance({ setCurrentPage }) {
               </p>
             )}
           </div>
+
+          {/* ── Target & Progress History Modal ── */}
+          {historyModalOpen && (
+            <div
+              className="target-history-modal-overlay"
+              onClick={() => setHistoryModalOpen(false)}
+            >
+              <div
+                className="target-history-modal-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="target-history-modal-header">
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>
+                      📜 Recruiter Targets & Progress History
+                    </h3>
+                    <p style={{ margin: "3px 0 0", fontSize: "0.84rem", color: "#64748b" }}>
+                      Review all previously set targets, date ranges, and actual achievements.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryModalOpen(false)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontSize: "1.5rem",
+                      cursor: "pointer",
+                      color: "#64748b",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="target-history-modal-body">
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      marginBottom: "16px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="recruiter-targets-search"
+                      style={{ flex: 1, minWidth: "220px" }}
+                      placeholder="Filter by recruiter name or RID..."
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                    />
+                    <select
+                      className="recruiter-targets-search"
+                      style={{ minWidth: "180px" }}
+                      value={historySelectedRid}
+                      onChange={(e) => {
+                        const rid = e.target.value;
+                        setHistorySelectedRid(rid);
+                        openTargetHistory(rid);
+                      }}
+                    >
+                      <option value="">All Recruiters</option>
+                      {(targetRecruiters || []).map((r) => (
+                        <option key={r.rid} value={r.rid}>
+                          {r.name} ({r.rid})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {historyLoading ? (
+                    <p className="admin-chart-empty" style={{ padding: "30px 0" }}>
+                      Loading target history...
+                    </p>
+                  ) : historyError ? (
+                    <div className="admin-alert admin-alert-error">{historyError}</div>
+                  ) : historyList.length === 0 ? (
+                    <p className="admin-chart-empty" style={{ padding: "30px 0" }}>
+                      No target history records found. Set a target for any period and it will appear here.
+                    </p>
+                  ) : (
+                    <div className="admin-table-wrap">
+                      <table className="admin-table recruiter-targets-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Recruiter</th>
+                            <th>Target Period</th>
+                            <th>Target</th>
+                            <th>Joined</th>
+                            <th>Progress</th>
+                            <th>Submissions</th>
+                            <th>Walk-in</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historyList
+                            .filter((h) => {
+                              if (!historySearch.trim()) return true;
+                              const q = historySearch.toLowerCase().trim();
+                              return (
+                                String(h.name || "").toLowerCase().includes(q) ||
+                                String(h.rid || "").toLowerCase().includes(q) ||
+                                String(h.team || "").toLowerCase().includes(q)
+                              );
+                            })
+                            .map((h, i) => (
+                              <tr key={h.id || `${h.rid}_${h.startDate}_${h.endDate}`}>
+                                <td>{i + 1}</td>
+                                <td>
+                                  <div style={{ fontWeight: 600, color: "#111827" }}>
+                                    {h.name}
+                                  </div>
+                                  <div style={{ fontSize: "11px", color: "#6b7280" }}>
+                                    {h.rid} • {h.team}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "12px" }}>
+                                    📅 {h.startDate} to {h.endDate}
+                                  </div>
+                                </td>
+                                <td style={{ fontWeight: 700 }}>{h.target} joins</td>
+                                <td>
+                                  <span className="target-joined-badge">
+                                    {h.joined} Joined
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="target-progress-cell">
+                                    <div className="target-progress-bar-bg">
+                                      <div
+                                        className={`target-progress-bar-fill ${
+                                          h.progressPct >= 100
+                                            ? "fill-success"
+                                            : h.progressPct >= 50
+                                            ? "fill-primary"
+                                            : "fill-neutral"
+                                        }`}
+                                        style={{ width: `${h.progressPct}%` }}
+                                      />
+                                    </div>
+                                    <span
+                                      className={`target-progress-text ${
+                                        h.progressPct >= 100 ? "text-success" : ""
+                                      }`}
+                                    >
+                                      {h.progressPct}% ({h.joined}/{h.target})
+                                    </span>
+                                  </div>
+                                </td>
+                                <td>{h.submitted}</td>
+                                <td>{h.walkIn}</td>
+                                <td>
+                                  <span
+                                    className={`target-status-pill status-${h.status}`}
+                                  >
+                                    {h.status === "achieved"
+                                      ? "🎯 Achieved"
+                                      : h.status === "in_progress"
+                                      ? "⏳ In Progress"
+                                      : "⚠️ Missed"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px 24px",
+                    borderTop: "1.5px solid #f1f5f9",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    onClick={() => setHistoryModalOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

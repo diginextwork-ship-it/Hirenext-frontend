@@ -191,24 +191,57 @@ export const fetchAdminRecruitersList = async () =>
     "Failed to fetch recruiters list.",
   );
 
-export const adminUpdateRecruiterTarget = async (rid, target) =>
+export const fetchAdminRecruiterTargets = async (startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+  const qs = params.toString();
+  return authFetch(
+    `${API_BASE_URL}/api/admin/recruiter-targets${qs ? `?${qs}` : ""}`,
+    {},
+    "Failed to fetch recruiter targets.",
+  );
+};
+
+export const fetchAdminRecruiterTargetsHistory = async (rid) => {
+  const params = new URLSearchParams();
+  if (rid) params.set("rid", rid);
+  const qs = params.toString();
+  return authFetch(
+    `${API_BASE_URL}/api/admin/recruiter-targets/history${qs ? `?${qs}` : ""}`,
+    {},
+    "Failed to fetch recruiter targets history.",
+  );
+};
+
+export const adminUpdateRecruiterTarget = async (rid, target, startDate, endDate, note) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/target`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target: Number(target) || 0 }),
+      body: JSON.stringify({
+        target: Number(target) || 0,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        note: note || null,
+      }),
     },
     "Failed to update recruiter target.",
   );
 
-export const adminUpdateRecruitersTargetsBulk = async (targets) =>
+export const adminUpdateRecruitersTargetsBulk = async (targets, startDate, endDate, note) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/targets`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targets }),
+      body: JSON.stringify({
+        targets,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        note: note || null,
+      }),
     },
     "Failed to update recruiter targets.",
   );

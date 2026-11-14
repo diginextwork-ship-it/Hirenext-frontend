@@ -3314,3 +3314,171 @@
   background: #b71c1c;
   border-color: #b71c1c;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Period Selector & History Modal for Recruiter Targets
+   ───────────────────────────────────────────────────────────── */
+.recruiter-targets-period-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.target-preset-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.target-preset-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.target-preset-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.target-preset-btn.active {
+  background: #c62828;
+  color: #ffffff;
+  border-color: #c62828;
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.2);
+}
+
+.target-custom-inputs-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.target-date-picker {
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  outline: none;
+}
+
+.target-date-picker:focus {
+  border-color: #c62828;
+}
+
+.target-period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.target-history-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.target-history-trigger-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* History Modal */
+.target-history-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.target-history-modal-card {
+  background: #ffffff;
+  border-radius: 18px;
+  max-width: 960px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.target-history-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+
+.target-history-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.target-status-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.target-status-pill.status-achieved {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.target-status-pill.status-in_progress {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.target-status-pill.status-missed {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
