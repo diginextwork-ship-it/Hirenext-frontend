@@ -2802,3 +2802,325 @@
 .active-recruiters-close-btn:hover {
   background: #334155;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Top 3 Recruiters Joined-Wise Showcase
+   ───────────────────────────────────────────────────────────── */
+.top3-recruiters-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.top3-recruiters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.top3-recruiters-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top3-flame-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.top3-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.top3-team-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+}
+
+.top3-timeline-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+}
+
+.top3-timeline-btn {
+  padding: 3px 11px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.top3-timeline-btn:hover {
+  color: #0f172a;
+}
+
+.top3-timeline-btn.is-active {
+  background: #c62828;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.25);
+}
+
+.top3-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .top3-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.top3-recruiter-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+}
+
+.top3-recruiter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* Rank 1: Gold */
+.top3-card-rank-1 {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fde68a;
+}
+.top3-card-rank-1:hover {
+  border-color: #f59e0b;
+}
+
+/* Rank 2: Silver */
+.top3-card-rank-2 {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: #e2e8f0;
+}
+.top3-card-rank-2:hover {
+  border-color: #94a3b8;
+}
+
+/* Rank 3: Bronze */
+.top3-card-rank-3 {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border-color: #fed7aa;
+}
+.top3-card-rank-3:hover {
+  border-color: #ea580c;
+}
+
+.top3-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.top3-rank-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+.top3-rank-badge-1 {
+  background: #fef08a;
+  color: #854d0e;
+  border: 1px solid #facc15;
+}
+
+.top3-rank-badge-2 {
+  background: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.top3-rank-badge-3 {
+  background: #fed7aa;
+  color: #9a3412;
+  border: 1px solid #fb923c;
+}
+
+.top3-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.top3-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.top3-avatar-rank-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.top3-avatar-rank-2 {
+  background: linear-gradient(135deg, #64748b, #475569);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+}
+
+.top3-avatar-rank-3 {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+}
+
+.top3-online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+.top3-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.top3-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.top3-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.top3-rid {
+  font-weight: 600;
+}
+
+.top3-dot {
+  color: #94a3b8;
+}
+
+.top3-team-tag {
+  font-weight: 700;
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.top3-team-bpo {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.top3-team-nbfc {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.top3-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.top3-stat-joined {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  background: #ecfdf5;
+  border: 1.5px solid #a7f3d0;
+  padding: 3px 9px;
+  border-radius: 9999px;
+}
+
+.top3-stat-number {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #059669;
+  line-height: 1;
+}
+
+.top3-stat-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #047857;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.top3-stat-points {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  padding-right: 4px;
+}
+
+.top3-loading-wrap,
+.top3-empty-state {
+  text-align: center;
+  padding: 14px 12px;
+  color: #64748b;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+}

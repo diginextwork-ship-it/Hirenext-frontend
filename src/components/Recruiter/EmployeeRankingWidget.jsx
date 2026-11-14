@@ -284,6 +284,17 @@ export default function EmployeeRankingWidget({
 
   const isHorizontal = layout === "horizontal";
 
+  const top3Recruiters = useMemo(() => {
+    const list = [...filteredRankings];
+    list.sort(
+      (a, b) =>
+        (b.joined ?? 0) - (a.joined ?? 0) ||
+        (b.points ?? 0) - (a.points ?? 0) ||
+        String(a.name || "").localeCompare(String(b.name || "")),
+    );
+    return list.slice(0, 3);
+  }, [filteredRankings]);
+
   return (
     <article
       className={`employee-ranking-card employee-ranking-card-prominent ${
@@ -349,6 +360,105 @@ export default function EmployeeRankingWidget({
             Team NBFC <span className="team-count-badge">{teamCounts.nbfc}</span>
           </button>
         </div>
+      </div>
+
+      {/* Top 3 Recruiters Joined-Wise Section */}
+      <div className="top3-recruiters-section">
+        <div className="top3-recruiters-header">
+          <div className="top3-recruiters-title-wrap">
+            <span className="top3-flame-icon">🔥</span>
+            <span className="top3-title">Top 3 Recruiters (Joined)</span>
+            <span className="top3-team-label">
+              {activeTeam === "all" ? "All Teams" : activeTeam}
+            </span>
+          </div>
+
+          <div className="top3-timeline-pills">
+            {[
+              { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
+              { key: FILTER_PRESETS.THIS_MONTH, label: "This Month" },
+              { key: FILTER_PRESETS.TODAY, label: "Today" },
+            ].map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                className={`top3-timeline-btn ${filterPreset === p.key ? "is-active" : ""}`}
+                onClick={() => handlePresetClick(p.key)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="top3-loading-wrap">
+            <div className="employee-ranking-spinner" style={{ width: 20, height: 20 }}></div>
+            <span>Loading top recruiters...</span>
+          </div>
+        ) : top3Recruiters.length === 0 ? (
+          <div className="top3-empty-state">
+            No joined candidate records found for this period.
+          </div>
+        ) : (
+          <div className="top3-cards-grid">
+            {top3Recruiters.map((recruiter, idx) => {
+              const rank = idx + 1;
+              const isFirst = rank === 1;
+              const isSecond = rank === 2;
+              const isThird = rank === 3;
+              const isNbfc = String(recruiter.team || "").toLowerCase().includes("nbfc");
+
+              return (
+                <div
+                  key={recruiter.rid || idx}
+                  className={`top3-recruiter-card top3-card-rank-${rank}`}
+                >
+                  <div className="top3-card-left">
+                    <div className={`top3-rank-badge top3-rank-badge-${rank}`}>
+                      {isFirst ? "🥇 1st" : isSecond ? "🥈 2nd" : "🥉 3rd"}
+                    </div>
+                    <div className="top3-avatar-wrap">
+                      <div className={`top3-avatar top3-avatar-rank-${rank}`}>
+                        {getInitials(recruiter.name)}
+                      </div>
+                      <span className="top3-online-dot" />
+                    </div>
+                    <div className="top3-info">
+                      <div className="top3-name" title={recruiter.name}>
+                        {recruiter.name || "Unknown"}
+                      </div>
+                      <div className="top3-sub">
+                        <span className="top3-rid">{recruiter.rid}</span>
+                        <span className="top3-dot">•</span>
+                        <span
+                          className={`top3-team-tag ${
+                            isNbfc ? "top3-team-nbfc" : "top3-team-bpo"
+                          }`}
+                        >
+                          {recruiter.team || (isNbfc ? "Team NBFC" : "Team BPO")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="top3-card-right">
+                    <div className="top3-stat-joined">
+                      <span className="top3-stat-number">{recruiter.joined ?? 0}</span>
+                      <span className="top3-stat-label">Joined</span>
+                    </div>
+                    <div
+                      className="top3-stat-points"
+                      title={`${recruiter.points ?? 0} total points`}
+                    >
+                      ⭐ {recruiter.points ?? 0} pts
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Smooth Active Recruiters Modal */}
