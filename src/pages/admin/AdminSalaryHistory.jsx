@@ -3,6 +3,7 @@ import AdminLayout from "./AdminLayout";
 import {
   API_BASE_URL,
   adminUpdateRecruiterAccountStatus,
+  adminUpdateRecruiterRole,
   adminUpdateRecruiterTeam,
   fetchAdminSalaryHistoryDetail,
   getAdminHeaders,
@@ -75,6 +76,10 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const [formMessage, setFormMessage] = useState("");
   const [formError, setFormError] = useState("");
   const [confirmDisableTarget, setConfirmDisableTarget] = useState(null);
+  const [confirmRoleTarget, setConfirmRoleTarget] = useState(null);
+  const [targetNextRole, setTargetNextRole] = useState("");
+  const [roleActionSubmitting, setRoleActionSubmitting] = useState(false);
+  const [roleActionError, setRoleActionError] = useState("");
   const [salaryForm, setSalaryForm] = useState({
     monthlySalary: "",
     effectiveFrom: getTodayValue(),
@@ -230,6 +235,35 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const closeDisableModal = () => {
     if (accountActionRid) return;
     setConfirmDisableTarget(null);
+  };
+
+  const openRoleConfirmModal = (member, nextRole) => {
+    setConfirmRoleTarget(member);
+    setTargetNextRole(nextRole);
+    setRoleActionError("");
+  };
+
+  const closeRoleConfirmModal = () => {
+    if (roleActionSubmitting) return;
+    setConfirmRoleTarget(null);
+    setTargetNextRole("");
+    setRoleActionError("");
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (!confirmRoleTarget?.rid || !targetNextRole) return;
+    setRoleActionSubmitting(true);
+    setRoleActionError("");
+    try {
+      await adminUpdateRecruiterRole(confirmRoleTarget.rid, targetNextRole);
+      setConfirmRoleTarget(null);
+      setTargetNextRole("");
+      await loadStaff();
+    } catch (err) {
+      setRoleActionError(err.message || "Failed to update role.");
+    } finally {
+      setRoleActionSubmitting(false);
+    }
   };
 
   const handleDisableAccount = async () => {
@@ -431,7 +465,65 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                 <div className="admin-salary-history-amount">
                   {formatCurrency(member.currentSalary)}
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {toRoleLabel(member.role) === "Recruiter" ? (
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      style={{
+                        backgroundColor: "#2563eb",
+                        color: "#fff",
+                        border: "none",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        whiteSpace: "nowrap",
+                        boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)",
+                      }}
+                      onClick={() => openRoleConfirmModal(member, "team leader")}
+                      title="Promote recruiter to Team Leader"
+                    >
+                      <span>👑</span> Move to Team Leader
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      style={{
+                        backgroundColor: "#f1f5f9",
+                        color: "#475569",
+                        border: "1px solid #cbd5e1",
+                        padding: "7px 12px",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        whiteSpace: "nowrap",
+                      }}
+                      onClick={() => openRoleConfirmModal(member, "recruiter")}
+                      title="Move back to Recruiter"
+                    >
+                      <span>👤</span> Move to Recruiter
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     className="admin-back-btn"
@@ -441,10 +533,7 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                       border: "none",
                       padding: "8px 12px",
                     }}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setConfirmDisableTarget(member);
-                    }}
+                    onClick={() => setConfirmDisableTarget(member)}
                     disabled={accountActionRid === member.rid}
                   >
                     {accountActionRid === member.rid
@@ -706,6 +795,114 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                     ? "Activating..."
                     : "Disabling..."
                   : `Confirm ${confirmActionLabel}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmRoleTarget ? (
+        <div className="admin-modal-backdrop" onClick={closeRoleConfirmModal}>
+          <div
+            className="admin-modal-card"
+            onClick={(event) => event.stopPropagation()}
+            style={{ maxWidth: "480px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "1.8rem" }}>
+                {targetNextRole === "team leader" ? "👑" : "👤"}
+              </span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "#0f172a" }}>
+                  {targetNextRole === "team leader"
+                    ? "Move to Team Leader"
+                    : "Move to Recruiter"}
+                </h3>
+                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                  Role change confirmation
+                </p>
+              </div>
+            </div>
+
+            <p style={{ margin: "0 0 14px", fontSize: "0.95rem", color: "#1e293b", lineHeight: "1.5" }}>
+              Are you sure you want to move{" "}
+              <strong style={{ color: "#0f172a" }}>
+                {confirmRoleTarget.name || "Unknown"}
+              </strong>{" "}
+              (<code>{confirmRoleTarget.rid}</code>) from{" "}
+              <span style={{ fontWeight: 600, color: "#d97706" }}>
+                {toRoleLabel(confirmRoleTarget.role)}
+              </span>{" "}
+              to{" "}
+              <span style={{ fontWeight: 700, color: "#2563eb" }}>
+                {targetNextRole === "team leader" ? "Team Leader" : "Recruiter"}
+              </span>
+              ?
+            </p>
+
+            <div
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                marginBottom: "16px",
+                fontSize: "0.85rem",
+                color: "#475569",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ color: "#64748b" }}>Email:</span>
+                <strong>{confirmRoleTarget.email || "-"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ color: "#64748b" }}>Team:</span>
+                <strong>{confirmRoleTarget.team || "Team BPO"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>New Role:</span>
+                <strong style={{ color: targetNextRole === "team leader" ? "#2563eb" : "#059669" }}>
+                  {targetNextRole === "team leader" ? "👑 Team Leader" : "👤 Recruiter"}
+                </strong>
+              </div>
+            </div>
+
+            {roleActionError && (
+              <div
+                className="admin-alert admin-alert-error"
+                style={{ marginBottom: "14px" }}
+              >
+                {roleActionError}
+              </div>
+            )}
+
+            <div className="admin-modal-actions" style={{ marginTop: "12px" }}>
+              <button
+                type="button"
+                className="admin-back-btn"
+                onClick={closeRoleConfirmModal}
+                disabled={roleActionSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                style={{
+                  backgroundColor:
+                    targetNextRole === "team leader" ? "#2563eb" : "#475569",
+                  border: "none",
+                  padding: "9px 18px",
+                  fontWeight: 700,
+                }}
+                onClick={handleConfirmRoleChange}
+                disabled={roleActionSubmitting}
+              >
+                {roleActionSubmitting
+                  ? "Updating..."
+                  : targetNextRole === "team leader"
+                  ? "Yes, Move to Team Leader"
+                  : "Yes, Move to Recruiter"}
               </button>
             </div>
           </div>

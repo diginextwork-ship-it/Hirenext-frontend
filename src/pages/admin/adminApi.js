@@ -177,6 +177,17 @@ export const adminUpdateRecruiterTeam = async (rid, team) =>
     "Failed to update recruiter team.",
   );
 
+export const adminUpdateRecruiterRole = async (rid, role) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/role`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    },
+    "Failed to update recruiter role.",
+  );
+
 export const fetchAdminRecruiterResumes = async (rid) =>
   authFetch(
     `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/resumes`,
