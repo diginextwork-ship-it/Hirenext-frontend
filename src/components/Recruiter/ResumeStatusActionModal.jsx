@@ -7,6 +7,15 @@ import {
   normalizeResumeData,
 } from "../../utils/dashboardData";
 
+const toDateStr = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function ResumeStatusActionModal({
   isOpen,
   onClose,
@@ -16,6 +25,7 @@ export default function ResumeStatusActionModal({
 }) {
   const [selectedAction, setSelectedAction] = useState(null);
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [customDate, setCustomDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -28,6 +38,7 @@ export default function ResumeStatusActionModal({
     if (!isOpen) {
       setSelectedAction(null);
       setAdditionalInfo("");
+      setCustomDate("");
       setErrorMessage("");
       setSuccessMessage("");
       setShowJoiningConfirm(false);
@@ -83,6 +94,23 @@ export default function ResumeStatusActionModal({
     return "Additional Information";
   };
 
+  const handleSelectAction = (actionValue) => {
+    setSelectedAction(actionValue);
+    setAdditionalInfo("");
+    setErrorMessage("");
+    setShowJoiningConfirm(false);
+    const todayStr = toDateStr();
+    if (actionValue === "walk_in") {
+      setCustomDate(resume?.walkInDate || todayStr);
+    } else if (actionValue === "joined") {
+      setCustomDate(resume?.joiningDate || todayStr);
+      setJoiningDate(resume?.joiningDate || todayStr);
+    } else {
+      setCustomDate(todayStr);
+    }
+    setJoiningNote("");
+  };
+
   const handleSubmitAction = async () => {
     if (!selectedAction) {
       setErrorMessage("Please select an action.");
@@ -105,6 +133,7 @@ export default function ResumeStatusActionModal({
     setSuccessMessage("");
 
     try {
+      const trimmedDate = (customDate || "").trim();
       await authFetch(
         `${API_BASE_URL}/api/recruiters/${encodeURIComponent(
           normalizedResume.recruiterRid || "",
@@ -117,6 +146,14 @@ export default function ResumeStatusActionModal({
           body: JSON.stringify({
             status: selectedAction,
             ...buildCandidatePayloadAliases(normalizedResume),
+            ...(trimmedDate
+              ? {
+                  custom_date: trimmedDate,
+                  status_date: trimmedDate,
+                  event_date: trimmedDate,
+                  date: trimmedDate,
+                }
+              : {}),
             ...(additionalInfo.trim()
               ? {
                   reason: additionalInfo.trim(),
@@ -128,8 +165,8 @@ export default function ResumeStatusActionModal({
                     : {}),
                 }
               : {}),
-            ...(selectedAction === "joined" && joiningDate
-              ? { joining_date: joiningDate }
+            ...(selectedAction === "joined" && (joiningDate || trimmedDate)
+              ? { joining_date: (joiningDate || trimmedDate).trim() }
               : {}),
             ...(selectedAction === "joined" && joiningNote.trim()
               ? {
@@ -223,14 +260,7 @@ export default function ResumeStatusActionModal({
                       className={`action-btn action-btn-${action.color} ${
                         selectedAction === action.value ? "active" : ""
                       }`}
-                      onClick={() => {
-                        setSelectedAction(action.value);
-                        setAdditionalInfo("");
-                        setErrorMessage("");
-                        setShowJoiningConfirm(false);
-                        setJoiningDate("");
-                        setJoiningNote("");
-                      }}
+                      onClick={() => handleSelectAction(action.value)}
                       disabled={isSubmitting}
                     >
                       {action.label}
@@ -240,31 +270,59 @@ export default function ResumeStatusActionModal({
               </div>
 
               {selectedAction && !showJoiningConfirm && (
-                <div className="form-group">
-                  <label htmlFor="reason-input">
-                    {getReasonFieldLabel()}
-                    {selectedAction === "others" ? " *" : " (optional)"}
-                  </label>
-                  <textarea
-                    id="reason-input"
-                    className="form-control"
-                    rows="4"
-                    placeholder={`Enter ${getReasonFieldLabel().toLowerCase()}...`}
-                    value={additionalInfo}
-                    onChange={(e) => setAdditionalInfo(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                  <small className="form-text-muted">
-                    {selectedAction === "others"
-                      ? "This reason is required and will be shown in the Others tab."
-                      : "This information will be saved for reference."}
-                  </small>
-                  {selectedAction === "walk_in" ? (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="custom-date-input">
+                      {selectedAction === "walk_in"
+                        ? "Walk In Date"
+                        : selectedAction === "others"
+                          ? "Others Date"
+                          : selectedAction === "rejected"
+                            ? "Rejection Date"
+                            : selectedAction === "shortlisted"
+                              ? "Shortlist Date"
+                              : selectedAction === "selected"
+                                ? "Selection Date"
+                                : selectedAction === "joined"
+                                  ? "Joining Date"
+                                  : "Date"}
+                    </label>
+                    <input
+                      id="custom-date-input"
+                      type="date"
+                      className="form-control"
+                      value={customDate}
+                      onChange={(e) => {
+                        setCustomDate(e.target.value);
+                        if (selectedAction === "joined") {
+                          setJoiningDate(e.target.value);
+                        }
+                      }}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="reason-input">
+                      {getReasonFieldLabel()}
+                      {selectedAction === "others" ? " *" : " (optional)"}
+                    </label>
+                    <textarea
+                      id="reason-input"
+                      className="form-control"
+                      rows="4"
+                      placeholder={`Enter ${getReasonFieldLabel().toLowerCase()}...`}
+                      value={additionalInfo}
+                      onChange={(e) => setAdditionalInfo(e.target.value)}
+                      disabled={isSubmitting}
+                    />
                     <small className="form-text-muted">
-                      The walk-in date will be recorded automatically.
+                      {selectedAction === "others"
+                        ? "This reason is required and will be shown in the Others tab."
+                        : "This information will be saved for reference."}
                     </small>
-                  ) : null}
-                </div>
+                  </div>
+                </>
               )}
 
               {showJoiningConfirm && (
@@ -280,8 +338,11 @@ export default function ResumeStatusActionModal({
                       id="joining-date-input"
                       type="date"
                       className="form-control"
-                      value={joiningDate}
-                      onChange={(e) => setJoiningDate(e.target.value)}
+                      value={joiningDate || customDate}
+                      onChange={(e) => {
+                        setJoiningDate(e.target.value);
+                        setCustomDate(e.target.value);
+                      }}
                       disabled={isSubmitting}
                     />
                   </div>

@@ -362,8 +362,9 @@ export default function RecruiterDashboard({ recruiterId }) {
       if (!rawValue) return false;
       const parsed = parseDateTimeValue(rawValue);
       if (!parsed) return false;
-      const start = new Date(`${startDate}T00:00:00`);
-      const end = new Date(`${endDate}T23:59:59.999`);
+      const start = parseDateTimeValue(`${startDate} 00:00:00`);
+      const end = parseDateTimeValue(`${endDate} 23:59:59.999`);
+      if (!start || !end) return true;
       return parsed >= start && parsed <= end;
     },
     [appliedFilters],
@@ -389,7 +390,9 @@ export default function RecruiterDashboard({ recruiterId }) {
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatusValue(activeStatus);
     if (normalizedStatus === "others") {
-      return othersEventResumes;
+      return othersEventResumes.filter((resume) =>
+        matchesCandidateSearch(resume, candidateSearch),
+      );
     }
     const dedupedByLatestStatus = (() => {
       const byResId = new Map();
@@ -433,9 +436,25 @@ export default function RecruiterDashboard({ recruiterId }) {
           normalizeStatusValue(resume.workflowStatus) === normalizedStatus,
       );
     }
-    resumes = resumes.filter((resume) =>
-      matchesAppliedDateRange(resume.workflowUpdatedAt || resume.uploadedAt),
-    );
+    resumes = resumes.filter((resume) => {
+      let eventDate = resume.workflowUpdatedAt;
+      if (normalizedStatus === "walk_in") {
+        eventDate = resume.walkInDate || resume.walkInAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "others") {
+        eventDate = resume.othersAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "rejected") {
+        eventDate = resume.rejectedAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "shortlisted") {
+        eventDate = resume.shortlistedAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "selected") {
+        eventDate = resume.selectedAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "joined") {
+        eventDate = resume.joiningDate || resume.joinedAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "verified") {
+        eventDate = resume.verifiedAt || resume.workflowUpdatedAt;
+      }
+      return matchesAppliedDateRange(eventDate || resume.uploadedAt);
+    });
     resumes = resumes.filter((resume) =>
       matchesCandidateSearch(resume, candidateSearch),
     );
