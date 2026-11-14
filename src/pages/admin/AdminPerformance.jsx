@@ -14,6 +14,8 @@ import {
   updateTeamLeaderNote,
   fetchAdminRecruiterResumes,
   fetchAdminRecruitersList,
+  adminUpdateRecruiterTarget,
+  adminUpdateRecruitersTargetsBulk,
 } from "./adminApi";
 import { getAuthSession } from "../../auth/session";
 import {
@@ -790,6 +792,132 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [inactiveResumesError, setInactiveResumesError] = useState("");
   const [inactiveResumeSearch, setInactiveResumeSearch] = useState("");
   const [inactiveResumeStatusFilter, setInactiveResumeStatusFilter] = useState("all");
+
+  // Set recruiter targets state
+  const [targetInputs, setTargetInputs] = useState({});
+  const [targetSavingRid, setTargetSavingRid] = useState("");
+  const [savingAllTargets, setSavingAllTargets] = useState(false);
+  const [targetMessage, setTargetMessage] = useState({ type: "", text: "" });
+  const [targetSearch, setTargetSearch] = useState("");
+
+  const filteredTargetRecruiters = useMemo(() => {
+    const list = Array.isArray(data?.recruiters) ? data.recruiters : [];
+    if (!targetSearch.trim()) return list;
+    const q = targetSearch.toLowerCase().trim();
+    return list.filter(
+      (r) =>
+        String(r.name || "").toLowerCase().includes(q) ||
+        String(r.rid || "").toLowerCase().includes(q) ||
+        String(r.team || "").toLowerCase().includes(q)
+    );
+  }, [data?.recruiters, targetSearch]);
+
+  const hasAnyTargetChanges = useMemo(() => {
+    if (!Array.isArray(data?.recruiters)) return false;
+    return Object.entries(targetInputs).some(([rid, val]) => {
+      const rec = data.recruiters.find((r) => r.rid === rid);
+      return (
+        rec &&
+        val !== "" &&
+        Number(val) !== Number(rec.joiningTarget ?? rec.target ?? 0)
+      );
+    });
+  }, [targetInputs, data?.recruiters]);
+
+  const handleSaveTarget = async (recruiter) => {
+    const rid = recruiter.rid;
+    const currentVal =
+      targetInputs[rid] !== undefined
+        ? targetInputs[rid]
+        : (recruiter.joiningTarget ?? recruiter.target ?? 0);
+    const numVal = Math.max(0, parseInt(currentVal, 10) || 0);
+
+    setTargetSavingRid(rid);
+    setTargetMessage({ type: "", text: "" });
+    try {
+      await adminUpdateRecruiterTarget(rid, numVal);
+      setTargetMessage({
+        type: "success",
+        text: `Target (${numVal} joins) saved for ${recruiter.name || rid}.`,
+      });
+      setData((prev) => {
+        if (!prev || !Array.isArray(prev.recruiters)) return prev;
+        return {
+          ...prev,
+          recruiters: prev.recruiters.map((rec) =>
+            rec.rid === rid
+              ? { ...rec, joiningTarget: numVal, target: numVal }
+              : rec
+          ),
+        };
+      });
+      setTargetInputs((prev) => {
+        const next = { ...prev };
+        delete next[rid];
+        return next;
+      });
+      setTimeout(() => setTargetMessage({ type: "", text: "" }), 3500);
+    } catch (err) {
+      setTargetMessage({
+        type: "error",
+        text: err.message || "Failed to update target.",
+      });
+    } finally {
+      setTargetSavingRid("");
+    }
+  };
+
+  const handleSaveAllTargets = async () => {
+    if (!Array.isArray(data?.recruiters)) return;
+    const changed = Object.entries(targetInputs).filter(([rid, val]) => {
+      const rec = data.recruiters.find((r) => r.rid === rid);
+      return (
+        rec &&
+        val !== "" &&
+        Number(val) !== Number(rec.joiningTarget ?? rec.target ?? 0)
+      );
+    });
+    if (changed.length === 0) return;
+
+    setSavingAllTargets(true);
+    setTargetMessage({ type: "", text: "" });
+    try {
+      const targets = changed.map(([rid, val]) => ({
+        rid,
+        target: Math.max(0, parseInt(val, 10) || 0),
+      }));
+      await adminUpdateRecruitersTargetsBulk(targets);
+      setTargetMessage({
+        type: "success",
+        text: `Successfully saved targets for ${targets.length} recruiter${targets.length === 1 ? "" : "s"}.`,
+      });
+      setData((prev) => {
+        if (!prev || !Array.isArray(prev.recruiters)) return prev;
+        const targetMap = new Map(targets.map((t) => [t.rid, t.target]));
+        return {
+          ...prev,
+          recruiters: prev.recruiters.map((rec) =>
+            targetMap.has(rec.rid)
+              ? {
+                  ...rec,
+                  joiningTarget: targetMap.get(rec.rid),
+                  target: targetMap.get(rec.rid),
+                }
+              : rec
+          ),
+        };
+      });
+      setTargetInputs({});
+      setTimeout(() => setTargetMessage({ type: "", text: "" }), 3500);
+    } catch (err) {
+      setTargetMessage({
+        type: "error",
+        text: err.message || "Failed to save targets.",
+      });
+    } finally {
+      setSavingAllTargets(false);
+    }
+  };
 
   // Temporary debugging toggle:
   // set localStorage.setItem("perf_debug_admin","1") then refresh the page.
@@ -2617,89 +2745,200 @@ export default function AdminPerformance({ setCurrentPage }) {
             )}
           </div>
 
-          {/* Top 5 recruiters by submissions */}
-          <div className="perf-section">
-            <h3 className="perf-section-title">
-              Top Recruiters by Submissions
-            </h3>
-            {(data?.recruiters || []).length > 0 ? (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Name</th>
-                      <th>Submitted</th>
-                      <th>Verified</th>
-                      <th>Walk-in</th>
-                      <th>Shortlisted</th>
-                      <th>Selected</th>
-                      <th>Joined</th>
-                      <th>Billed</th>
-                      <th>Left</th>
-                      <th>Points</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data?.recruiters || []).slice(0, 5).map((r, i) => (
-                      <tr key={r.rid}>
-                        <td>{i + 1}</td>
-                        <td>{r.name}</td>
-                        <td>{r.submitted}</td>
-                        <td>{r.verified}</td>
-                        <td>{r.walk_in}</td>
-                        <td>{r.shortlisted ?? 0}</td>
-                        <td>{r.selected}</td>
-                        <td>{r.joined}</td>
-                        <td>{r.billed ?? 0}</td>
-                        <td>{r.left ?? 0}</td>
-                        <td>{r.points}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Set Recruiter Targets Section */}
+          <div className="perf-section recruiter-targets-section">
+            <div className="recruiter-targets-header">
+              <div className="recruiter-targets-title-wrap">
+                <span className="recruiter-targets-icon">🎯</span>
+                <div>
+                  <h3 className="perf-section-title" style={{ margin: 0 }}>
+                    Set Recruiter Targets
+                  </h3>
+                  <p className="recruiter-targets-subtitle">
+                    Set joining targets for recruiters and track achievements in real-time.
+                  </p>
+                </div>
               </div>
-            ) : (
-              <p className="admin-chart-empty">No recruiter data yet.</p>
-            )}
-          </div>
 
-          {/* Top team leaders by jobs created */}
-          <div className="perf-section">
-            <h3 className="perf-section-title">
-              Top Team Leaders by Jobs Created
-            </h3>
-            {(data?.teamLeaders || []).length > 0 ? (
+              <div className="recruiter-targets-controls">
+                <input
+                  type="text"
+                  className="recruiter-targets-search"
+                  placeholder="Search recruiter by name, RID, or team..."
+                  value={targetSearch}
+                  onChange={(e) => setTargetSearch(e.target.value)}
+                />
+                {hasAnyTargetChanges && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-primary"
+                    disabled={savingAllTargets}
+                    onClick={handleSaveAllTargets}
+                  >
+                    {savingAllTargets ? "Saving..." : "Save All Changes"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {targetMessage.text && (
+              <div
+                className={`admin-alert ${
+                  targetMessage.type === "error"
+                    ? "admin-alert-error"
+                    : "admin-alert-success"
+                }`}
+                style={{ marginBottom: "14px" }}
+              >
+                {targetMessage.text}
+              </div>
+            )}
+
+            {filteredTargetRecruiters.length > 0 ? (
               <div className="admin-table-wrap">
-                <table className="admin-table">
+                <table className="admin-table recruiter-targets-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Name</th>
-                      <th>Jobs Created</th>
-                      <th>Open</th>
-                      <th>Restricted</th>
-                      <th>Total Positions</th>
+                      <th style={{ width: "40px" }}>#</th>
+                      <th>Recruiter</th>
+                      <th>Team</th>
+                      <th style={{ minWidth: "150px" }}>Joining Target</th>
+                      <th>Joined (Achieved)</th>
+                      <th style={{ minWidth: "140px" }}>Progress</th>
+                      <th>Submissions</th>
+                      <th>Walk-in</th>
                       <th>Points</th>
+                      <th style={{ textAlign: "center", width: "110px" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(data?.teamLeaders || []).slice(0, 5).map((tl, i) => (
-                      <tr key={tl.rid}>
-                        <td>{i + 1}</td>
-                        <td>{tl.name}</td>
-                        <td>{tl.jobsCreated}</td>
-                        <td>{tl.openJobs}</td>
-                        <td>{tl.restrictedJobs}</td>
-                        <td>{tl.totalPositions}</td>
-                        <td>{tl.points}</td>
-                      </tr>
-                    ))}
+                    {filteredTargetRecruiters.map((r, i) => {
+                      const currentSaved = Number(r.joiningTarget ?? r.target ?? 0);
+                      const inputVal =
+                        targetInputs[r.rid] !== undefined
+                          ? targetInputs[r.rid]
+                          : currentSaved;
+                      const isModified =
+                        targetInputs[r.rid] !== undefined &&
+                        targetInputs[r.rid] !== "" &&
+                        Number(targetInputs[r.rid]) !== currentSaved;
+                      const achieved = Number(r.joined ?? 0);
+                      const targetNumber = Math.max(0, parseInt(inputVal, 10) || 0);
+                      const pct =
+                        targetNumber > 0
+                          ? Math.min(100, Math.round((achieved / targetNumber) * 100))
+                          : achieved > 0
+                          ? 100
+                          : 0;
+
+                      return (
+                        <tr
+                          key={r.rid}
+                          className={isModified ? "target-row-edited" : ""}
+                        >
+                          <td>{i + 1}</td>
+                          <td>
+                            <div style={{ fontWeight: 600, color: "#111827" }}>
+                              {r.name || "Unknown"}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                              {r.rid || "-"}
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                background: "#f3f4f6",
+                                color: "#374151",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {r.team || "General"}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="number"
+                                min="0"
+                                className="target-input-box"
+                                value={inputVal}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setTargetInputs((prev) => ({
+                                    ...prev,
+                                    [r.rid]: val === "" ? "" : Math.max(0, parseInt(val, 10) || 0),
+                                  }));
+                                }}
+                                placeholder="0"
+                              />
+                              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>joins</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="target-joined-badge">
+                              {achieved} Joined
+                            </span>
+                          </td>
+                          <td>
+                            <div className="target-progress-cell">
+                              <div className="target-progress-bar-bg">
+                                <div
+                                  className={`target-progress-bar-fill ${
+                                    pct >= 100
+                                      ? "fill-success"
+                                      : pct >= 50
+                                      ? "fill-primary"
+                                      : "fill-neutral"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span
+                                className={`target-progress-text ${
+                                  pct >= 100 ? "text-success" : ""
+                                }`}
+                              >
+                                {pct}% ({achieved}/{targetNumber || 0})
+                              </span>
+                            </div>
+                          </td>
+                          <td>{r.submitted ?? 0}</td>
+                          <td>{r.walk_in ?? 0}</td>
+                          <td style={{ fontWeight: 700, color: "#2563eb" }}>{r.points ?? 0}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <button
+                              type="button"
+                              className={`target-save-action-btn ${
+                                isModified ? "is-changed" : ""
+                              }`}
+                              disabled={targetSavingRid === r.rid}
+                              onClick={() => handleSaveTarget(r)}
+                              title={isModified ? "Save changes for this recruiter" : "Set target"}
+                            >
+                              {targetSavingRid === r.rid
+                                ? "Saving..."
+                                : isModified
+                                ? "Save ✓"
+                                : "Set Target"}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <p className="admin-chart-empty">No team leader data yet.</p>
+              <p className="admin-chart-empty">
+                {targetSearch.trim()
+                  ? `No recruiters match "${targetSearch}".`
+                  : "No recruiter data available."}
+              </p>
             )}
           </div>
         </div>

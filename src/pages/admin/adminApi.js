@@ -190,3 +190,25 @@ export const fetchAdminRecruitersList = async () =>
     {},
     "Failed to fetch recruiters list.",
   );
+
+export const adminUpdateRecruiterTarget = async (rid, target) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/${encodeURIComponent(rid)}/target`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: Number(target) || 0 }),
+    },
+    "Failed to update recruiter target.",
+  );
+
+export const adminUpdateRecruitersTargetsBulk = async (targets) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/recruiters/targets`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targets }),
+    },
+    "Failed to update recruiter targets.",
+  );
