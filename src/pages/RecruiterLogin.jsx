@@ -626,7 +626,13 @@ export default function RecruiterLogin({ setCurrentPage }) {
             <div className="recruiter-dashboard-header">
               <div className="recruiter-dashboard-header-copy">
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <h1 style={{ margin: 0 }}>recruiter dashboard</h1>
+                  <h1 style={{ margin: 0 }}>
+                    {isTeamLeader
+                      ? "Team Leader Dashboard"
+                      : normalizedRole === "job creator"
+                        ? "Job Creator Dashboard"
+                        : "Recruiter Dashboard"}
+                  </h1>
                   <button
                     type="button"
                     className="admin-back-btn"
