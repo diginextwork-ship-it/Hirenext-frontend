@@ -8,7 +8,7 @@ import {
 } from "../../utils/dashboardData";
 import NoteViewButton from "../common/NoteViewButton";
 import EmployeeRankingWidget from "../Recruiter/EmployeeRankingWidget";
-import { formatDateTimeInIndia } from "../../utils/dateTime";
+import { formatDateInIndia, formatDateTimeInIndia } from "../../utils/dateTime";
 import {
   fetchTeamLeaderPerformanceDashboard,
   rollbackJobResumeStatus,
@@ -160,12 +160,7 @@ const formatStatusLabel = (status) => {
     .join(" ");
 };
 
-const formatDate = (value) => {
-  if (!value) return "Not set";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleDateString();
-};
+const formatDate = (value) => formatDateInIndia(value, "Not set");
 
 const formatDateTime = (value) =>
   formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
@@ -306,6 +301,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
   const [actionReason, setActionReason] = useState("");
   const [actionJoiningDate, setActionJoiningDate] = useState("");
   const [actionJoiningNote, setActionJoiningNote] = useState("");
+  const [actionCustomDate, setActionCustomDate] = useState("");
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
   const [editingCandidateItem, setEditingCandidateItem] = useState(null);
@@ -440,37 +436,51 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       });
     };
 
-    const allCandidateItemsMap = new Map();
-    const getResId = (it) =>
-      it?.resId ?? it?.res_id ?? it?.resumeId ?? it?.resume_id;
-
-    for (const [, bucketArr] of Object.entries(statusDrilldown || {})) {
-      if (!Array.isArray(bucketArr)) continue;
-      for (const it of bucketArr) {
-        const id = getResId(it);
-        if (id && !allCandidateItemsMap.has(String(id))) {
-          allCandidateItemsMap.set(String(id), it);
-        }
-      }
-    }
-
-    const postSubmissionPool = Array.from(allCandidateItemsMap.values());
-
     return {
       submitted: buildItems(
         Array.isArray(statusDrilldown.submitted) ? statusDrilldown.submitted : [],
         "submitted",
       ),
-      verified: buildItems(postSubmissionPool, "verified"),
-      others: buildItems(postSubmissionPool, "others"),
-      walk_in: buildItems(postSubmissionPool, "walk_in"),
-      shortlisted: buildItems(postSubmissionPool, "shortlisted"),
-      selected: buildItems(postSubmissionPool, "selected"),
-      rejected: buildItems(postSubmissionPool, "rejected"),
-      joined: buildItems(postSubmissionPool, "joined"),
-      dropout: buildItems(postSubmissionPool, "dropout"),
-      billed: buildItems(postSubmissionPool, "billed"),
-      left: buildItems(postSubmissionPool, "left"),
+      verified: buildItems(
+        Array.isArray(statusDrilldown.verified) ? statusDrilldown.verified : [],
+        "verified",
+      ),
+      others: buildItems(
+        Array.isArray(statusDrilldown.others) ? statusDrilldown.others : [],
+        "others",
+      ),
+      walk_in: buildItems(
+        Array.isArray(statusDrilldown.walk_in) ? statusDrilldown.walk_in : [],
+        "walk_in",
+      ),
+      shortlisted: buildItems(
+        Array.isArray(statusDrilldown.shortlisted) ? statusDrilldown.shortlisted : [],
+        "shortlisted",
+      ),
+      selected: buildItems(
+        Array.isArray(statusDrilldown.selected) ? statusDrilldown.selected : [],
+        "selected",
+      ),
+      rejected: buildItems(
+        Array.isArray(statusDrilldown.rejected) ? statusDrilldown.rejected : [],
+        "rejected",
+      ),
+      joined: buildItems(
+        Array.isArray(statusDrilldown.joined) ? statusDrilldown.joined : [],
+        "joined",
+      ),
+      dropout: buildItems(
+        Array.isArray(statusDrilldown.dropout) ? statusDrilldown.dropout : [],
+        "dropout",
+      ),
+      billed: buildItems(
+        Array.isArray(statusDrilldown.billed) ? statusDrilldown.billed : [],
+        "billed",
+      ),
+      left: buildItems(
+        Array.isArray(statusDrilldown.left) ? statusDrilldown.left : [],
+        "left",
+      ),
     };
   }, [latestStatusByResId, statusDrilldown]);
   const selectedStatusItems = useMemo(
@@ -565,9 +575,15 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     setActionModalItem(item);
     setActionTarget(targetStatus);
     setActionReason("");
-    setActionJoiningDate("");
+    setActionJoiningDate(item?.joiningDate || item?.currentJoiningDate || "");
     setActionJoiningNote("");
     setActionError("");
+
+    const stageDefaultDate =
+      (targetStatus === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
+      (targetStatus === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
+      toDateStr(new Date());
+    setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
   };
 
   const closeActionModal = () => {
@@ -577,6 +593,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     setActionReason("");
     setActionJoiningDate("");
     setActionJoiningNote("");
+    setActionCustomDate("");
     setActionError("");
   };
 
@@ -591,6 +608,10 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         status: actionTarget,
       };
 
+      if (actionCustomDate && actionCustomDate.trim()) {
+        payload.custom_date = actionCustomDate.trim();
+      }
+
       const trimmedReason = actionReason.trim();
       const trimmedJoiningNote = actionJoiningNote.trim();
 
@@ -603,6 +624,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       } else if (actionTarget === "joined") {
         if (trimmedJoiningNote) payload.joinedReason = trimmedJoiningNote;
         else if (trimmedReason) payload.note = trimmedReason;
+        if (!payload.joining_date && actionCustomDate.trim()) {
+          payload.joining_date = actionCustomDate.trim();
+        }
       } else if (actionTarget === "others") {
         if (!trimmedReason) {
           throw new Error("A reason is required for Others status.");
@@ -835,9 +859,31 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   <th>Resume File</th>
                   <th>Status</th>
                   <th>Submitted At</th>
-                  {selectedStatusKey === "walk_in" ? <th>Walk-in Date</th> : null}
+                  {selectedStatusKey !== "submitted" && (
+                    <th>
+                      {selectedStatusKey === "verified"
+                        ? "Verification Date"
+                        : selectedStatusKey === "walk_in"
+                          ? "Walk-in Date"
+                          : selectedStatusKey === "shortlisted"
+                            ? "Shortlist Date"
+                            : selectedStatusKey === "selected"
+                              ? "Selection Date"
+                              : selectedStatusKey === "joined"
+                                ? "Joining Date"
+                                : selectedStatusKey === "rejected"
+                                  ? "Rejection Date"
+                                  : selectedStatusKey === "dropout"
+                                    ? "Dropout Date"
+                                    : selectedStatusKey === "billed"
+                                      ? "Billing Date"
+                                      : selectedStatusKey === "left"
+                                        ? "Exit Date"
+                                        : `${formatStatusLabel(selectedStatusKey)} Date`}
+                    </th>
+                  )}
                   {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
-                    <th>Joining Date</th>
+                    <th>{selectedStatusKey === "selected" ? "Tentative Joining Date" : "Joining Date"}</th>
                   ) : null}
                   <th>Note / Reason</th>
                   {hasAnyRowActions ? <th>Actions</th> : null}
@@ -901,9 +947,23 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                           item.eventAt,
                       )}
                     </td>
-                    {selectedStatusKey === "walk_in" ? (
-                      <td>{formatDate(item.walkInDate)}</td>
-                    ) : null}
+                    {selectedStatusKey !== "submitted" && (
+                      <td>
+                        {formatDate(
+                          (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                          (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
+                          item.eventAt ||
+                          (selectedStatusKey === "verified" ? item.verifiedAt : null) ||
+                          (selectedStatusKey === "others" ? item.othersAt : null) ||
+                          (selectedStatusKey === "shortlisted" ? item.shortlistedAt : null) ||
+                          (selectedStatusKey === "selected" ? item.selectedAt : null) ||
+                          (selectedStatusKey === "rejected" ? item.rejectedAt : null) ||
+                          (selectedStatusKey === "dropout" ? item.dropoutAt : null) ||
+                          (selectedStatusKey === "billed" ? item.billedAt : null) ||
+                          (selectedStatusKey === "left" ? item.leftAt : null)
+                        )}
+                      </td>
+                    )}
                     {["selected", "joined", "billed", "left"].includes(selectedStatusKey) ? (
                       <td>{item.joiningDate ? formatDate(item.joiningDate) : "Not set"}</td>
                     ) : null}
@@ -1010,6 +1070,54 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 <strong>Current Status:</strong>{" "}
                 {formatStatusLabel(actionModalItem.status)}
               </p>
+            </div>
+
+            {/* Custom Date Input for Every Stage */}
+            <div style={{ marginBottom: 12 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontWeight: 600,
+                  marginBottom: 4,
+                }}
+              >
+                {actionTarget === "verified"
+                  ? "Verification Date"
+                  : actionTarget === "walk_in"
+                    ? "Walk-in Date"
+                    : actionTarget === "shortlisted"
+                      ? "Shortlist Date"
+                      : actionTarget === "selected"
+                        ? "Selection Date"
+                        : actionTarget === "joined"
+                          ? "Joining Date"
+                          : actionTarget === "rejected"
+                            ? "Rejection Date"
+                            : actionTarget === "dropout"
+                              ? "Dropout Date"
+                              : actionTarget === "billed"
+                                ? "Billing Date"
+                                : actionTarget === "left"
+                                  ? "Exit Date"
+                                  : "Date"}
+              </label>
+              <input
+                type="date"
+                value={actionCustomDate}
+                onChange={(event) => {
+                  setActionCustomDate(event.target.value);
+                  if (actionTarget === "joined") {
+                    setActionJoiningDate(event.target.value);
+                  }
+                }}
+                disabled={actionSubmitting}
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  borderRadius: 4,
+                  border: "1px solid #ccc",
+                }}
+              />
             </div>
 
             {actionTarget === "selected" ? (
