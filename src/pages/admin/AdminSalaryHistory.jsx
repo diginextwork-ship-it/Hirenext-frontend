@@ -80,6 +80,10 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
   const [targetNextRole, setTargetNextRole] = useState("");
   const [roleActionSubmitting, setRoleActionSubmitting] = useState(false);
   const [roleActionError, setRoleActionError] = useState("");
+  const [confirmTeamTarget, setConfirmTeamTarget] = useState(null);
+  const [targetNextTeam, setTargetNextTeam] = useState("");
+  const [teamActionSubmitting, setTeamActionSubmitting] = useState(false);
+  const [teamActionError, setTeamActionError] = useState("");
   const [salaryForm, setSalaryForm] = useState({
     monthlySalary: "",
     effectiveFrom: getTodayValue(),
@@ -266,6 +270,40 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
     }
   };
 
+  const openTeamConfirmModal = (member, nextTeam) => {
+    if ((member.team || "Team BPO") === nextTeam) return;
+    setConfirmTeamTarget(member);
+    setTargetNextTeam(nextTeam);
+    setTeamActionError("");
+  };
+
+  const closeTeamConfirmModal = () => {
+    if (teamActionSubmitting) return;
+    setConfirmTeamTarget(null);
+    setTargetNextTeam("");
+    setTeamActionError("");
+  };
+
+  const handleConfirmTeamChange = async () => {
+    if (!confirmTeamTarget?.rid || !targetNextTeam) return;
+    setTeamActionSubmitting(true);
+    setTeamActionError("");
+    try {
+      await adminUpdateRecruiterTeam(confirmTeamTarget.rid, targetNextTeam);
+      setStaff((prev) =>
+        prev.map((s) =>
+          s.rid === confirmTeamTarget.rid ? { ...s, team: targetNextTeam } : s
+        )
+      );
+      setConfirmTeamTarget(null);
+      setTargetNextTeam("");
+    } catch (err) {
+      setTeamActionError(err.message || "Failed to update team.");
+    } finally {
+      setTeamActionSubmitting(false);
+    }
+  };
+
   const handleDisableAccount = async () => {
     if (!confirmDisableTarget?.rid) return;
     setAccountActionRid(confirmDisableTarget.rid);
@@ -446,16 +484,9 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                   <select
                     className="admin-team-select"
                     value={member.team || "Team BPO"}
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const newTeam = e.target.value;
-                      try {
-                        await adminUpdateRecruiterTeam(member.rid, newTeam);
-                        setStaff((prev) =>
-                          prev.map((s) => (s.rid === member.rid ? { ...s, team: newTeam } : s))
-                        );
-                      } catch (err) {
-                        alert("Failed to update team: " + (err.message || err));
-                      }
+                      openTeamConfirmModal(member, newTeam);
                     }}
                   >
                     <option value="Team BPO">Team BPO</option>
@@ -810,6 +841,109 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
                       ? "Activating..."
                       : "Disabling..."
                     : `Confirm ${confirmActionLabel}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Confirm Team Change Bootstrap Modal ── */}
+      {confirmTeamTarget ? (
+        <div
+          className="bs-modal-overlay"
+          onClick={closeTeamConfirmModal}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bs-modal-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="bs-modal-content">
+              <div className="bs-modal-header">
+                <h5 className="bs-modal-title">
+                  🏢 Change Team
+                </h5>
+                <button
+                  type="button"
+                  className="bs-btn-close"
+                  onClick={closeTeamConfirmModal}
+                  disabled={teamActionSubmitting}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bs-modal-body">
+                <p style={{ margin: "0 0 1rem", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                  Are you sure you want to change the team for{" "}
+                  <strong>{confirmTeamTarget.name || "Unknown"}</strong> (
+                  <code>{confirmTeamTarget.rid}</code>) from{" "}
+                  <span style={{ fontWeight: 600, color: "#64748b" }}>
+                    {confirmTeamTarget.team || "Team BPO"}
+                  </span>{" "}
+                  to{" "}
+                  <span style={{ fontWeight: 700, color: "#0d6efd" }}>
+                    {targetNextTeam}
+                  </span>
+                  ?
+                </p>
+
+                <div
+                  style={{
+                    backgroundColor: "#f8f9fa",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "0.375rem",
+                    padding: "0.75rem 1rem",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <span style={{ color: "#6c757d" }}>Role:</span>
+                    <strong>{toRoleLabel(confirmTeamTarget.role)}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <span style={{ color: "#6c757d" }}>Current Team:</span>
+                    <strong>{confirmTeamTarget.team || "Team BPO"}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#6c757d" }}>New Team:</span>
+                    <strong style={{ color: "#0d6efd" }}>
+                      🏢 {targetNextTeam}
+                    </strong>
+                  </div>
+                </div>
+
+                {teamActionError && (
+                  <div
+                    className="admin-alert admin-alert-error"
+                    style={{ marginTop: "1rem", marginBottom: 0 }}
+                  >
+                    {teamActionError}
+                  </div>
+                )}
+              </div>
+
+              <div className="bs-modal-footer">
+                <button
+                  type="button"
+                  className="bs-btn bs-btn-secondary"
+                  onClick={closeTeamConfirmModal}
+                  disabled={teamActionSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="bs-btn bs-btn-primary"
+                  onClick={handleConfirmTeamChange}
+                  disabled={teamActionSubmitting}
+                >
+                  {teamActionSubmitting
+                    ? "Updating..."
+                    : `Yes, Move to ${targetNextTeam}`}
                 </button>
               </div>
             </div>
