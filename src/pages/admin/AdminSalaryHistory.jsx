@@ -743,167 +743,181 @@ export default function AdminSalaryHistory({ setCurrentPage }) {
 
       {confirmDisableTarget ? (
         <div
-          className="admin-modal-overlay"
+          className="bs-modal-overlay"
           role="dialog"
           aria-modal="true"
-            onClick={closeDisableModal}
+          onClick={closeDisableModal}
         >
           <div
-            className="admin-modal-card"
+            className="bs-modal-dialog"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3
-              style={{
-                marginTop: 0,
-                color: confirmActionLabel === "Activate" ? "#166534" : "#dc2626",
-              }}
-            >
-              {confirmActionLabel} account
-            </h3>
-            <p style={{ margin: "0 0 10px" }}>
-              {confirmActionLabel} login for{" "}
-              <strong>{confirmDisableTarget.name || "Unknown"}</strong> (
-              {confirmDisableTarget.rid})?
-            </p>
-            <p className="admin-muted" style={{ margin: "0 0 14px" }}>
-              {confirmActionLabel === "Activate"
-                ? "This account will be able to log in again and will return to the active list."
-                : "This account will not be able to log in and it will be removed from the active salary revenue list."}
-            </p>
-            <div className="admin-modal-actions">
-              <button
-                type="button"
-                className="admin-back-btn"
-                onClick={closeDisableModal}
-                disabled={Boolean(accountActionRid)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="admin-refresh-btn"
-                style={{
-                  backgroundColor:
-                    confirmActionLabel === "Activate" ? "#166534" : "#dc2626",
-                  border: "none",
-                }}
-                onClick={handleDisableAccount}
-                disabled={Boolean(accountActionRid)}
-              >
-                {accountActionRid
-                  ? confirmActionLabel === "Activate"
-                    ? "Activating..."
-                    : "Disabling..."
-                  : `Confirm ${confirmActionLabel}`}
-              </button>
+            <div className="bs-modal-content">
+              <div className="bs-modal-header">
+                <h5
+                  className="bs-modal-title"
+                  style={{
+                    color: confirmActionLabel === "Activate" ? "#198754" : "#dc3545",
+                  }}
+                >
+                  {confirmActionLabel} Account
+                </h5>
+                <button
+                  type="button"
+                  className="bs-btn-close"
+                  onClick={closeDisableModal}
+                  disabled={Boolean(accountActionRid)}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bs-modal-body">
+                <p style={{ margin: "0 0 0.5rem" }}>
+                  Are you sure you want to {confirmActionLabel.toLowerCase()} login for{" "}
+                  <strong>{confirmDisableTarget.name || "Unknown"}</strong> (
+                  <code>{confirmDisableTarget.rid}</code>)?
+                </p>
+                <p style={{ margin: 0, color: "#6c757d", fontSize: "0.88rem" }}>
+                  {confirmActionLabel === "Activate"
+                    ? "This account will be able to log in again and will return to the active list."
+                    : "This account will not be able to log in and it will be removed from the active salary list."}
+                </p>
+              </div>
+
+              <div className="bs-modal-footer">
+                <button
+                  type="button"
+                  className="bs-btn bs-btn-secondary"
+                  onClick={closeDisableModal}
+                  disabled={Boolean(accountActionRid)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`bs-btn ${
+                    confirmActionLabel === "Activate"
+                      ? "bs-btn-success"
+                      : "bs-btn-danger"
+                  }`}
+                  onClick={handleDisableAccount}
+                  disabled={Boolean(accountActionRid)}
+                >
+                  {accountActionRid
+                    ? confirmActionLabel === "Activate"
+                      ? "Activating..."
+                      : "Disabling..."
+                    : `Confirm ${confirmActionLabel}`}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
       {confirmRoleTarget ? (
-        <div className="admin-modal-backdrop" onClick={closeRoleConfirmModal}>
+        <div
+          className="bs-modal-overlay"
+          onClick={closeRoleConfirmModal}
+          role="dialog"
+          aria-modal="true"
+        >
           <div
-            className="admin-modal-card"
+            className="bs-modal-dialog"
             onClick={(event) => event.stopPropagation()}
-            style={{ maxWidth: "480px" }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <span style={{ fontSize: "1.8rem" }}>
-                {targetNextRole === "team leader" ? "👑" : "👤"}
-              </span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "#0f172a" }}>
+            <div className="bs-modal-content">
+              <div className="bs-modal-header">
+                <h5 className="bs-modal-title">
                   {targetNextRole === "team leader"
-                    ? "Move to Team Leader"
-                    : "Move to Recruiter"}
-                </h3>
-                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
-                  Role change confirmation
+                    ? "👑 Move to Team Leader"
+                    : "👤 Move to Recruiter"}
+                </h5>
+                <button
+                  type="button"
+                  className="bs-btn-close"
+                  onClick={closeRoleConfirmModal}
+                  disabled={roleActionSubmitting}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bs-modal-body">
+                <p style={{ margin: "0 0 1rem", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                  Are you sure you want to move{" "}
+                  <strong>{confirmRoleTarget.name || "Unknown"}</strong> (
+                  <code>{confirmRoleTarget.rid}</code>) from{" "}
+                  <span style={{ fontWeight: 600, color: "#d97706" }}>
+                    {toRoleLabel(confirmRoleTarget.role)}
+                  </span>{" "}
+                  to{" "}
+                  <span style={{ fontWeight: 700, color: "#0d6efd" }}>
+                    {targetNextRole === "team leader" ? "Team Leader" : "Recruiter"}
+                  </span>
+                  ?
                 </p>
-              </div>
-            </div>
 
-            <p style={{ margin: "0 0 14px", fontSize: "0.95rem", color: "#1e293b", lineHeight: "1.5" }}>
-              Are you sure you want to move{" "}
-              <strong style={{ color: "#0f172a" }}>
-                {confirmRoleTarget.name || "Unknown"}
-              </strong>{" "}
-              (<code>{confirmRoleTarget.rid}</code>) from{" "}
-              <span style={{ fontWeight: 600, color: "#d97706" }}>
-                {toRoleLabel(confirmRoleTarget.role)}
-              </span>{" "}
-              to{" "}
-              <span style={{ fontWeight: 700, color: "#2563eb" }}>
-                {targetNextRole === "team leader" ? "Team Leader" : "Recruiter"}
-              </span>
-              ?
-            </p>
+                <div
+                  style={{
+                    backgroundColor: "#f8f9fa",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "0.375rem",
+                    padding: "0.75rem 1rem",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <span style={{ color: "#6c757d" }}>Email:</span>
+                    <strong>{confirmRoleTarget.email || "-"}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <span style={{ color: "#6c757d" }}>Team:</span>
+                    <strong>{confirmRoleTarget.team || "Team BPO"}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#6c757d" }}>New Role:</span>
+                    <strong style={{ color: targetNextRole === "team leader" ? "#0d6efd" : "#198754" }}>
+                      {targetNextRole === "team leader" ? "👑 Team Leader" : "👤 Recruiter"}
+                    </strong>
+                  </div>
+                </div>
 
-            <div
-              style={{
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                marginBottom: "16px",
-                fontSize: "0.85rem",
-                color: "#475569",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <span style={{ color: "#64748b" }}>Email:</span>
-                <strong>{confirmRoleTarget.email || "-"}</strong>
+                {roleActionError && (
+                  <div
+                    className="admin-alert admin-alert-error"
+                    style={{ marginTop: "1rem", marginBottom: 0 }}
+                  >
+                    {roleActionError}
+                  </div>
+                )}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <span style={{ color: "#64748b" }}>Team:</span>
-                <strong>{confirmRoleTarget.team || "Team BPO"}</strong>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#64748b" }}>New Role:</span>
-                <strong style={{ color: targetNextRole === "team leader" ? "#2563eb" : "#059669" }}>
-                  {targetNextRole === "team leader" ? "👑 Team Leader" : "👤 Recruiter"}
-                </strong>
-              </div>
-            </div>
 
-            {roleActionError && (
-              <div
-                className="admin-alert admin-alert-error"
-                style={{ marginBottom: "14px" }}
-              >
-                {roleActionError}
+              <div className="bs-modal-footer">
+                <button
+                  type="button"
+                  className="bs-btn bs-btn-secondary"
+                  onClick={closeRoleConfirmModal}
+                  disabled={roleActionSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="bs-btn bs-btn-primary"
+                  onClick={handleConfirmRoleChange}
+                  disabled={roleActionSubmitting}
+                >
+                  {roleActionSubmitting
+                    ? "Updating..."
+                    : targetNextRole === "team leader"
+                    ? "Yes, Move to Team Leader"
+                    : "Yes, Move to Recruiter"}
+                </button>
               </div>
-            )}
-
-            <div className="admin-modal-actions" style={{ marginTop: "12px" }}>
-              <button
-                type="button"
-                className="admin-back-btn"
-                onClick={closeRoleConfirmModal}
-                disabled={roleActionSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary"
-                style={{
-                  backgroundColor:
-                    targetNextRole === "team leader" ? "#2563eb" : "#475569",
-                  border: "none",
-                  padding: "9px 18px",
-                  fontWeight: 700,
-                }}
-                onClick={handleConfirmRoleChange}
-                disabled={roleActionSubmitting}
-              >
-                {roleActionSubmitting
-                  ? "Updating..."
-                  : targetNextRole === "team leader"
-                  ? "Yes, Move to Team Leader"
-                  : "Yes, Move to Recruiter"}
-              </button>
             </div>
           </div>
         </div>
