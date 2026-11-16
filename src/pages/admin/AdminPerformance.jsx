@@ -2285,8 +2285,8 @@ export default function AdminPerformance({ setCurrentPage }) {
           {personStatusItems.length > 0 ? (
             <div style={{ marginTop: "16px" }}>
               <TablePaginationControls {...pagination} />
-              <div className="admin-table-wrap">
-                <table className="admin-table admin-table-wide">
+              <div className="admin-table-wrap perf-records-scroll-wrap">
+                <table className="admin-table admin-table-wide perf-fixed-header-table">
                 <thead>
                   <tr>
                     <th>Candidate</th>
@@ -2727,8 +2727,8 @@ export default function AdminPerformance({ setCurrentPage }) {
             {filteredSelectedStatusItems.length > 0 ? (
               <div style={{ marginTop: "16px" }}>
                 <TablePaginationControls {...overviewPagination} />
-                <div className="admin-table-wrap">
-                  <table className="admin-table admin-table-wide">
+                <div className="admin-table-wrap perf-records-scroll-wrap">
+                  <table className="admin-table admin-table-wide perf-fixed-header-table">
                   <thead>
                     <tr>
                       <th>Candidate Name</th>
@@ -3079,8 +3079,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                 Loading targets & progress for {targetDateRange.label || "selected period"}...
               </p>
             ) : filteredTargetRecruiters.length > 0 ? (
-              <div className="admin-table-wrap">
-                <table className="admin-table recruiter-targets-table">
+              <div className="admin-table-wrap perf-records-scroll-wrap">
+                <table className="admin-table recruiter-targets-table perf-fixed-header-table">
                   <thead>
                     <tr>
                       <th style={{ width: "40px" }}>#</th>
@@ -3352,8 +3352,8 @@ export default function AdminPerformance({ setCurrentPage }) {
                       No target history records found. Set a target for any period and it will appear here.
                     </p>
                   ) : (
-                    <div className="admin-table-wrap">
-                      <table className="admin-table recruiter-targets-table">
+                    <div className="admin-table-wrap perf-records-scroll-wrap">
+                      <table className="admin-table recruiter-targets-table perf-fixed-header-table">
                         <thead>
                           <tr>
                             <th>#</th>
@@ -3741,8 +3741,8 @@ export default function AdminPerformance({ setCurrentPage }) {
               )}
             </>
           ) : filteredTLs.length > 0 ? (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
+            <div className="admin-table-wrap perf-records-scroll-wrap">
+              <table className="admin-table perf-fixed-header-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -3809,8 +3809,8 @@ export default function AdminPerformance({ setCurrentPage }) {
               )}
             </>
           ) : filteredRecruiters.length > 0 ? (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
+            <div className="admin-table-wrap perf-records-scroll-wrap">
+              <table className="admin-table perf-fixed-header-table">
                 <thead>
                   <tr>
                     <th

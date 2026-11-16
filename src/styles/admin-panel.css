@@ -3991,3 +3991,103 @@ select.admin-filter-select {
     min-width: 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   FIXED HEADER & SCROLLABLE RECORDS TABLE
+   Heading stays completely fixed at the top;
+   Candidate records & recruiter records scroll inside the table.
+   ═══════════════════════════════════════════════════════════════ */
+.perf-records-scroll-wrap {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 380px !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-x pan-y pinch-zoom !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Custom scrollbars */
+.perf-records-scroll-wrap::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.perf-records-scroll-wrap::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 999px !important;
+}
+
+.perf-records-scroll-wrap::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 999px !important;
+}
+
+.perf-records-scroll-wrap::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
+.perf-records-scroll-wrap {
+  scrollbar-width: thin !important;
+  scrollbar-color: #94a3b8 #f1f5f9 !important;
+}
+
+/* Table element MUST use separate borders so Chromium sticky th works 100% */
+.perf-fixed-header-table,
+.perf-records-scroll-wrap table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Fixed Table Header */
+.perf-fixed-header-table thead,
+.perf-records-scroll-wrap thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+}
+
+.perf-fixed-header-table thead tr,
+.perf-records-scroll-wrap thead tr {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+}
+
+.perf-fixed-header-table thead th,
+.perf-fixed-header-table th,
+.perf-records-scroll-wrap thead th,
+.perf-records-scroll-wrap th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px !important;
+  border-top: none !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  box-shadow: inset 0 -2px 0 #cbd5e1, 0 2px 4px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Table body cells border */
+.perf-fixed-header-table tbody td,
+.perf-records-scroll-wrap tbody td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
+}
+
+.perf-fixed-header-table tbody tr:hover td,
+.perf-records-scroll-wrap tbody tr:hover td {
+  background-color: #f8fafc !important;
+}
