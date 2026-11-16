@@ -416,7 +416,7 @@ export default function EmployeeRankingWidget({
                 >
                   <div className="top3-card-left">
                     <div className={`top3-rank-badge top3-rank-badge-${rank}`}>
-                      {isFirst ? "🥇 1st" : isSecond ? "🥈 2nd" : "🥉 3rd"}
+                      {isFirst ? "1st" : isSecond ? "2nd" : "3rd"}
                     </div>
                     <div className="top3-avatar-wrap">
                       <div className={`top3-avatar top3-avatar-rank-${rank}`}>
@@ -446,12 +446,6 @@ export default function EmployeeRankingWidget({
                     <div className="top3-stat-joined">
                       <span className="top3-stat-number">{recruiter.joined ?? 0}</span>
                       <span className="top3-stat-label">Joined</span>
-                    </div>
-                    <div
-                      className="top3-stat-points"
-                      title={`${recruiter.points ?? 0} total points`}
-                    >
-                      ⭐ {recruiter.points ?? 0} pts
                     </div>
                   </div>
                 </div>
