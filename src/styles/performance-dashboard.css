@@ -3171,13 +3171,24 @@
   box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.1);
 }
 
-.recruiter-targets-table th {
+.recruiter-targets-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+
+.recruiter-targets-table th,
+.recruiter-targets-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 15;
   background: #f8fafc;
   font-weight: 700;
   color: #475569;
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  box-shadow: inset 0 -1px 0 #cbd5e1;
 }
 
 .target-row-edited {

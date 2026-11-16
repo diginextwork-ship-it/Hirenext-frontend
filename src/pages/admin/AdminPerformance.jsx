@@ -2283,9 +2283,10 @@ export default function AdminPerformance({ setCurrentPage }) {
             </span>
           </div>
           {personStatusItems.length > 0 ? (
-            <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+            <div style={{ marginTop: "16px" }}>
               <TablePaginationControls {...pagination} />
-              <table className="admin-table admin-table-wide">
+              <div className="admin-table-wrap">
+                <table className="admin-table admin-table-wide">
                 <thead>
                   <tr>
                     <th>Candidate</th>
@@ -2499,6 +2500,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                 </tbody>
               </table>
             </div>
+          </div>
           ) : selectedStatusKey === "submitted" && submittedLoading ? (
             <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
               Loading submitted resumes...
@@ -2723,9 +2725,10 @@ export default function AdminPerformance({ setCurrentPage }) {
               </span>
             </div>
             {filteredSelectedStatusItems.length > 0 ? (
-              <div className="admin-table-wrap" style={{ marginTop: "16px" }}>
+              <div style={{ marginTop: "16px" }}>
                 <TablePaginationControls {...overviewPagination} />
-                <table className="admin-table admin-table-wide">
+                <div className="admin-table-wrap">
+                  <table className="admin-table admin-table-wide">
                   <thead>
                     <tr>
                       <th>Candidate Name</th>
@@ -2906,6 +2909,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   </tbody>
                 </table>
               </div>
+            </div>
             ) : selectedStatusKey === "submitted" && submittedLoading ? (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
                 Loading submitted resumes...

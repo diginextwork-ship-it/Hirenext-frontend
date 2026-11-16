@@ -66,17 +66,19 @@
 .ui-table-wrap {
   width: 100%;
   display: block;
+  max-height: min(72vh, 680px);
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
+  position: relative;
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
   min-width: 0;
   padding-bottom: 0.35rem;
   scrollbar-gutter: stable both-edges;
   scroll-padding-inline: 0.75rem;
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto;
-  touch-action: pan-x pinch-zoom;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  scrollbar-width: thin;
 }
 
 .ui-table {
@@ -84,7 +86,6 @@
   border-collapse: collapse;
   min-width: 720px;
   border-radius: 1rem;
-  overflow: hidden;
 }
 
 .ui-table th,
@@ -96,13 +97,24 @@
   vertical-align: middle;
 }
 
+.ui-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+
+.ui-table th,
 .ui-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 15;
   font-family: var(--font-display);
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.62);
+  background: #f8fafc;
+  box-shadow: inset 0 -1px 0 #cbd5e1;
 }
 
 .ui-form-input,
