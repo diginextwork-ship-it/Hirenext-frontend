@@ -617,101 +617,76 @@ export default function RecruiterDashboard({ recruiterId }) {
             ) : null}
           </div>
 
-          {/* ── My Joining Target & Progress (Set by Admin) ── */}
-          <div className="recruiter-target-banner">
-            <div className="recruiter-target-banner-header">
-              <div className="recruiter-target-title-wrap">
-                <span className="recruiter-target-icon">🎯</span>
-                <div>
-                  <h3 className="recruiter-target-title">My Joining Target & Progress</h3>
-                  <p className="recruiter-target-subtitle">
-                    {data.target?.startDate && data.target?.endDate
-                      ? `Target Period: ${data.target.startDate} to ${data.target.endDate}${data.target.note ? ` • ${data.target.note}` : ""}`
-                      : "Target assigned by Admin for candidate joins"}
-                  </p>
+          {/* ── Compact Target & Progress Strip ── */}
+          <div className="recruiter-target-compact-strip">
+            <div className="target-strip-left">
+              <span className="target-strip-icon">🎯</span>
+              <div className="target-strip-title-group">
+                <div className="target-strip-label">Joining Target</div>
+                <div className="target-strip-period">
+                  {data.target?.startDate && data.target?.endDate
+                    ? `${data.target.startDate} to ${data.target.endDate}`
+                    : "Current Period"}
                 </div>
-              </div>
-
-              <div className="recruiter-target-badge-wrap">
-                {Number(data.target?.target || 0) > 0 ? (
-                  Number(data.target?.joined || 0) >= Number(data.target?.target || 0) ? (
-                    <span className="target-pill-status pill-achieved">
-                      🎉 Target Achieved!
-                    </span>
-                  ) : (
-                    <span className="target-pill-status pill-progress">
-                      ⏳ In Progress
-                    </span>
-                  )
-                ) : (
-                  <span className="target-pill-status pill-notset">
-                    No Target Set
-                  </span>
-                )}
               </div>
             </div>
 
-            <div className="recruiter-target-metrics-grid">
-              <div className="recruiter-target-metric-box">
-                <span className="target-metric-label">Target (Joins)</span>
-                <span className="target-metric-value target-val-blue">
+            <div className="target-strip-stats">
+              <div className="target-strip-stat">
+                <span className="target-stat-name">Target</span>
+                <span className="target-stat-val text-blue">
                   {data.target?.target || 0}
                 </span>
-                <span className="target-metric-hint">Assigned by Admin</span>
               </div>
-
-              <div className="recruiter-target-metric-box">
-                <span className="target-metric-label">Joined (Achieved)</span>
-                <span className="target-metric-value target-val-green">
+              <div className="target-strip-divider" />
+              <div className="target-strip-stat">
+                <span className="target-stat-name">Joined</span>
+                <span className="target-stat-val text-green">
                   {data.target?.joined || 0}
                 </span>
-                <span className="target-metric-hint">Candidates joined</span>
               </div>
-
-              <div className="recruiter-target-metric-box">
-                <span className="target-metric-label">Remaining</span>
-                <span className="target-metric-value target-val-orange">
+              <div className="target-strip-divider" />
+              <div className="target-strip-stat">
+                <span className="target-stat-name">Remaining</span>
+                <span className="target-stat-val text-orange">
                   {data.target?.remaining !== undefined
                     ? data.target.remaining
                     : Math.max(0, (data.target?.target || 0) - (data.target?.joined || 0))}
                 </span>
-                <span className="target-metric-hint">
-                  {Number(data.target?.target || 0) > 0 && Number(data.target?.joined || 0) >= Number(data.target?.target || 0)
-                    ? "Goal achieved!"
-                    : "Joins needed to reach target"}
-                </span>
-              </div>
-
-              <div className="recruiter-target-metric-box">
-                <span className="target-metric-label">Progress</span>
-                <span className="target-metric-value target-val-purple">
-                  {data.target?.progressPct || 0}%
-                </span>
-                <span className="target-metric-hint">Overall achievement</span>
               </div>
             </div>
 
-            <div className="recruiter-target-progressbar-wrap">
-              <div className="recruiter-target-progressbar-bg">
+            <div className="target-strip-progress-col">
+              <div className="target-strip-progress-header">
+                <span className="target-progress-label">Progress</span>
+                <span className="target-progress-percentage">
+                  {data.target?.progressPct || 0}%
+                </span>
+              </div>
+              <div className="target-strip-progress-track">
                 <div
-                  className={`recruiter-target-progressbar-fill ${
+                  className={`target-strip-progress-fill ${
                     Number(data.target?.progressPct || 0) >= 100
                       ? "fill-achieved"
-                      : Number(data.target?.progressPct || 0) >= 50
-                      ? "fill-half"
-                      : "fill-start"
+                      : "fill-active"
                   }`}
                   style={{ width: `${Math.min(100, Number(data.target?.progressPct || 0))}%` }}
                 />
               </div>
-              <div className="recruiter-target-progressbar-footer">
-                <span>
-                  <strong>{data.target?.joined || 0}</strong> of <strong>{data.target?.target || 0}</strong> joins achieved
+            </div>
+
+            <div className="target-strip-badge">
+              {Number(data.target?.target || 0) > 0 ? (
+                Number(data.target?.joined || 0) >= Number(data.target?.target || 0) ? (
+                  <span className="target-status-pill status-achieved">🎉 Achieved</span>
+                ) : (
+                  <span className="target-status-pill status-in_progress">⏳ In Progress</span>
+                )
+              ) : (
+                <span className="target-status-pill status-missed" style={{ background: "#f1f5f9", color: "#64748b", borderColor: "#e2e8f0" }}>
+                  No Target
                 </span>
-                <span>
-                  <strong>{data.target?.progressPct || 0}%</strong> Completed
-                </span>
-              </div>
+              )}
             </div>
           </div>
 
