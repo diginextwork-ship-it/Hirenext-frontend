@@ -816,6 +816,16 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [historySearch, setHistorySearch] = useState("");
   const [historySelectedRid, setHistorySelectedRid] = useState("");
 
+  // Set Target Modal State (modal with calendar date pickers start date & end date)
+  const [setTargetModalOpen, setSetTargetModalOpen] = useState(false);
+  const [targetModalRecruiter, setTargetModalRecruiter] = useState(null);
+  const [targetModalStart, setTargetModalStart] = useState("");
+  const [targetModalEnd, setTargetModalEnd] = useState("");
+  const [targetModalTarget, setTargetModalTarget] = useState("");
+  const [targetModalNote, setTargetModalNote] = useState("");
+  const [targetModalSaving, setTargetModalSaving] = useState(false);
+  const [targetModalError, setTargetModalError] = useState("");
+
   const targetDateRange = useMemo(() => {
     const now = new Date();
     const toYmd = (d) =>
@@ -894,11 +904,73 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const openSetTargetModal = (recruiter) => {
+    setTargetModalRecruiter(recruiter);
+    setTargetModalStart(targetDateRange.start);
+    setTargetModalEnd(targetDateRange.end);
+    setTargetModalTarget(recruiter.target ?? recruiter.joiningTarget ?? 0);
+    setTargetModalNote("");
+    setTargetModalError("");
+    setSetTargetModalOpen(true);
+  };
+
+  const closeSetTargetModal = () => {
+    if (targetModalSaving) return;
+    setSetTargetModalOpen(false);
+    setTargetModalRecruiter(null);
+    setTargetModalError("");
+  };
+
+  const handleSaveModalTarget = async (e) => {
+    if (e) e.preventDefault();
+    if (!targetModalRecruiter?.rid) return;
+    if (!targetModalStart || !targetModalEnd) {
+      setTargetModalError("Please select both start date and end date.");
+      return;
+    }
+    if (targetModalStart > targetModalEnd) {
+      setTargetModalError("Start date cannot be after end date.");
+      return;
+    }
+    const numVal = Math.max(0, parseInt(targetModalTarget, 10) || 0);
+
+    setTargetModalSaving(true);
+    setTargetModalError("");
+    try {
+      await adminUpdateRecruiterTarget(
+        targetModalRecruiter.rid,
+        numVal,
+        targetModalStart,
+        targetModalEnd,
+        targetModalNote || null,
+      );
+      setTargetMessage({
+        type: "success",
+        text: `Target (${numVal} joins) saved for ${targetModalRecruiter.name || targetModalRecruiter.rid} (${targetModalStart} to ${targetModalEnd}).`,
+      });
+      setSetTargetModalOpen(false);
+      setTargetModalRecruiter(null);
+
+      // Re-fetch current target data so all achievements and target are freshly computed
+      fetchTargetsForRange(targetDateRange.start, targetDateRange.end);
+    } catch (err) {
+      setTargetModalError(err.message || "Failed to set target.");
+    } finally {
+      setTargetModalSaving(false);
+    }
+  };
+
   const filteredTargetRecruiters = useMemo(() => {
     const list = Array.isArray(targetRecruiters) ? targetRecruiters : [];
-    if (!targetSearch.trim()) return list;
+    // Filter out disabled / inactive accounts
+    const activeList = list.filter((r) => {
+      const status = String(r.accountStatus || "active").trim().toLowerCase();
+      return !["inactive", "disabled", "deactivated", "blocked"].includes(status);
+    });
+
+    if (!targetSearch.trim()) return activeList;
     const q = targetSearch.toLowerCase().trim();
-    return list.filter(
+    return activeList.filter(
       (r) =>
         String(r.name || "").toLowerCase().includes(q) ||
         String(r.rid || "").toLowerCase().includes(q) ||
@@ -3010,39 +3082,33 @@ export default function AdminPerformance({ setCurrentPage }) {
                       <th style={{ width: "40px" }}>#</th>
                       <th>Recruiter</th>
                       <th>Team</th>
-                      <th style={{ minWidth: "150px" }}>Joining Target</th>
-                      <th>Joined (Achieved)</th>
+                      <th>Joining Target</th>
                       <th style={{ minWidth: "140px" }}>Progress</th>
                       <th>Submissions</th>
                       <th>Walk-in</th>
+                      <th>Selected</th>
+                      <th>Pending</th>
+                      <th>Joining</th>
+                      <th>Drop</th>
                       <th style={{ textAlign: "center", width: "120px" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTargetRecruiters.map((r, i) => {
-                      const currentSaved = Number(r.target ?? r.joiningTarget ?? 0);
-                      const inputVal =
-                        targetInputs[r.rid] !== undefined
-                          ? targetInputs[r.rid]
-                          : currentSaved;
-                      const isModified =
-                        targetInputs[r.rid] !== undefined &&
-                        targetInputs[r.rid] !== "" &&
-                        Number(targetInputs[r.rid]) !== currentSaved;
+                      const targetNumber = Number(r.target ?? r.joiningTarget ?? 0);
                       const achieved = Number(r.joined ?? 0);
-                      const targetNumber = Math.max(0, parseInt(inputVal, 10) || 0);
-                      const pct =
-                        targetNumber > 0
-                          ? Math.min(100, Math.round((achieved / targetNumber) * 100))
-                          : achieved > 0
-                          ? 100
-                          : 0;
+                      const pct = Number(
+                        r.progressPct ?? (
+                          targetNumber > 0
+                            ? Math.min(100, Math.round((achieved / targetNumber) * 100))
+                            : achieved > 0
+                            ? 100
+                            : 0
+                        )
+                      );
 
                       return (
-                        <tr
-                          key={r.rid}
-                          className={isModified ? "target-row-edited" : ""}
-                        >
+                        <tr key={r.rid}>
                           <td>{i + 1}</td>
                           <td>
                             <div style={{ fontWeight: 600, color: "#111827" }}>
@@ -3068,27 +3134,21 @@ export default function AdminPerformance({ setCurrentPage }) {
                             </span>
                           </td>
                           <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <input
-                                type="number"
-                                min="0"
-                                className="target-input-box"
-                                value={inputVal}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setTargetInputs((prev) => ({
-                                    ...prev,
-                                    [r.rid]: val === "" ? "" : Math.max(0, parseInt(val, 10) || 0),
-                                  }));
-                                }}
-                                placeholder="0"
-                              />
-                              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>joins</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className="target-joined-badge">
-                              {achieved} Joined
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                background: targetNumber > 0 ? "#eff6ff" : "#f8fafc",
+                                border: targetNumber > 0 ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                                fontWeight: 700,
+                                color: targetNumber > 0 ? "#1d4ed8" : "#64748b",
+                                fontSize: "13px",
+                              }}
+                            >
+                              🎯 {targetNumber} joins
                             </span>
                           </td>
                           <td>
@@ -3110,27 +3170,85 @@ export default function AdminPerformance({ setCurrentPage }) {
                                   pct >= 100 ? "text-success" : ""
                                 }`}
                               >
-                                {pct}% ({achieved}/{targetNumber || 0})
+                                {pct}% ({achieved}/{targetNumber})
                               </span>
                             </div>
                           </td>
-                          <td>{r.submitted ?? 0}</td>
-                          <td>{r.walk_in ?? 0}</td>
+                          <td>
+                            <span style={{ fontWeight: 600 }}>{r.submitted ?? 0}</span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600 }}>{r.walk_in ?? r.walkIn ?? 0}</span>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                background: Number(r.selected || 0) > 0 ? "#e0e7ff" : "#f3f4f6",
+                                color: Number(r.selected || 0) > 0 ? "#4338ca" : "#6b7280",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {r.selected ?? 0}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                background: Number(r.pending || 0) > 0 ? "#fef3c7" : "#f3f4f6",
+                                color: Number(r.pending || 0) > 0 ? "#b45309" : "#6b7280",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {r.pending ?? 0}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className="target-joined-badge"
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                background: Number(achieved) > 0 ? "#dcfce7" : "#f3f4f6",
+                                color: Number(achieved) > 0 ? "#15803d" : "#6b7280",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {achieved} Joined
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                background: Number(r.drop || 0) > 0 ? "#fee2e2" : "#f3f4f6",
+                                color: Number(r.drop || 0) > 0 ? "#b91c1c" : "#6b7280",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {r.drop ?? 0}
+                            </span>
+                          </td>
                           <td style={{ textAlign: "center" }}>
                             <button
                               type="button"
-                              className={`target-save-action-btn ${
-                                isModified ? "is-changed" : ""
-                              }`}
-                              disabled={targetSavingRid === r.rid}
-                              onClick={() => handleSaveTarget(r)}
-                              title={isModified ? "Save changes for this recruiter" : "Set target"}
+                              className="target-save-action-btn"
+                              onClick={() => openSetTargetModal(r)}
+                              title="Set target for date range"
                             >
-                              {targetSavingRid === r.rid
-                                ? "Saving..."
-                                : isModified
-                                ? "Save ✓"
-                                : "Set Target"}
+                              🎯 Set Target
                             </button>
                           </td>
                         </tr>
@@ -3337,6 +3455,249 @@ export default function AdminPerformance({ setCurrentPage }) {
                   >
                     Close
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Set Recruiter Target Modal ── */}
+          {setTargetModalOpen && targetModalRecruiter && (
+            <div
+              className="bs-modal-overlay"
+              onClick={closeSetTargetModal}
+              role="dialog"
+              aria-modal="true"
+            >
+              <div
+                className="bs-modal-dialog"
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: "500px" }}
+              >
+                <div className="bs-modal-content">
+                  <div className="bs-modal-header">
+                    <h5 className="bs-modal-title">
+                      🎯 Set Recruiter Target
+                    </h5>
+                    <button
+                      type="button"
+                      className="bs-btn-close"
+                      onClick={closeSetTargetModal}
+                      disabled={targetModalSaving}
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveModalTarget}>
+                    <div className="bs-modal-body">
+                      {/* Recruiter info header */}
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          padding: "10px 14px",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "0.98rem" }}>
+                            {targetModalRecruiter.name || "Unknown"}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#64748b" }}>
+                            ID: <code>{targetModalRecruiter.rid}</code>
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            background: "#e0f2fe",
+                            color: "#0369a1",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {targetModalRecruiter.team || "Team BPO"}
+                        </span>
+                      </div>
+
+                      {/* Date Range Selectors */}
+                      <div style={{ marginBottom: "16px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Target Date Range (Calendar):
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                          <div>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "#64748b",
+                                fontWeight: 600,
+                                display: "block",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              Start Date
+                            </span>
+                            <input
+                              type="date"
+                              className="admin-form-input"
+                              style={{
+                                width: "100%",
+                                padding: "8px 10px",
+                                fontSize: "13px",
+                                borderRadius: "6px",
+                                border: "1px solid #cbd5e1",
+                                background: "#ffffff",
+                              }}
+                              value={targetModalStart}
+                              onChange={(e) => setTargetModalStart(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "#64748b",
+                                fontWeight: 600,
+                                display: "block",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              End Date
+                            </span>
+                            <input
+                              type="date"
+                              className="admin-form-input"
+                              style={{
+                                width: "100%",
+                                padding: "8px 10px",
+                                fontSize: "13px",
+                                borderRadius: "6px",
+                                border: "1px solid #cbd5e1",
+                                background: "#ffffff",
+                              }}
+                              value={targetModalEnd}
+                              onChange={(e) => setTargetModalEnd(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Joining Target input */}
+                      <div style={{ marginBottom: "16px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Joining Target:
+                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="e.g. 10"
+                            className="admin-form-input"
+                            style={{
+                              width: "100%",
+                              padding: "8px 12px",
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              background: "#ffffff",
+                            }}
+                            value={targetModalTarget}
+                            onChange={(e) => setTargetModalTarget(e.target.value)}
+                            required
+                          />
+                          <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            joins
+                          </span>
+                        </div>
+                        <span style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", display: "block" }}>
+                          Number of successful candidate joins required in this date period.
+                        </span>
+                      </div>
+
+                      {/* Optional Note */}
+                      <div style={{ marginBottom: "10px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Note / Remark (Optional):
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Monthly joining target"
+                          className="admin-form-input"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            fontSize: "13px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            background: "#ffffff",
+                          }}
+                          value={targetModalNote}
+                          onChange={(e) => setTargetModalNote(e.target.value)}
+                        />
+                      </div>
+
+                      {targetModalError && (
+                        <div
+                          className="admin-alert admin-alert-error"
+                          style={{ margin: "10px 0 0", padding: "8px 12px", fontSize: "13px" }}
+                        >
+                          {targetModalError}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bs-modal-footer">
+                      <button
+                        type="button"
+                        className="bs-btn bs-btn-secondary"
+                        onClick={closeSetTargetModal}
+                        disabled={targetModalSaving}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="bs-btn bs-btn-primary"
+                        disabled={targetModalSaving}
+                      >
+                        {targetModalSaving ? "Saving..." : "Save Target"}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
