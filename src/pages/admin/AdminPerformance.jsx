@@ -2289,16 +2289,16 @@ export default function AdminPerformance({ setCurrentPage }) {
                 <table className="admin-table admin-table-wide perf-fixed-header-table">
                 <thead>
                   <tr>
-                    <th>Candidate</th>
-                    <th>Recruiter</th>
-                    <th>Team Leader</th>
-                    <th>Contact Number</th>
-                    <th>Highest Qualification</th>
-                    <th>Company Name</th>
-                    <th>City</th>
-                    <th>Resume File</th>
-                    <th>Status</th>
-                    <th>Submitted At</th>
+                    <th style={{ minWidth: "160px" }}>Candidate</th>
+                    <th style={{ minWidth: "150px" }}>Recruiter</th>
+                    <th style={{ minWidth: "140px" }}>Team Leader</th>
+                    <th style={{ minWidth: "140px" }}>Contact Number</th>
+                    <th style={{ minWidth: "140px" }}>Highest Qualification</th>
+                    <th style={{ minWidth: "180px" }}>Company Name</th>
+                    <th className="perf-city-col" style={{ minWidth: "160px" }}>City</th>
+                    <th style={{ minWidth: "120px" }}>Resume File</th>
+                    <th style={{ minWidth: "110px" }}>Status</th>
+                    <th style={{ minWidth: "140px" }}>Submitted At</th>
                     {selectedStatusKey !== "submitted" && (
                       <th>
                         {selectedStatusKey === "verified"
@@ -2377,7 +2377,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td className="admin-performance-key-cell">
                           {displayValue(formatResumeCompanyDisplay(item))}
                         </td>
-                        <td className="admin-performance-key-cell">
+                        <td className="admin-performance-key-cell perf-city-cell" style={{ minWidth: "160px", whiteSpace: "nowrap" }}>
                           {displayValue(item.city || item.job?.city)}
                         </td>
                         <td>
@@ -2731,15 +2731,15 @@ export default function AdminPerformance({ setCurrentPage }) {
                   <table className="admin-table admin-table-wide perf-fixed-header-table">
                   <thead>
                     <tr>
-                      <th>Candidate Name</th>
-                      <th>Recruiter</th>
-                      <th>Contact Number</th>
-                      <th>Highest Qualification</th>
-                      <th>Company Name</th>
-                      <th>City</th>
-                      <th>Resume File</th>
-                      <th>Status</th>
-                      <th>Submitted At</th>
+                      <th style={{ minWidth: "160px" }}>Candidate Name</th>
+                      <th style={{ minWidth: "150px" }}>Recruiter</th>
+                      <th style={{ minWidth: "140px" }}>Contact Number</th>
+                      <th style={{ minWidth: "140px" }}>Highest Qualification</th>
+                      <th style={{ minWidth: "180px" }}>Company Name</th>
+                      <th className="perf-city-col" style={{ minWidth: "160px" }}>City</th>
+                      <th style={{ minWidth: "120px" }}>Resume File</th>
+                      <th style={{ minWidth: "110px" }}>Status</th>
+                      <th style={{ minWidth: "140px" }}>Submitted At</th>
                       {selectedStatusKey !== "submitted" && (
                         <th>
                           {selectedStatusKey === "verified"
@@ -2818,7 +2818,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td className="admin-performance-key-cell">
                             {displayValue(formatResumeCompanyDisplay(item))}
                           </td>
-                          <td className="admin-performance-key-cell">
+                          <td className="admin-performance-key-cell perf-city-cell" style={{ minWidth: "160px", whiteSpace: "nowrap" }}>
                             {displayValue(item.city || item.job?.city)}
                           </td>
                           <td>
