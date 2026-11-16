@@ -1002,14 +1002,36 @@ export default function AdminPerformance({ setCurrentPage }) {
       return !["inactive", "disabled", "deactivated", "blocked"].includes(status);
     });
 
-    if (!targetSearch.trim()) return activeList;
-    const q = targetSearch.toLowerCase().trim();
-    return activeList.filter(
-      (r) =>
-        String(r.name || "").toLowerCase().includes(q) ||
-        String(r.rid || "").toLowerCase().includes(q) ||
-        String(r.team || "").toLowerCase().includes(q)
-    );
+    const searchFiltered = !targetSearch.trim()
+      ? activeList
+      : activeList.filter((r) => {
+          const q = targetSearch.toLowerCase().trim();
+          return (
+            String(r.name || "").toLowerCase().includes(q) ||
+            String(r.rid || "").toLowerCase().includes(q) ||
+            String(r.team || "").toLowerCase().includes(q)
+          );
+        });
+
+    // Sort recruiters by highest joining first (descending)
+    return [...searchFiltered].sort((a, b) => {
+      const joinedA = Number(a.joined ?? 0);
+      const joinedB = Number(b.joined ?? 0);
+      if (joinedB !== joinedA) {
+        return joinedB - joinedA; // highest joining first
+      }
+      const walkA = Number(a.walk_in ?? a.walkIn ?? 0);
+      const walkB = Number(b.walk_in ?? b.walkIn ?? 0);
+      if (walkB !== walkA) {
+        return walkB - walkA;
+      }
+      const subsA = Number(a.submitted ?? 0);
+      const subsB = Number(b.submitted ?? 0);
+      if (subB !== subsA) {
+        return subB - subsA;
+      }
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
   }, [targetRecruiters, targetSearch]);
 
   const hasAnyTargetChanges = useMemo(() => {
@@ -3119,15 +3141,15 @@ export default function AdminPerformance({ setCurrentPage }) {
                     <tr>
                       <th style={{ width: "40px" }}>#</th>
                       <th style={{ minWidth: "160px" }}>Recruiter</th>
-                      <th>Joining Target</th>
-                      <th style={{ minWidth: "140px" }}>Progress</th>
-                      <th style={{ minWidth: "110px", textAlign: "center" }}>Performance</th>
                       <th>Submissions</th>
                       <th>Walk-in</th>
                       <th>Selected</th>
                       <th>Pending</th>
                       <th>Joining</th>
                       <th>Drop</th>
+                      <th>Joining Target</th>
+                      <th style={{ minWidth: "140px" }}>Progress</th>
+                      <th style={{ minWidth: "110px", textAlign: "center" }}>Performance</th>
                       <th style={{ textAlign: "center", width: "120px" }}>Action</th>
                     </tr>
                   </thead>
@@ -3174,66 +3196,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 </span>
                               )}
                             </div>
-                          </td>
-                          <td>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                padding: "4px 10px",
-                                borderRadius: "6px",
-                                background: targetNumber > 0 ? "#eff6ff" : "#f8fafc",
-                                border: targetNumber > 0 ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
-                                fontWeight: 700,
-                                color: targetNumber > 0 ? "#1d4ed8" : "#64748b",
-                                fontSize: "13px",
-                              }}
-                            >
-                              🎯 {targetNumber} joins
-                            </span>
-                          </td>
-                          <td>
-                            <div className="target-progress-cell">
-                              <div className="target-progress-bar-bg">
-                                <div
-                                  className={`target-progress-bar-fill ${
-                                    pct >= 100
-                                      ? "fill-success"
-                                      : pct >= 50
-                                      ? "fill-primary"
-                                      : "fill-neutral"
-                                  }`}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                              <span
-                                className={`target-progress-text ${
-                                  pct >= 100 ? "text-success" : ""
-                                }`}
-                              >
-                                {pct}% ({achieved}/{targetNumber})
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "3px 10px",
-                                borderRadius: "999px",
-                                fontSize: "11px",
-                                fontWeight: 800,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.03em",
-                                background: perfRating.bg,
-                                color: perfRating.color,
-                                border: `1px solid ${perfRating.border}`,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {perfRating.label}
-                            </span>
                           </td>
                           <td>
                             <span style={{ fontWeight: 600 }}>{r.submitted ?? 0}</span>
@@ -3300,6 +3262,66 @@ export default function AdminPerformance({ setCurrentPage }) {
                               }}
                             >
                               {r.drop ?? 0}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                background: targetNumber > 0 ? "#eff6ff" : "#f8fafc",
+                                border: targetNumber > 0 ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                                fontWeight: 700,
+                                color: targetNumber > 0 ? "#1d4ed8" : "#64748b",
+                                fontSize: "13px",
+                              }}
+                            >
+                              🎯 {targetNumber} joins
+                            </span>
+                          </td>
+                          <td>
+                            <div className="target-progress-cell">
+                              <div className="target-progress-bar-bg">
+                                <div
+                                  className={`target-progress-bar-fill ${
+                                    pct >= 100
+                                      ? "fill-success"
+                                      : pct >= 50
+                                      ? "fill-primary"
+                                      : "fill-neutral"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span
+                                className={`target-progress-text ${
+                                  pct >= 100 ? "text-success" : ""
+                                }`}
+                              >
+                                {pct}% ({achieved}/{targetNumber})
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "3px 10px",
+                                borderRadius: "999px",
+                                fontSize: "11px",
+                                fontWeight: 800,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                                background: perfRating.bg,
+                                color: perfRating.color,
+                                border: `1px solid ${perfRating.border}`,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {perfRating.label}
                             </span>
                           </td>
                           <td style={{ textAlign: "center" }}>
