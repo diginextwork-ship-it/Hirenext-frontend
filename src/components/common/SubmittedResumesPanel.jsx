@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { getAuthSession } from "../../auth/session";
 import { API_BASE_URL } from "../../config/api";
 import {
@@ -298,55 +299,55 @@ const downloadExcelFile = (rows, showAtsScore = false) => {
     ? EXCEL_EXPORT_COLUMNS
     : EXCEL_EXPORT_COLUMNS.filter((col) => col !== "ATS Score");
 
-  const tableRows = rows
-    .map(
-      (row) => `
-        <tr>
-          <td>${escapeHtml(sanitizeExcelValue(row.recruiterName))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.candidateName))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.phone))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.email))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.companyName))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.role))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.city))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.education))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.age))}</td>
-          ${showAtsScore ? `<td>${escapeHtml(sanitizeExcelValue(row.atsScore))}</td>` : ""}
-          <td>${escapeHtml(sanitizeExcelValue(row.latestStatus))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.recruiterNote))}</td>
-          <td>${escapeHtml(sanitizeExcelValue(row.submittedAt))}</td>
-          <td>${row.resumeFileUrl !== "N/A" ? `<a href="${escapeHtml(row.resumeFileUrl)}">${escapeHtml(row.resumeFileUrl)}</a>` : "N/A"}</td>
-        </tr>`,
-    )
-    .join("");
-
-  const html = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-  </head>
-  <body>
-    <table border="1">
-      <thead>
-        <tr>${exportColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
-      </thead>
-      <tbody>${tableRows}</tbody>
-    </table>
-  </body>
-</html>`;
-
-  const blob = new Blob(["\ufeff", html], {
-    type: "application/vnd.ms-excel;charset=utf-8;",
+  const data = rows.map((row) => {
+    const item = {
+      "Recruiter Name": sanitizeExcelValue(row.recruiterName),
+      "Candidate Name": sanitizeExcelValue(row.candidateName),
+      "Phone": sanitizeExcelValue(row.phone),
+      "Email": sanitizeExcelValue(row.email),
+      "Job Company Name": sanitizeExcelValue(row.companyName),
+      "Role": sanitizeExcelValue(row.role),
+      "City": sanitizeExcelValue(row.city),
+      "Education": sanitizeExcelValue(row.education),
+      "Age": sanitizeExcelValue(row.age),
+    };
+    if (showAtsScore) {
+      item["ATS Score"] = sanitizeExcelValue(row.atsScore);
+    }
+    item["Latest Status"] = sanitizeExcelValue(row.latestStatus);
+    item["Recruiter Note"] = sanitizeExcelValue(row.recruiterNote);
+    item["Submitted At"] = sanitizeExcelValue(row.submittedAt);
+    item["Resume File"] = row.resumeFileUrl !== "N/A" ? row.resumeFileUrl : "N/A";
+    return item;
   });
+
+  const worksheet = XLSX.utils.json_to_sheet(data, { header: exportColumns });
+
+  // Add sensible column widths
+  worksheet["!cols"] = [
+    { wch: 18 }, // Recruiter Name
+    { wch: 20 }, // Candidate Name
+    { wch: 15 }, // Phone
+    { wch: 25 }, // Email
+    { wch: 22 }, // Job Company Name
+    { wch: 18 }, // Role
+    { wch: 15 }, // City
+    { wch: 18 }, // Education
+    { wch: 8 },  // Age
+    ...(showAtsScore ? [{ wch: 12 }] : []), // ATS Score
+    { wch: 16 }, // Latest Status
+    { wch: 25 }, // Recruiter Note
+    { wch: 20 }, // Submitted At
+    { wch: 40 }, // Resume File
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Submitted Resumes");
+
   const fileDate = new Date().toISOString().slice(0, 10);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `submitted-resumes-${fileDate}.xls`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  XLSX.writeFile(workbook, `submitted-resumes-${fileDate}.xlsx`, {
+    bookType: "xlsx",
+  });
 };
 
 export default function SubmittedResumesPanel({
