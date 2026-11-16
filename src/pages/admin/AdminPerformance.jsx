@@ -221,6 +221,40 @@ function toDateStr(d) {
   return `${year}-${month}-${day}`;
 }
 
+function getPerformanceRating(pct) {
+  const p = Number(pct) || 0;
+  if (p > 75) {
+    return {
+      label: "Excellent",
+      bg: "#dcfce7",
+      color: "#15803d",
+      border: "#86efac",
+    };
+  }
+  if (p > 50) {
+    return {
+      label: "Very Good",
+      bg: "#dbeafe",
+      color: "#1d4ed8",
+      border: "#bfdbfe",
+    };
+  }
+  if (p > 25) {
+    return {
+      label: "Good",
+      bg: "#fef3c7",
+      color: "#b45309",
+      border: "#fde68a",
+    };
+  }
+  return {
+    label: "Poor",
+    bg: "#fee2e2",
+    color: "#b91c1c",
+    border: "#fca5a5",
+  };
+}
+
 function getPresetRange(preset) {
   const now = new Date();
   switch (preset) {
@@ -3084,10 +3118,10 @@ export default function AdminPerformance({ setCurrentPage }) {
                   <thead>
                     <tr>
                       <th style={{ width: "40px" }}>#</th>
-                      <th>Recruiter</th>
-                      <th>Team</th>
+                      <th style={{ minWidth: "160px" }}>Recruiter</th>
                       <th>Joining Target</th>
                       <th style={{ minWidth: "140px" }}>Progress</th>
+                      <th style={{ minWidth: "110px", textAlign: "center" }}>Performance</th>
                       <th>Submissions</th>
                       <th>Walk-in</th>
                       <th>Selected</th>
@@ -3110,32 +3144,36 @@ export default function AdminPerformance({ setCurrentPage }) {
                             : 0
                         )
                       );
+                      const perfRating = getPerformanceRating(pct);
 
                       return (
                         <tr key={r.rid}>
                           <td>{i + 1}</td>
                           <td>
-                            <div style={{ fontWeight: 600, color: "#111827" }}>
+                            <div style={{ fontWeight: 700, color: "#0f172a" }}>
                               {r.name || "Unknown"}
                             </div>
-                            <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                              {r.rid || "-"}
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
+                              <span style={{ fontSize: "11.5px", color: "#64748b", fontWeight: 600 }}>
+                                {r.rid || "-"}
+                              </span>
+                              {r.team && (
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    padding: "1px 6px",
+                                    borderRadius: "4px",
+                                    fontSize: "11px",
+                                    background: "#f1f5f9",
+                                    color: "#475569",
+                                    fontWeight: 600,
+                                    border: "1px solid #e2e8f0",
+                                  }}
+                                >
+                                  {r.team}
+                                </span>
+                              )}
                             </div>
-                          </td>
-                          <td>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "2px 8px",
-                                borderRadius: "4px",
-                                fontSize: "12px",
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                fontWeight: 500,
-                              }}
-                            >
-                              {r.team || "General"}
-                            </span>
                           </td>
                           <td>
                             <span
@@ -3177,6 +3215,25 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 {pct}% ({achieved}/{targetNumber})
                               </span>
                             </div>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "3px 10px",
+                                borderRadius: "999px",
+                                fontSize: "11px",
+                                fontWeight: 800,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                                background: perfRating.bg,
+                                color: perfRating.color,
+                                border: `1px solid ${perfRating.border}`,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {perfRating.label}
+                            </span>
                           </td>
                           <td>
                             <span style={{ fontWeight: 600 }}>{r.submitted ?? 0}</span>
