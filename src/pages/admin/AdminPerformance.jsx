@@ -1027,8 +1027,8 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
       const subsA = Number(a.submitted ?? 0);
       const subsB = Number(b.submitted ?? 0);
-      if (subB !== subsA) {
-        return subB - subsA;
+      if (subsB !== subsA) {
+        return subsB - subsA;
       }
       return String(a.name || "").localeCompare(String(b.name || ""));
     });
