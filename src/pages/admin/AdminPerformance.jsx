@@ -18,7 +18,9 @@ import {
   fetchAdminRecruiterTargetsHistory,
   adminUpdateRecruiterTarget,
   adminUpdateRecruitersTargetsBulk,
+  exportAdminRecruiterTargets,
 } from "./adminApi";
+import * as XLSX from "xlsx";
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
@@ -842,6 +844,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [targetMessage, setTargetMessage] = useState({ type: "", text: "" });
   const [targetSearch, setTargetSearch] = useState("");
   const [targetTeamFilter, setTargetTeamFilter] = useState("all");
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   // Target History Modal State
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -1080,6 +1083,100 @@ export default function AdminPerformance({ setCurrentPage }) {
       return String(a.name || "").localeCompare(String(b.name || ""));
     });
   }, [targetRecruiters, targetTeamFilter, targetSearch]);
+
+  const clientExportTargetsExcel = (recruiters, startDate, endDate) => {
+    const wb = XLSX.utils.book_new();
+
+    const formatList = (list) =>
+      list.map((r, idx) => {
+        const targetVal = Number(r.target ?? r.joiningTarget ?? 0);
+        const achieved = Number(r.joined ?? 0);
+        const pct =
+          targetVal > 0
+            ? Math.round((achieved / targetVal) * 100)
+            : achieved > 0
+            ? 100
+            : 0;
+        const perfLabel =
+          pct > 75 ? "Excellent" : pct > 50 ? "Very Good" : pct > 25 ? "Good" : "Poor";
+        return {
+          "S.No.": idx + 1,
+          NAME: r.name || "Unknown",
+          "JOINING TARGET": targetVal,
+          "TARGET ACHIEVED": achieved,
+          PERFORMANCE: perfLabel,
+        };
+      });
+
+    const activeList = (Array.isArray(recruiters) ? recruiters : []).filter((r) => {
+      const status = String(r.accountStatus || "active").trim().toLowerCase();
+      return !["inactive", "disabled", "deactivated", "blocked"].includes(status);
+    });
+
+    const bpoList = activeList.filter((r) =>
+      String(r.team || "").toLowerCase().includes("bpo"),
+    );
+    const nbfcList = activeList.filter((r) =>
+      String(r.team || "").toLowerCase().includes("nbfc"),
+    );
+
+    const wsBPO = XLSX.utils.json_to_sheet(formatList(bpoList));
+    wsBPO["!cols"] = [{ wch: 8 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, wsBPO, "Team BPO");
+
+    const wsNBFC = XLSX.utils.json_to_sheet(formatList(nbfcList));
+    wsNBFC["!cols"] = [{ wch: 8 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, wsNBFC, "Team NBFC");
+
+    const wsAll = XLSX.utils.json_to_sheet(
+      activeList.map((r, idx) => {
+        const targetVal = Number(r.target ?? r.joiningTarget ?? 0);
+        const achieved = Number(r.joined ?? 0);
+        const pct =
+          targetVal > 0
+            ? Math.round((achieved / targetVal) * 100)
+            : achieved > 0
+            ? 100
+            : 0;
+        const perfLabel =
+          pct > 75 ? "Excellent" : pct > 50 ? "Very Good" : pct > 25 ? "Good" : "Poor";
+        return {
+          "S.No.": idx + 1,
+          NAME: r.name || "Unknown",
+          TEAM: r.team || "-",
+          "JOINING TARGET": targetVal,
+          "TARGET ACHIEVED": achieved,
+          PERFORMANCE: perfLabel,
+        };
+      }),
+    );
+    wsAll["!cols"] = [{ wch: 8 }, { wch: 24 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, wsAll, "All Teams");
+
+    XLSX.writeFile(wb, `recruiter-targets-${startDate || "all"}-to-${endDate || "all"}.xlsx`, {
+      bookType: "xlsx",
+    });
+  };
+
+  const handleExportTargetsExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await exportAdminRecruiterTargets(
+        targetDateRange.start,
+        targetDateRange.end,
+        targetTeamFilter,
+      );
+    } catch (err) {
+      console.warn("Backend export failed, falling back to client-side XLSX generation:", err);
+      clientExportTargetsExcel(
+        targetRecruiters,
+        targetDateRange.start,
+        targetDateRange.end,
+      );
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   const hasAnyTargetChanges = useMemo(() => {
     if (!Array.isArray(targetRecruiters)) return false;
@@ -3049,6 +3146,15 @@ export default function AdminPerformance({ setCurrentPage }) {
               </div>
 
               <div className="recruiter-targets-controls">
+                <button
+                  type="button"
+                  className="target-export-excel-btn"
+                  onClick={handleExportTargetsExcel}
+                  disabled={exportingExcel || targetLoading}
+                  title="Download Targets Excel (.xlsx) with Team BPO and Team NBFC sheets"
+                >
+                  <span>📥</span> {exportingExcel ? "Exporting..." : "Download Excel (.xlsx)"}
+                </button>
                 <button
                   type="button"
                   className="target-history-trigger-btn"

@@ -3447,6 +3447,35 @@
   border-radius: 999px;
 }
 
+.target-export-excel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.target-export-excel-btn:hover:not(:disabled) {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+  transform: translateY(-1px);
+}
+
+.target-export-excel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .target-history-trigger-btn {
   display: inline-flex;
   align-items: center;

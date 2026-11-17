@@ -65,6 +65,39 @@ export const exportAdminSubmittedResumes = async (params = {}) => {
   return true;
 };
 
+export const exportAdminRecruiterTargets = async (startDate, endDate, team = "all") => {
+  const token = getAuthSession()?.token || "";
+  const query = new URLSearchParams();
+  if (startDate) query.set("startDate", startDate);
+  if (endDate) query.set("endDate", endDate);
+  if (team && team !== "all") query.set("team", team);
+
+  const queryString = query.toString();
+  const url = `${API_BASE_URL}/api/admin/recruiter-targets/export${queryString ? `?${queryString}` : ""}`;
+
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    let errorMsg = "Failed to export targets Excel file.";
+    try {
+      const errJson = await response.json();
+      if (errJson?.message) errorMsg = errJson.message;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  const blob = await response.blob();
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = `recruiter-targets-${startDate || "all"}-to-${endDate || "all"}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
+  return true;
+};
+
 export const fetchAdminCandidateResumes = async () =>
   authFetch(
     `${API_BASE_URL}/api/admin/candidate-resumes`,
