@@ -17,6 +17,17 @@ const readJsonBody = async (response) => {
   }
 };
 
+const formatErrorMessage = (data, fallbackMessage) => {
+  const baseMessage = data?.error || data?.message || fallbackMessage;
+  if (data?.details && String(data.details).trim()) {
+    const details = String(data.details).trim();
+    if (details !== baseMessage) {
+      return `${baseMessage} (${details})`;
+    }
+  }
+  return baseMessage;
+};
+
 export const buildAuthHeaders = (extraHeaders = {}) => {
   const token = getAuthToken();
   return token
@@ -101,16 +112,14 @@ export const authFetch = async (
         broadcastSessionExpired();
         throw new Error("Session expired. Please log in again.");
       }
-      throw new Error(
-        retryData?.error || retryData?.message || fallbackMessage,
-      );
+      throw new Error(formatErrorMessage(retryData, fallbackMessage));
     }
     return retryData;
   }
 
   const data = await readJsonBody(response);
   if (!response.ok) {
-    throw new Error(data?.error || data?.message || fallbackMessage);
+    throw new Error(formatErrorMessage(data, fallbackMessage));
   }
   return data;
 };
@@ -155,16 +164,14 @@ export const authFetchMultipart = async (
         broadcastSessionExpired();
         throw new Error("Session expired. Please log in again.");
       }
-      throw new Error(
-        retryData?.error || retryData?.message || fallbackMessage,
-      );
+      throw new Error(formatErrorMessage(retryData, fallbackMessage));
     }
     return retryData;
   }
 
   const data = await readJsonBody(response);
   if (!response.ok) {
-    throw new Error(data?.error || data?.message || fallbackMessage);
+    throw new Error(formatErrorMessage(data, fallbackMessage));
   }
   return data;
 };

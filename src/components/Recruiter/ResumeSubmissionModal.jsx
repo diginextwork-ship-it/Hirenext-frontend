@@ -48,6 +48,25 @@ const normalizeCandidateName = (value) => {
     .join(" ");
 };
 
+const cleanInstitutionName = (value) => {
+  if (!value) return "";
+  let text = String(value).trim();
+  if (!text) return "";
+
+  const fromMatch = text.match(/\b(?:from|at)\s+\[?([^\]\r\n]+)\]?/i);
+  if (fromMatch && fromMatch[1]) {
+    text = fromMatch[1].trim();
+  }
+
+  text = text.replace(/^[\[\("']+|[\]\)"']+$/g, "").trim();
+  text = text.replace(/^(?:college|institute|institution|university)\s*:\s*/i, "").trim();
+
+  if (text.length > 190) {
+    text = text.slice(0, 190).trim();
+  }
+  return text;
+};
+
 const mergeRecruiterOverridesIntoParsedData = (parsedData, formData) => {
   const safeParsedData =
     parsedData && typeof parsedData === "object" && !Array.isArray(parsedData)
@@ -66,7 +85,7 @@ const mergeRecruiterOverridesIntoParsedData = (parsedData, formData) => {
   const candidateEmail = String(formData.email || "").trim().toLowerCase();
   const latestEducationLevel = String(formData.latest_education_level || "").trim();
   const boardUniversity = String(formData.board_university || "").trim();
-  const institutionName = String(formData.institution_name || "").trim();
+  const institutionName = cleanInstitutionName(formData.institution_name || "");
   const age = String(formData.age || "").trim();
 
   if (candidateName) {
@@ -308,7 +327,9 @@ export default function ResumeSubmissionModal({
             ? autofill.latestEducationLevel
             : ""),
         board_university: prev.board_university || autofill.boardUniversity || "",
-        institution_name: prev.institution_name || autofill.institutionName || "",
+        institution_name: cleanInstitutionName(
+          prev.institution_name || autofill.institutionName || "",
+        ),
         age: prev.age || autofill.age || "",
       }));
       setParseMessageType("success");
@@ -560,6 +581,7 @@ export default function ResumeSubmissionModal({
               type="text"
               placeholder="Candidate Name"
               value={formData.candidate_name}
+              maxLength={100}
               onChange={(event) => setField("candidate_name", event.target.value)}
               required
             />
@@ -567,6 +589,7 @@ export default function ResumeSubmissionModal({
               type="tel"
               placeholder="Phone"
               value={formData.phone}
+              maxLength={10}
               onChange={(event) => setField("phone", event.target.value)}
               required
             />
@@ -574,6 +597,7 @@ export default function ResumeSubmissionModal({
               type="email"
               placeholder="Email"
               value={formData.email}
+              maxLength={100}
               onChange={(event) => setField("email", event.target.value)}
               required
             />
@@ -584,6 +608,7 @@ export default function ResumeSubmissionModal({
                 type="text"
                 placeholder="Candidate Current Location"
                 value={formData.candidate_location}
+                maxLength={150}
                 onChange={(event) => setField("candidate_location", event.target.value)}
               />
             </div>
@@ -615,6 +640,7 @@ export default function ResumeSubmissionModal({
                   type="text"
                   placeholder="Enter office city"
                   value={formData.office_location_city}
+                  maxLength={120}
                   onChange={(event) => setField("office_location_city", event.target.value)}
                   required
                 />
@@ -648,6 +674,7 @@ export default function ResumeSubmissionModal({
               type="text"
               placeholder="Institution Name"
               value={formData.institution_name}
+              maxLength={190}
               onChange={(event) => setField("institution_name", event.target.value)}
               required
             />
