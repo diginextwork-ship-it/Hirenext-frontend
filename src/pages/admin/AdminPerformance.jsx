@@ -841,6 +841,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [savingAllTargets, setSavingAllTargets] = useState(false);
   const [targetMessage, setTargetMessage] = useState({ type: "", text: "" });
   const [targetSearch, setTargetSearch] = useState("");
+  const [targetTeamFilter, setTargetTeamFilter] = useState("all");
 
   // Target History Modal State
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -994,6 +995,42 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const targetTeamOptions = useMemo(() => {
+    const list = Array.isArray(targetRecruiters) ? targetRecruiters : [];
+    const activeList = list.filter((r) => {
+      const status = String(r.accountStatus || "active").trim().toLowerCase();
+      return !["inactive", "disabled", "deactivated", "blocked"].includes(status);
+    });
+
+    const teamCounts = new Map();
+    for (const r of activeList) {
+      const team = String(r.team || "").trim();
+      if (team) {
+        teamCounts.set(team, (teamCounts.get(team) || 0) + 1);
+      }
+    }
+
+    const primaryTeams = ["Team BPO", "Team NBFC"];
+    const allFoundTeams = Array.from(teamCounts.keys());
+    const sortedTeams = [
+      ...primaryTeams.filter((t) => allFoundTeams.includes(t)),
+      ...allFoundTeams.filter((t) => !primaryTeams.includes(t)),
+    ];
+
+    if (sortedTeams.length === 0) {
+      sortedTeams.push("Team BPO", "Team NBFC");
+    }
+
+    return [
+      { key: "all", label: "All Recruiters", count: activeList.length },
+      ...sortedTeams.map((teamName) => ({
+        key: teamName,
+        label: teamName,
+        count: teamCounts.get(teamName) || 0,
+      })),
+    ];
+  }, [targetRecruiters]);
+
   const filteredTargetRecruiters = useMemo(() => {
     const list = Array.isArray(targetRecruiters) ? targetRecruiters : [];
     // Filter out disabled / inactive accounts
@@ -1002,9 +1039,19 @@ export default function AdminPerformance({ setCurrentPage }) {
       return !["inactive", "disabled", "deactivated", "blocked"].includes(status);
     });
 
+    // Filter by team
+    const teamFiltered =
+      targetTeamFilter === "all"
+        ? activeList
+        : activeList.filter((r) => {
+            const recTeam = String(r.team || "").trim().toLowerCase();
+            const filterTeam = String(targetTeamFilter).trim().toLowerCase();
+            return recTeam === filterTeam;
+          });
+
     const searchFiltered = !targetSearch.trim()
-      ? activeList
-      : activeList.filter((r) => {
+      ? teamFiltered
+      : teamFiltered.filter((r) => {
           const q = targetSearch.toLowerCase().trim();
           return (
             String(r.name || "").toLowerCase().includes(q) ||
@@ -1032,7 +1079,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
       return String(a.name || "").localeCompare(String(b.name || ""));
     });
-  }, [targetRecruiters, targetSearch]);
+  }, [targetRecruiters, targetTeamFilter, targetSearch]);
 
   const hasAnyTargetChanges = useMemo(() => {
     if (!Array.isArray(targetRecruiters)) return false;
@@ -3077,6 +3124,28 @@ export default function AdminPerformance({ setCurrentPage }) {
                 </button>
               </div>
 
+              {/* Team Wise Filter Buttons (All Recruiters, Team BPO, Team NBFC) */}
+              <div className="target-team-filter-group" role="tablist" aria-label="Filter recruiters by team">
+                <span className="target-team-filter-label">
+                  TEAM:
+                </span>
+                {targetTeamOptions.map((opt) => {
+                  const isActive = targetTeamFilter === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      className={`target-team-btn ${isActive ? "active" : ""}`}
+                      onClick={() => setTargetTeamFilter(opt.key)}
+                      title={`Filter by ${opt.label}`}
+                    >
+                      <span>{opt.label}</span>
+                      <span className="target-team-badge">{opt.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {targetPreset === "custom" && (
                 <div className="target-custom-inputs-wrap">
                   <span style={{ fontSize: "12px", color: "#475569", fontWeight: 600 }}>From:</span>
@@ -3344,6 +3413,8 @@ export default function AdminPerformance({ setCurrentPage }) {
               <p className="admin-chart-empty">
                 {targetSearch.trim()
                   ? `No recruiters match "${targetSearch}".`
+                  : targetTeamFilter !== "all"
+                  ? `No recruiters found for ${targetTeamFilter}.`
                   : "No recruiter data available."}
               </p>
             )}

@@ -3348,6 +3348,71 @@
   box-shadow: 0 2px 6px rgba(198, 40, 40, 0.2);
 }
 
+.target-team-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.target-team-filter-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 2px;
+  letter-spacing: 0.02em;
+}
+
+.target-team-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.target-team-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.target-team-btn.active {
+  background: #c62828;
+  color: #ffffff;
+  border-color: #c62828;
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.2);
+}
+
+.target-team-btn .target-team-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  transition: all 0.18s ease;
+}
+
+.target-team-btn.active .target-team-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .target-custom-inputs-wrap {
   display: flex;
   align-items: center;
