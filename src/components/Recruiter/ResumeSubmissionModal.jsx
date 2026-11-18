@@ -157,10 +157,12 @@ export default function ResumeSubmissionModal({
   jobId,
   job,
   isOpen,
+  initialMode = "with_resume",
   onClose,
   onSuccess,
 }) {
   const { addNotification } = useNotification();
+  const [submissionMode, setSubmissionMode] = useState(initialMode || "with_resume");
   const [hasAccess, setHasAccess] = useState(null);
   const [checkingAccess, setCheckingAccess] = useState(false);
   const [isResumeProcessing, setIsResumeProcessing] = useState(false);
@@ -172,6 +174,12 @@ export default function ResumeSubmissionModal({
   const [resumeBase64, setResumeBase64] = useState("");
   const [parsedPayload, setParsedPayload] = useState(null);
   const activeResumeRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSubmissionMode(initialMode || "with_resume");
+    }
+  }, [isOpen, initialMode]);
 
   useEffect(() => {
     if (!isOpen || !jobId || !recruiterId) return;
@@ -418,13 +426,25 @@ export default function ResumeSubmissionModal({
         return;
       }
 
-      const fileError = validateFile(formData.resume_file);
-      if (fileError) {
-        setErrorMessage(fileError);
+      if (submissionMode === "with_resume" && !formData.resume_file) {
+        setErrorMessage("Please select a resume file to upload.");
         return;
       }
 
+      if (formData.resume_file) {
+        const fileError = validateFile(formData.resume_file);
+        if (fileError) {
+          setErrorMessage(fileError);
+          return;
+        }
+      }
+
       const jid = String(jobId || "").trim();
+      if (!jid) {
+        setErrorMessage("A valid job is required.");
+        return;
+      }
+
       const officeLocationCity = String(
         formData.office_location_option === "manual" ? formData.office_location_city : "",
       ).trim();
@@ -432,10 +452,46 @@ export default function ResumeSubmissionModal({
         setErrorMessage("Please enter the office city name.");
         return;
       }
+
+      const candidateName = normalizeCandidateName(formData.candidate_name || "");
+      const candidateEmail = String(formData.email || "").trim().toLowerCase();
+      const candidatePhone = String(formData.phone || "")
+        .replace(/\D/g, "")
+        .slice(0, 10);
+
+      if (!candidateName) {
+        setErrorMessage("Please enter candidate name.");
+        return;
+      }
+      if (!candidatePhone || candidatePhone.length !== 10) {
+        setErrorMessage("Please enter a valid 10-digit phone number.");
+        return;
+      }
+      if (!candidateEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateEmail)) {
+        setErrorMessage("Please enter a valid email address.");
+        return;
+      }
+      if (!formData.source) {
+        setErrorMessage("Please select a resume source.");
+        return;
+      }
+      if (!formData.latest_education_level) {
+        setErrorMessage("Please select an education level.");
+        return;
+      }
+      if (!formData.institution_name?.trim()) {
+        setErrorMessage("Please enter institution name.");
+        return;
+      }
+      if (!formData.age || Number(formData.age) < 18 || Number(formData.age) > 100) {
+        setErrorMessage("Please enter a valid age between 18 and 100.");
+        return;
+      }
+
       let currentResumeBase64 = resumeBase64;
       let currentParsedPayload = parsedPayload;
 
-      if (!currentResumeBase64 && formData.resume_file) {
+      if (formData.resume_file && !currentResumeBase64) {
         updateResumeRequestStage(requestId, "Parsing resume...");
         currentResumeBase64 = await fileToDataUrl(formData.resume_file);
         if (activeResumeRequestIdRef.current !== requestId) {
@@ -444,22 +500,17 @@ export default function ResumeSubmissionModal({
         setResumeBase64(currentResumeBase64);
       }
 
-      if (!currentParsedPayload && formData.resume_file) {
+      if (formData.resume_file && !currentParsedPayload) {
         currentParsedPayload = await parseResumeAndAutofill(formData.resume_file, {
           requestId,
           resumeBase64: currentResumeBase64,
         });
-        if (!currentParsedPayload) {
+        if (!currentParsedPayload && submissionMode === "with_resume") {
           if (activeResumeRequestIdRef.current === requestId) {
             setErrorMessage("Resume parsing failed. Please re-upload and try again.");
           }
           return;
         }
-      }
-
-      if (!jid || !formData.resume_file) {
-        setErrorMessage("A valid job and resume file are required.");
-        return;
       }
 
       updateResumeRequestStage(requestId, "Submitting...");
@@ -468,11 +519,7 @@ export default function ResumeSubmissionModal({
       payload.append("recruiter_rid", String(recruiterId));
       payload.append("jid", jid);
       payload.append("submitted_at_client", submittedAtClient);
-      const candidateName = normalizeCandidateName(formData.candidate_name || "");
-      const candidateEmail = String(formData.email || "").trim();
-      const candidatePhone = String(formData.phone || "")
-        .replace(/\D/g, "")
-        .slice(0, 10);
+      payload.append("submission_mode", submissionMode);
       if (candidateName) {
         payload.append("candidate_name", candidateName);
         payload.append("candidateName", candidateName);
@@ -522,10 +569,12 @@ export default function ResumeSubmissionModal({
       }
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "resume_file") {
-          payload.append(key, value);
+          if (value) {
+            payload.append(key, value);
+          }
           return;
         }
-        if (key === "candidate_name" || key === "phone") {
+        if (key === "candidate_name" || key === "phone" || key === "email") {
           return;
         }
         payload.append(key, String(value ?? "").trim());
@@ -564,11 +613,45 @@ export default function ResumeSubmissionModal({
     <div className="resume-modal-overlay" role="presentation">
       <div className="resume-modal" role="dialog" aria-modal="true" aria-labelledby="resume-modal-title">
         <div className="resume-modal-header">
-          <h2 id="resume-modal-title">Submit Resume</h2>
+          <h2 id="resume-modal-title">
+            {submissionMode === "without_resume"
+              ? "Submit Candidate (Without Resume)"
+              : "Submit Candidate (With Resume)"}
+          </h2>
           <button type="button" className="btn-secondary" onClick={onClose}>
             Close
           </button>
         </div>
+
+        <div className="resume-mode-tabs">
+          <button
+            type="button"
+            className={`resume-mode-tab ${submissionMode === "with_resume" ? "active" : ""}`}
+            onClick={() => {
+              setSubmissionMode("with_resume");
+              setErrorMessage("");
+            }}
+          >
+            📄 Submit with Resume
+          </button>
+          <button
+            type="button"
+            className={`resume-mode-tab ${submissionMode === "without_resume" ? "active" : ""}`}
+            onClick={() => {
+              setSubmissionMode("without_resume");
+              setErrorMessage("");
+            }}
+          >
+            ✍️ Submit without Resume
+          </button>
+        </div>
+
+        {submissionMode === "without_resume" ? (
+          <div className="resume-mode-banner">
+            <span>✍️</span>
+            <span>Manual Candidate Entry &mdash; Resume file is not required. Fill details below.</span>
+          </div>
+        ) : null}
 
         {checkingAccess ? <p>Checking access...</p> : null}
         {!checkingAccess && hasAccess === false ? (
@@ -687,12 +770,29 @@ export default function ResumeSubmissionModal({
               onChange={(event) => setField("age", event.target.value)}
               required
             />
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleResumeFileChange}
-              required
-            />
+            {submissionMode === "with_resume" ? (
+              <div className="resume-modal-field">
+                <label htmlFor="resume_file">Resume File (PDF, DOC, DOCX) *</label>
+                <input
+                  id="resume_file"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleResumeFileChange}
+                  required
+                />
+              </div>
+            ) : (
+              <div className="resume-modal-field resume-modal-field-optional">
+                <label htmlFor="resume_file_opt">Resume File (Optional)</label>
+                <input
+                  id="resume_file_opt"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleResumeFileChange}
+                />
+                <small>Optional &mdash; You can leave this blank to submit without a resume file.</small>
+              </div>
+            )}
             <div className="resume-modal-field">
               <label htmlFor="submitted_reason">Any brief about candidate&apos;s availability?</label>
               <textarea
@@ -714,7 +814,9 @@ export default function ResumeSubmissionModal({
               <button type="submit" className="btn-primary" disabled={isResumeProcessing}>
                 {isResumeProcessing && resumeProcessingStage
                   ? resumeProcessingStage
-                  : "Submit Resume"}
+                  : submissionMode === "without_resume"
+                    ? "Submit Candidate"
+                    : "Submit Resume"}
               </button>
               <button type="button" className="btn-secondary" onClick={onClose}>
                 Cancel

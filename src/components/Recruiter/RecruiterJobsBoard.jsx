@@ -112,6 +112,8 @@ export default function RecruiterJobsBoard({
   const [activeJobId, setActiveJobId] = useState(null);
   const [activeJob, setActiveJob] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isChoiceModalOpen, setIsChoiceModalOpen] = useState(false);
+  const [submitMode, setSubmitMode] = useState("with_resume");
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
@@ -164,11 +166,12 @@ export default function RecruiterJobsBoard({
     };
   }, [recruiterId, filters.location, filters.company, filters.search, offset, refreshKey]);
 
-  const openSubmitModal = (jobId) => {
+  const openSubmitModal = (jobId, mode = "with_resume") => {
     const selectedJob =
       jobs.find((job) => String(job?.jid) === String(jobId)) || null;
     setActiveJobId(jobId);
     setActiveJob(selectedJob);
+    setSubmitMode(mode);
     setIsSubmitModalOpen(true);
   };
 
@@ -186,7 +189,7 @@ export default function RecruiterJobsBoard({
 
   const closeDetailsModal = () => {
     setIsDetailsModalOpen(false);
-    if (!isSubmitModalOpen) {
+    if (!isSubmitModalOpen && !isChoiceModalOpen) {
       setActiveJob(null);
     }
   };
@@ -194,7 +197,14 @@ export default function RecruiterJobsBoard({
   const closeSubmitModal = () => {
     setIsSubmitModalOpen(false);
     setActiveJobId(null);
-    if (!isDetailsModalOpen) {
+    if (!isDetailsModalOpen && !isChoiceModalOpen) {
+      setActiveJob(null);
+    }
+  };
+
+  const closeChoiceModal = () => {
+    setIsChoiceModalOpen(false);
+    if (!isDetailsModalOpen && !isSubmitModalOpen) {
       setActiveJob(null);
     }
   };
@@ -209,8 +219,14 @@ export default function RecruiterJobsBoard({
 
   const handleSubmitFromDetails = () => {
     if (!activeJob?.jid) return;
+    setIsChoiceModalOpen(true);
+  };
+
+  const handleSelectSubmissionMode = (mode) => {
+    setIsChoiceModalOpen(false);
     setIsDetailsModalOpen(false);
-    openSubmitModal(activeJob.jid);
+    setSubmitMode(mode);
+    openSubmitModal(activeJob.jid, mode);
   };
 
   const handleEditChange = (event) => {
@@ -481,6 +497,75 @@ export default function RecruiterJobsBoard({
         </div>
       ) : null}
 
+      {isChoiceModalOpen && activeJob ? (
+        <div
+          className="job-details-modal-overlay"
+          role="presentation"
+          onClick={closeChoiceModal}
+        >
+          <div
+            className="job-details-modal submission-choice-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submission-choice-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="job-details-modal-header">
+              <div>
+                <h2 id="submission-choice-title">Submit Candidate</h2>
+                <p className="job-detail-company">
+                  {toDisplayText(activeJob.role_name) || "Untitled Role"} &bull;{" "}
+                  {toDisplayText(activeJob.company_name)}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeChoiceModal}
+              >
+                Close
+              </button>
+            </div>
+
+            <p
+              style={{
+                margin: "14px 0 18px",
+                color: "var(--color-text-muted, #64748b)",
+                fontSize: "14px",
+              }}
+            >
+              Please select how you would like to submit this candidate:
+            </p>
+
+            <div className="submission-choice-options">
+              <button
+                type="button"
+                className="submission-choice-card"
+                onClick={() => handleSelectSubmissionMode("with_resume")}
+              >
+                <div className="submission-choice-icon-wrap">📄</div>
+                <div className="submission-choice-title">Submit with Resume</div>
+                <div className="submission-choice-desc">
+                  Upload candidate resume file (PDF, DOCX) with automatic parsing &amp; ATS score calculation.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="submission-choice-card"
+                onClick={() => handleSelectSubmissionMode("without_resume")}
+              >
+                <div className="submission-choice-icon-wrap">✍️</div>
+                <div className="submission-choice-title">Submit without Resume</div>
+                <div className="submission-choice-desc">
+                  Enter candidate details manually without uploading a resume file.
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {isEditModalOpen && editingJob ? (
         <div
           className="job-details-modal-overlay"
@@ -668,6 +753,7 @@ export default function RecruiterJobsBoard({
         jobId={activeJobId}
         job={activeJob}
         isOpen={isSubmitModalOpen}
+        initialMode={submitMode}
         onClose={closeSubmitModal}
         onSuccess={onResumeSubmitted}
       />
