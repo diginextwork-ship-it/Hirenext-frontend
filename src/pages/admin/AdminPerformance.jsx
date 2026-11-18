@@ -31,6 +31,7 @@ import {
 import {
   formatDateInIndia,
   formatDateTimeInIndia,
+  formatEventDateOrDateTime,
 } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 import EmployeeRankingWidget from "../../components/Recruiter/EmployeeRankingWidget";
@@ -390,6 +391,10 @@ function formatDate(value) {
 
 function formatDateTime(value) {
   return formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
+}
+
+function formatEventDate(value) {
+  return formatEventDateOrDateTime(value, "-");
 }
 
 function displayValue(value) {
@@ -2598,7 +2603,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                         {selectedStatusKey !== "submitted" && (
                           <td>
-                            {formatDate(
+                            {formatEventDate(
                               (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
                               (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                               (selectedStatusKey === "selected" ? item.selectedAt : null) ||
@@ -3039,7 +3044,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>{formatDateTime(item.submittedAt || item.uploadedAt)}</td>
                           {selectedStatusKey !== "submitted" && (
                             <td>
-                              {formatDate(
+                              {formatEventDate(
                                 (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
                                 (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                                 (selectedStatusKey === "selected" ? item.selectedAt : null) ||

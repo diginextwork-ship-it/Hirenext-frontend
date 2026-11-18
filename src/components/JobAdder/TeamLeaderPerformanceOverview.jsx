@@ -8,7 +8,11 @@ import {
 } from "../../utils/dashboardData";
 import NoteViewButton from "../common/NoteViewButton";
 import EmployeeRankingWidget from "../Recruiter/EmployeeRankingWidget";
-import { formatDateInIndia, formatDateTimeInIndia } from "../../utils/dateTime";
+import {
+  formatDateInIndia,
+  formatDateTimeInIndia,
+  formatEventDateOrDateTime,
+} from "../../utils/dateTime";
 import {
   fetchTeamLeaderPerformanceDashboard,
   rollbackJobResumeStatus,
@@ -949,7 +953,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                     </td>
                     {selectedStatusKey !== "submitted" && (
                       <td>
-                        {formatDate(
+                        {formatEventDateOrDateTime(
                           (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
                           (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                           item.eventAt ||
@@ -960,7 +964,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                           (selectedStatusKey === "rejected" ? item.rejectedAt : null) ||
                           (selectedStatusKey === "dropout" ? item.dropoutAt : null) ||
                           (selectedStatusKey === "billed" ? item.billedAt : null) ||
-                          (selectedStatusKey === "left" ? item.leftAt : null)
+                          (selectedStatusKey === "left" ? item.leftAt : null),
+                          "Not set"
                         )}
                       </td>
                     )}

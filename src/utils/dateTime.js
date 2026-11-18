@@ -17,7 +17,7 @@ export const parseDateTimeValue = (value) => {
   if (!normalized) return null;
 
   const sqlDateTimeMatch = normalized.match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/,
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?$/,
   );
 
   if (sqlDateTimeMatch && !/[zZ]|[+-]\d{2}:\d{2}$/.test(normalized)) {
@@ -32,6 +32,12 @@ export const parseDateTimeValue = (value) => {
       milliseconds = "0",
     ] = sqlDateTimeMatch;
 
+    const safeMillis = Number(
+      String(milliseconds || "0")
+        .slice(0, 3)
+        .padEnd(3, "0"),
+    );
+
     const utcValue =
       Date.UTC(
         Number(year),
@@ -40,7 +46,7 @@ export const parseDateTimeValue = (value) => {
         Number(hours),
         Number(minutes),
         Number(seconds),
-        Number(milliseconds.padEnd(3, "0")),
+        safeMillis,
       ) -
       (5 * 60 + 30) * 60 * 1000;
 
@@ -77,10 +83,26 @@ export const formatDateTimeInIndia = (
 export const formatDateInIndia = (value, fallback = "N/A") => {
   if (!value) return fallback;
 
-  const parsed = parseDateTimeValue(`${value}T00:00:00`);
+  const str = String(value).trim();
+  let parsed = null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    parsed = parseDateTimeValue(`${str}T00:00:00`);
+  } else {
+    parsed = parseDateTimeValue(str);
+  }
+
   if (!parsed) return String(value);
 
   return parsed.toLocaleDateString(INDIA_LOCALE, {
     timeZone: INDIA_TIME_ZONE,
   });
+};
+
+export const formatEventDateOrDateTime = (value, fallback = "-") => {
+  if (!value) return fallback;
+  const str = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return formatDateInIndia(str, fallback);
+  }
+  return formatDateTimeInIndia(str, fallback, { treatAsWallTime: true });
 };
