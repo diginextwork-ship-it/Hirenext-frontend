@@ -123,6 +123,17 @@ export const updateTeamLeaderNote = async (resId, verifiedReason) =>
     "Failed to update team leader note.",
   );
 
+export const adminUpdateResumeNote = async (resId, { note, status = "pending" } = {}) =>
+  authFetch(
+    `${API_BASE_URL}/api/admin/resumes/${encodeURIComponent(resId)}/note`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: note ?? null, status }),
+    },
+    "Failed to update note.",
+  );
+
 export const adminAdvanceStatus = async (resId, payload) =>
   payload instanceof FormData
     ? authFetchMultipart(

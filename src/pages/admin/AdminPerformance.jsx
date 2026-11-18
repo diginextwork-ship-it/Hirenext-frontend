@@ -9,6 +9,7 @@ import {
   readJsonResponse,
   adminAdvanceStatus,
   adminRollbackStatus,
+  adminUpdateResumeNote,
   adminDeleteRecruiter,
   adminUpdateRecruiterAccountStatus,
   updateTeamLeaderNote,
@@ -89,6 +90,12 @@ const STATUS_CARDS = [
     tone: "purple",
   },
   {
+    key: "pending",
+    label: "Pending",
+    summaryKey: "totalPending",
+    tone: "blue",
+  },
+  {
     key: "rejected",
     label: "Rejected",
     summaryKey: "totalRejected",
@@ -128,6 +135,7 @@ const PERSON_METRIC_CARDS = [
   { key: "didnt_turn_up", label: "Didn't Turn Up", tone: "orange" },
   { key: "shortlisted", label: "Shortlisted", tone: "blue" },
   { key: "selected", label: "Selected", tone: "purple" },
+  { key: "pending", label: "Pending", tone: "blue" },
   { key: "rejected", label: "Rejected", tone: "red" },
   { key: "joined", label: "Joined", tone: "gold" },
   { key: "dropout", label: "Dropout", tone: "pink" },
@@ -173,8 +181,14 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   selected: [
+    { value: "pending", label: "Pending", color: "#2563eb" },
     { value: "joined", label: "Joined", color: "#16a34a" },
     { value: "dropout", label: "Dropout", color: "#dc2626" },
+  ],
+  pending: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   rejected: [{ value: "joined", label: "Joined", color: "#16a34a" }],
   joined: [
@@ -189,6 +203,7 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "walk_in",
   "didnt_turn_up",
   "selected",
+  "pending",
   "rejected",
   "shortlisted",
   "joined",
@@ -204,7 +219,8 @@ const ALLOWED_TRANSITIONS = {
   walk_in: ["shortlisted", "didnt_turn_up", "rejected"],
   didnt_turn_up: ["walk_in", "others", "rejected"],
   shortlisted: ["selected", "dropout", "rejected"],
-  selected: ["joined", "dropout"],
+  selected: ["pending", "joined", "dropout"],
+  pending: ["joined", "dropout", "rejected"],
   rejected: ["joined"],
   joined: ["billed", "left"],
 };
@@ -221,15 +237,18 @@ const resolveRollbackTargetStatus = (item) => {
   if (currentStatus === "verified") return "submitted";
   if (currentStatus === "shortlisted") return "walk_in";
   if (currentStatus === "selected") return "shortlisted";
+  if (currentStatus === "pending") return "selected";
   if (currentStatus === "rejected") {
+    if (item?.pendingAt || item?.pendingReason) return "pending";
     if (item?.joiningDate) return "selected";
     if (item?.walkInDate || item?.walkInReason) return "walk_in";
     if (item?.othersReason) return "others";
     return item?.verifiedReason ? "verified" : "submitted";
   }
-  if (currentStatus === "joined") return "selected";
+  if (currentStatus === "joined") return item?.pendingAt ? "pending" : "selected";
   if (currentStatus === "billed" || currentStatus === "left") return "joined";
   if (currentStatus === "dropout") {
+    if (item?.pendingAt || item?.pendingReason) return "pending";
     return item?.joiningDate ? "selected" : "shortlisted";
   }
   return null;
@@ -446,6 +465,7 @@ function getPerformanceNoteForStatus(item, statusValue) {
     didnt_turn_up: item?.didntTurnUpReason || item?.didnt_turn_up_reason || item?.selectionNote,
     shortlisted: item?.shortlistedReason || item?.selectionNote,
     selected: item?.selectReason || item?.selectionNote,
+    pending: item?.pendingReason || item?.pending_reason || (item?.currentStatus === "pending" ? item?.selectionNote : ""),
     joined: item?.joiningNote || item?.joinedReason || item?.selectionNote,
     dropout: item?.dropoutReason || item?.selectionNote,
     rejected: item?.rejectReason || item?.selectionNote,
@@ -462,6 +482,10 @@ function getPerformanceNoteForStatus(item, statusValue) {
 
   if (status === "submitted") {
     return recruiterNote || statusNote || item?.latestNote || item?.note || null;
+  }
+
+  if (status === "pending") {
+    return normalizeNoteText(byStatus.pending) || item?.latestNote || item?.note || "";
   }
 
   if (statusNote && recruiterNote && statusNote !== recruiterNote) {
@@ -595,11 +619,12 @@ const STATUS_PROGRESS_RANK = {
   didnt_turn_up: 2,
   shortlisted: 3,
   selected: 4,
-  joined: 5,
-  billed: 6,
-  left: 7,
-  dropout: 7,
-  rejected: 7,
+  pending: 5,
+  joined: 6,
+  billed: 7,
+  left: 8,
+  dropout: 8,
+  rejected: 8,
 };
 
 function getStatusRank(status) {
@@ -693,6 +718,7 @@ const LINEAR_STAGES = [
   "walk_in",
   "shortlisted",
   "selected",
+  "pending",
   "joined",
   "billed",
 ];
@@ -760,6 +786,14 @@ function hasCandidatePassedStage(item, targetStage) {
           item?.selectReason ||
           item?.select_reason ||
           (currentStatus === "selected" && (item?.joiningDate || item?.currentJoiningDate))
+        );
+      case "pending":
+        return Boolean(
+          item?.pendingAt ||
+          item?.pending_at ||
+          item?.pendingReason ||
+          item?.pending_reason ||
+          currentStatus === "pending"
         );
       case "joined":
         return Boolean(
@@ -1835,6 +1869,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       didnt_turn_up: buildItems(statusDrilldown?.didnt_turn_up || [], "didnt_turn_up"),
       shortlisted: buildItems(statusDrilldown?.shortlisted || [], "shortlisted"),
       selected: buildItems(statusDrilldown?.selected || [], "selected"),
+      pending: buildItems(statusDrilldown?.pending || [], "pending"),
       rejected: buildItems(statusDrilldown?.rejected || [], "rejected"),
       joined: buildItems(statusDrilldown?.joined || [], "joined"),
       dropout: buildItems(statusDrilldown?.dropout || [], "dropout"),
@@ -1856,6 +1891,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       didnt_turn_up: 0,
       shortlisted: 0,
       selected: 0,
+      pending: 0,
       rejected: 0,
       joined: 0,
       dropout: 0,
@@ -1906,6 +1942,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     incrementFromBucket("didnt_turn_up", statusItemsByStatus.didnt_turn_up);
     incrementFromBucket("shortlisted", statusItemsByStatus.shortlisted);
     incrementFromBucket("selected", statusItemsByStatus.selected);
+    incrementFromBucket("pending", statusItemsByStatus.pending);
     incrementFromBucket("rejected", statusItemsByStatus.rejected);
     incrementFromBucket("joined", statusItemsByStatus.joined);
     incrementFromBucket("dropout", statusItemsByStatus.dropout);
@@ -1925,6 +1962,7 @@ export default function AdminPerformance({ setCurrentPage }) {
         didnt_turn_up: 0,
         shortlisted: 0,
         selected: 0,
+        pending: 0,
         rejected: 0,
         joined: 0,
         dropout: 0,
@@ -1995,6 +2033,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       totalDidntTurnUp: getCount("didnt_turn_up"),
       totalShortlisted: getCount("shortlisted"),
       totalSelected: getCount("selected"),
+      totalPending: getCount("pending"),
       totalRejected: getCount("rejected"),
       totalJoined: getCount("joined"),
       totalDropout: getCount("dropout"),
@@ -2103,6 +2142,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     const stageDefaultDate =
       (targetStatus === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
       (targetStatus === "didnt_turn_up" ? (item?.didntTurnUpAt || item?.didnt_turn_up_at) : null) ||
+      (targetStatus === "pending" ? (item?.pendingAt || item?.pending_at) : null) ||
       (targetStatus === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
       toDateStr(new Date());
     setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
@@ -2282,6 +2322,14 @@ export default function AdminPerformance({ setCurrentPage }) {
                   : {}),
                 ...(actionTarget === "didnt_turn_up"
                   ? { didntTurnUpReason: normalizedReason || null, didnt_turn_up_reason: normalizedReason || null }
+                  : {}),
+                ...(actionTarget === "pending"
+                  ? {
+                    pendingReason: normalizedReason || null,
+                    pending_reason: normalizedReason || null,
+                    pendingNote: normalizedReason || null,
+                    pending_note: normalizedReason || null,
+                  }
                   : {}),
               }
               : {}),
@@ -2479,12 +2527,36 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
   };
 
+  const handleSaveNote = async (item, statusKey, newNote) => {
+    const resId = item?.resId ?? item?.res_id ?? item?.resumeId ?? item?.resume_id;
+    if (!resId) throw new Error("Resume ID not found");
+    await adminUpdateResumeNote(resId, { note: newNote, status: statusKey || "pending" });
+    item.pendingReason = newNote;
+    item.pending_reason = newNote;
+    item.selectionNote = newNote;
+    item.latestNote = newNote;
+    item.note = newNote;
+    setStatusOverrides((prev) => ({
+      ...prev,
+      [`note_${resId}`]: newNote,
+    }));
+  };
+
   const renderNoteButton = (item, noteValue, statusValue) => {
+    const currentStatus = normalizeStatus(statusValue || selectedStatusKey || item?.currentStatus || item?.status);
+    const isPending = currentStatus === "pending" || selectedStatusKey === "pending";
+    const effectiveNote =
+      isPending && statusOverrides[`note_${item?.resId}`] !== undefined
+        ? statusOverrides[`note_${item?.resId}`]
+        : noteValue;
     return (
       <NoteViewButton
-        note={noteValue}
+        note={effectiveNote}
         candidateName={getCandidateDisplayName(item)}
-        authorName={resolveNoteAuthor(item, noteValue, statusValue)}
+        authorName={resolveNoteAuthor(item, effectiveNote, statusValue)}
+        editable={isPending}
+        emptyLabel="+ Add Note"
+        onSave={isPending ? (newNote) => handleSaveNote(item, currentStatus, newNote) : undefined}
       />
     );
   };
@@ -2586,7 +2658,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                               ? "Shortlist Date"
                               : selectedStatusKey === "selected"
                                 ? "Selection Date"
-                                : selectedStatusKey === "joined"
+                                : selectedStatusKey === "pending"
+                                  ? "Pending Date"
+                                  : selectedStatusKey === "joined"
                                   ? "Joining Date"
                                   : selectedStatusKey === "rejected"
                                     ? "Rejection Date"
@@ -2681,6 +2755,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                               (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                               (selectedStatusKey === "selected" ? item.selectedAt : null) ||
+                              (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at) : null) ||
                               item.eventAt ||
                               item[`${selectedStatusKey}At`]
                             )}
@@ -3038,7 +3113,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 ? "Shortlist Date"
                                 : selectedStatusKey === "selected"
                                   ? "Selection Date"
-                                  : selectedStatusKey === "joined"
+                                  : selectedStatusKey === "pending"
+                                    ? "Pending Date"
+                                    : selectedStatusKey === "joined"
                                     ? "Joining Date"
                                     : selectedStatusKey === "rejected"
                                       ? "Rejection Date"
@@ -3132,6 +3209,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                                 (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                                 (selectedStatusKey === "selected" ? item.selectedAt : null) ||
+                                (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at) : null) ||
                                 item.eventAt ||
                                 item[`${selectedStatusKey}At`]
                               )}
@@ -4369,7 +4447,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                       ? "Shortlist Date"
                       : actionTarget === "selected"
                         ? "Selection Date"
-                        : actionTarget === "joined"
+                        : actionTarget === "pending"
+                          ? "Pending Date"
+                          : actionTarget === "joined"
                           ? "Joining Date"
                           : actionTarget === "rejected"
                             ? "Rejection Date"
@@ -4675,7 +4755,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                         ? "Shortlist Reason (optional)"
                         : actionTarget === "selected"
                           ? "Selection Reason (optional)"
-                          : actionTarget === "dropout"
+                          : actionTarget === "pending"
+                            ? "Pending Note (optional)"
+                            : actionTarget === "dropout"
                             ? "Dropout Reason (optional)"
                             : actionTarget === "left"
                               ? "Reason for Leaving (optional)"
@@ -4799,6 +4881,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   <option value="didnt_turn_up">Didn't Turn Up</option>
                   <option value="shortlisted">Shortlisted</option>
                   <option value="selected">Selected</option>
+                  <option value="pending">Pending</option>
                   <option value="joined">Joined</option>
                   <option value="billed">Billed</option>
                   <option value="left">Left</option>
