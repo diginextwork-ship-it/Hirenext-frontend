@@ -438,7 +438,9 @@ export default function RecruiterDashboard({ recruiterId }) {
     }
     resumes = resumes.filter((resume) => {
       let eventDate = resume.workflowUpdatedAt;
-      if (normalizedStatus === "walk_in") {
+      if (normalizedStatus === "submitted") {
+        eventDate = resume.submittedAt || resume.uploadedAt || resume.createdAt;
+      } else if (normalizedStatus === "walk_in") {
         eventDate = resume.walkInDate || resume.walkInAt || resume.workflowUpdatedAt;
       } else if (normalizedStatus === "others") {
         eventDate = resume.othersAt || resume.workflowUpdatedAt;
@@ -453,7 +455,12 @@ export default function RecruiterDashboard({ recruiterId }) {
       } else if (normalizedStatus === "verified") {
         eventDate = resume.verifiedAt || resume.workflowUpdatedAt;
       }
-      return matchesAppliedDateRange(eventDate || resume.uploadedAt);
+      return matchesAppliedDateRange(
+        eventDate ||
+          resume.submittedAt ||
+          resume.uploadedAt ||
+          resume.createdAt,
+      );
     });
     resumes = resumes.filter((resume) =>
       matchesCandidateSearch(resume, candidateSearch),

@@ -681,9 +681,9 @@ function hasCandidatePassedStage(item, targetStage) {
   // If candidate is currently at this stage, they belong in this stage
   if (currentStatus === target) return true;
 
-  // Submitted: All candidates pass through submitted (excluding terminal exclusive statuses like rejected/left)
+  // Submitted: All candidates pass through submitted, including those who were later rejected, left, or reached any other stage
   if (target === "submitted") {
-    return !TERMINAL_EXCLUSIVE_STATUSES.has(currentStatus);
+    return true;
   }
 
   // Check explicit timestamps or reasons for this stage if recorded
@@ -1768,36 +1768,33 @@ export default function AdminPerformance({ setCurrentPage }) {
     const submittedRawItems =
       performanceSubmittedItems.length > 0 ? performanceSubmittedItems : submittedResumes;
 
-    const allCandidateItemsMap = new Map();
     const getResId = (it) =>
       it?.resId ?? it?.res_id ?? it?.resumeId ?? it?.resume_id;
 
+    const submittedPoolMap = new Map();
+    const primarySubmitted =
+      (statusDrilldown?.submitted && statusDrilldown.submitted.length > 0)
+        ? statusDrilldown.submitted
+        : submittedRawItems;
+
+    for (const it of primarySubmitted) {
+      const id = getResId(it);
+      if (id) submittedPoolMap.set(String(id), it);
+    }
+
+    // Every candidate in any statusDrilldown bucket (e.g. rejected, verified, walk_in) was originally submitted
     for (const [, bucketArr] of Object.entries(statusDrilldown || {})) {
       if (!Array.isArray(bucketArr)) continue;
       for (const it of bucketArr) {
         const id = getResId(it);
-        if (id && !allCandidateItemsMap.has(String(id))) {
-          allCandidateItemsMap.set(String(id), it);
+        if (id && !submittedPoolMap.has(String(id))) {
+          submittedPoolMap.set(String(id), it);
         }
       }
     }
 
-    for (const it of submittedRawItems) {
-      const id = getResId(it);
-      if (id && !allCandidateItemsMap.has(String(id))) {
-        allCandidateItemsMap.set(String(id), it);
-      }
-    }
-
-    const postSubmissionPool = Array.from(allCandidateItemsMap.values());
-
     return {
-      submitted: buildItems(
-        (statusDrilldown?.submitted && statusDrilldown.submitted.length > 0)
-          ? statusDrilldown.submitted
-          : (performanceSubmittedItems.length > 0 ? performanceSubmittedItems : submittedResumes),
-        "submitted",
-      ),
+      submitted: buildItems(Array.from(submittedPoolMap.values()), "submitted"),
       verified: buildItems(statusDrilldown?.verified || [], "verified"),
       others: buildItems(statusDrilldown?.others || [], "others"),
       walk_in: buildItems(statusDrilldown?.walk_in || [], "walk_in"),

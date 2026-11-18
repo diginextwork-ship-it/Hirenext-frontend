@@ -451,9 +451,30 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       });
     };
 
+    const submittedPoolMap = new Map();
+    const getResId = (it) =>
+      it?.resId ?? it?.res_id ?? it?.resumeId ?? it?.resume_id;
+
+    if (Array.isArray(statusDrilldown.submitted)) {
+      for (const it of statusDrilldown.submitted) {
+        const id = getResId(it);
+        if (id) submittedPoolMap.set(String(id), it);
+      }
+    }
+    // Every candidate in any statusDrilldown bucket (e.g. rejected, verified, walk_in) was originally submitted
+    for (const [, bucketArr] of Object.entries(statusDrilldown || {})) {
+      if (!Array.isArray(bucketArr)) continue;
+      for (const it of bucketArr) {
+        const id = getResId(it);
+        if (id && !submittedPoolMap.has(String(id))) {
+          submittedPoolMap.set(String(id), it);
+        }
+      }
+    }
+
     return {
       submitted: buildItems(
-        Array.isArray(statusDrilldown.submitted) ? statusDrilldown.submitted : [],
+        Array.from(submittedPoolMap.values()),
         "submitted",
       ),
       verified: buildItems(
