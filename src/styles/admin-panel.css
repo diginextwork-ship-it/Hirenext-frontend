@@ -1,11 +1,13 @@
 .admin-page {
   min-height: 80vh;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: clamp(1.5rem, 3vw, 3rem) clamp(0.75rem, 1.5vw, 1.75rem);
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-family: var(--font-body);
   color: var(--text-primary);
-  overflow-x: visible;
+  overflow-x: clip;
 }
 
 .admin-panel-page {
@@ -287,10 +289,37 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .admin-page-body > * {
   min-width: 0;
+  max-width: 100%;
+}
+
+.perf-overview,
+.perf-person-detail {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.perf-section {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 1.75rem;
+}
+
+.perf-section > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .admin-page-actions {
@@ -981,7 +1010,10 @@
   gap: 14px;
   margin-bottom: 1.75rem;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .perf-stat-card {
@@ -2355,6 +2387,8 @@
   gap: 14px;
   margin-bottom: 1.5rem;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -4001,6 +4035,8 @@ select.admin-filter-select {
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
   max-height: min(82vh, 660px) !important;
   min-height: 380px !important;
   overflow-y: auto !important;
