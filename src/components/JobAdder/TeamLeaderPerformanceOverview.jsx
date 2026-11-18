@@ -213,7 +213,7 @@ const getCandidateEmail = (item) =>
 const getNoteForStatus = (item, statusValue) => {
   const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
   const byStatus = {
-    submitted: item?.submittedReason,
+    submitted: item?.submittedReason || item?.recruiterNote,
     verified: item?.verifiedReason || item?.selectionNote,
     others: item?.othersReason || item?.selectionNote,
     walk_in: item?.walkInReason || item?.selectionNote,
@@ -226,7 +226,18 @@ const getNoteForStatus = (item, statusValue) => {
     left: item?.leftReason || item?.selectionNote,
   };
 
-  return byStatus[status] || item?.latestNote || item?.note || item?.selectionNote;
+  const statusNote = String(byStatus[status] || "").trim();
+  const recruiterNote = String(item?.recruiterNote || item?.submittedReason || "").trim();
+
+  if (status === "submitted") {
+    return recruiterNote || statusNote || item?.latestNote || item?.note || "";
+  }
+
+  if (statusNote && recruiterNote && statusNote !== recruiterNote) {
+    return `Recruiter Note: ${recruiterNote}\n\n${formatStatusLabel(status)} Note: ${statusNote}`;
+  }
+
+  return statusNote || recruiterNote || item?.latestNote || item?.note || item?.selectionNote || "";
 };
 
 const getNoteAuthor = (item, statusValue) => {

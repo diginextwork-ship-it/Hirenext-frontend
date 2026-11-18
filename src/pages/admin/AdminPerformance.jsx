@@ -117,6 +117,7 @@ const STATUS_CARDS = [
 const PERSON_METRIC_CARDS = [
   { key: "submitted", label: "Submitted", tone: "submitted" },
   { key: "verified", label: "Verified", tone: "green" },
+  { key: "others", label: "Others", tone: "teal" },
   { key: "walk_in", label: "Verified Walk-in", tone: "green" },
   { key: "shortlisted", label: "Shortlisted", tone: "blue" },
   { key: "selected", label: "Selected", tone: "purple" },
@@ -421,7 +422,7 @@ function getCandidateDisplayName(item) {
 function getPerformanceNoteForStatus(item, statusValue) {
   const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
   const byStatus = {
-    submitted: item?.submittedReason,
+    submitted: item?.submittedReason || item?.recruiterNote,
     verified: item?.verifiedReason || item?.selectionNote,
     others: item?.othersReason || item?.selectionNote,
     walk_in: item?.walkInReason || item?.selectionNote,
@@ -434,11 +435,30 @@ function getPerformanceNoteForStatus(item, statusValue) {
     left: item?.leftReason || item?.selectionNote,
   };
 
-  if (Object.prototype.hasOwnProperty.call(byStatus, status)) {
-    return byStatus[status];
+  const statusNote = normalizeNoteText(byStatus[status]);
+  const recruiterNote = normalizeNoteText(
+    item?.recruiterNote ||
+    item?.submittedReason ||
+    item?.candidateNote
+  );
+
+  if (status === "submitted") {
+    return recruiterNote || statusNote || item?.latestNote || item?.note || null;
   }
 
-  return item?.latestNote || item?.note || item?.selectionNote;
+  if (statusNote && recruiterNote && statusNote !== recruiterNote) {
+    return `Recruiter Note: ${recruiterNote}\n\n${formatStatusLabel(status)} Note: ${statusNote}`;
+  }
+
+  if (statusNote) {
+    return statusNote;
+  }
+
+  if (recruiterNote) {
+    return recruiterNote;
+  }
+
+  return item?.latestNote || item?.note || item?.selectionNote || null;
 }
 
 const normalizeNoteText = (value) => String(value ?? "").trim();
@@ -446,9 +466,16 @@ const normalizeNoteText = (value) => String(value ?? "").trim();
 function resolveNoteAuthor(item, noteValue, statusValue) {
   const note = normalizeNoteText(noteValue);
   if (!note) return "-";
+  if (note.includes("Recruiter Note:")) {
+    return `${item?.recruiterName || "Recruiter"} & Team Leader / Admin`;
+  }
   const status = normalizeStatus(statusValue || item?.currentStatus || item?.status);
 
-  if (status === "submitted" || note === normalizeNoteText(item?.submittedReason)) {
+  if (
+    status === "submitted" ||
+    note === normalizeNoteText(item?.submittedReason) ||
+    note === normalizeNoteText(item?.recruiterNote)
+  ) {
     return item?.recruiterName || "Recruiter";
   }
 
@@ -1792,6 +1819,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     const baseMetrics = () => ({
       submitted: 0,
       verified: 0,
+      others: 0,
       walk_in: 0,
       shortlisted: 0,
       selected: 0,
@@ -1840,6 +1868,7 @@ export default function AdminPerformance({ setCurrentPage }) {
 
     incrementFromBucket("submitted", statusItemsByStatus.submitted);
     incrementFromBucket("verified", statusItemsByStatus.verified);
+    incrementFromBucket("others", statusItemsByStatus.others);
     incrementFromBucket("walk_in", statusItemsByStatus.walk_in);
     incrementFromBucket("shortlisted", statusItemsByStatus.shortlisted);
     incrementFromBucket("selected", statusItemsByStatus.selected);
@@ -1857,6 +1886,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       teamLeaderMetricMap.get(selectedTeamLeader.rid) || {
         submitted: 0,
         verified: 0,
+        others: 0,
         walk_in: 0,
         shortlisted: 0,
         selected: 0,
@@ -2542,6 +2572,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               : "Joining Info"}
                         </th>
                       )}
+                    <th>Note / Reason</th>
                     {hasAnyRowActions && <th>Actions</th>}
                   </tr>
                 </thead>
@@ -2654,6 +2685,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                               )}
                             </td>
                           )}
+                        <td>
+                          {renderNoteButton(
+                            item,
+                            getPerformanceNoteForStatus(item, selectedStatusKey),
+                            selectedStatusKey,
+                          )}
+                        </td>
                         {hasAnyRowActions && (
                           <td>
                             {rowHasActions ? (
