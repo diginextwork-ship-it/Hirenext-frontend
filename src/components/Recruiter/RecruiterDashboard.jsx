@@ -71,6 +71,7 @@ const STATUS_PROGRESS_RANK = {
   verified: 1,
   others: 1,
   walk_in: 2,
+  didnt_turn_up: 2,
   shortlisted: 3,
   selected: 4,
   joined: 5,
@@ -112,6 +113,15 @@ const mapStatusToFilter = (status) => {
   if (normalized === "verified") return "verified";
   if (normalized === "others") return "others";
   if (normalized === "walk in" || normalized === "walk_in") return "walk_in";
+  if (
+    normalized === "didnt_turn_up" ||
+    normalized === "did_not_turn_up" ||
+    normalized === "didnt turn up" ||
+    normalized === "didn't turn up" ||
+    normalized === "didntturnup"
+  ) {
+    return "didnt_turn_up";
+  }
   if (
     normalized === "shortlisted" ||
     normalized === "pending_joining" ||
@@ -442,6 +452,8 @@ export default function RecruiterDashboard({ recruiterId }) {
         eventDate = resume.submittedAt || resume.uploadedAt || resume.createdAt;
       } else if (normalizedStatus === "walk_in") {
         eventDate = resume.walkInDate || resume.walkInAt || resume.workflowUpdatedAt;
+      } else if (normalizedStatus === "didnt_turn_up") {
+        eventDate = resume.didntTurnUpAt || resume.didnt_turn_up_at || resume.workflowUpdatedAt;
       } else if (normalizedStatus === "others") {
         eventDate = resume.othersAt || resume.workflowUpdatedAt;
       } else if (normalizedStatus === "rejected") {
@@ -728,6 +740,13 @@ export default function RecruiterDashboard({ recruiterId }) {
               onClick={() => handleStatusCardClick("walk_in")}
             />
             <PerformanceMetricCard
+              title="Didn't Turn Up"
+              color="orange"
+              value={toDisplay(data.stats?.didnt_turn_up)}
+              clickable
+              onClick={() => handleStatusCardClick("didnt_turn_up")}
+            />
+            <PerformanceMetricCard
               title="Shortlisted"
               color="blue"
               value={toDisplay(data.stats?.shortlisted)}
@@ -872,6 +891,8 @@ export default function RecruiterDashboard({ recruiterId }) {
                         ? "Others Reason"
                         : activeStatus === "walk_in"
                         ? "Walk In Reason"
+                        : activeStatus === "didnt_turn_up"
+                        ? "Didn't Turn Up Reason"
                         : activeStatus === "shortlisted"
                           ? "Shortlist Reason"
                           : activeStatus === "selected"
@@ -892,6 +913,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                     <th>Submitted At</th>
                     <th>Updated</th>
                     {activeStatus === "walk_in" && <th>Walk-in Date</th>}
+                    {activeStatus === "didnt_turn_up" && <th>Didn't Turn Up Date</th>}
                     {(activeStatus === "selected" ||
                       activeStatus === "joined" ||
                       activeStatus === "billed" ||
@@ -906,6 +928,11 @@ export default function RecruiterDashboard({ recruiterId }) {
                       currentReasonField = resume.othersReason;
                     } else if (activeStatus === "walk_in") {
                       currentReasonField = resume.walkInReason;
+                    } else if (activeStatus === "didnt_turn_up") {
+                      currentReasonField =
+                        resume.didntTurnUpReason ||
+                        resume.didnt_turn_up_reason ||
+                        resume.workflowNote;
                     } else if (activeStatus === "shortlisted") {
                       currentReasonField =
                         resume.shortlistedReason ||
@@ -991,6 +1018,9 @@ export default function RecruiterDashboard({ recruiterId }) {
                         {activeStatus === "walk_in" && (
                           <td>{formatDate(resume.walkInDate)}</td>
                         )}
+                        {activeStatus === "didnt_turn_up" && (
+                          <td>{formatDate(resume.didntTurnUpAt || resume.didnt_turn_up_at || resume.workflowUpdatedAt)}</td>
+                        )}
                         {(activeStatus === "selected" ||
                           activeStatus === "joined" ||
                           activeStatus === "billed" ||
@@ -1032,7 +1062,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                           >
                             Take Action
                           </button>
-                          {activeStatus === "others" ? (
+                          {activeStatus === "others" || activeStatus === "didnt_turn_up" ? (
                             <button
                               type="button"
                               className="action-btn action-btn-warning"

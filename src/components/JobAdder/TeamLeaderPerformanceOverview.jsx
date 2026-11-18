@@ -33,6 +33,7 @@ const STATUS_CARDS = [
   { key: "verified", label: "Verified", summaryKey: "totalVerified", tone: "green" },
   { key: "others", label: "Others", summaryKey: "totalOthers", tone: "teal" },
   { key: "walk_in", label: "Walk In", summaryKey: "totalWalkIn", tone: "green" },
+  { key: "didnt_turn_up", label: "Didn't Turn Up", summaryKey: "totalDidntTurnUp", tone: "orange" },
   { key: "shortlisted", label: "Shortlisted", summaryKey: "totalShortlisted", tone: "blue" },
   { key: "selected", label: "Selected", summaryKey: "totalSelected", tone: "purple" },
   { key: "rejected", label: "Rejected", summaryKey: "totalRejected", tone: "red" },
@@ -50,6 +51,7 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
   ],
   verified: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
     { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
@@ -59,6 +61,12 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
   ],
   walk_in: [
     { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  didnt_turn_up: [
+    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   shortlisted: [
@@ -80,6 +88,7 @@ const ROLLBACKABLE_STATUSES = new Set([
   "others",
   "verified",
   "walk_in",
+  "didnt_turn_up",
   "shortlisted",
   "selected",
   "joined",
@@ -94,6 +103,7 @@ const STATUS_PROGRESS_RANK = {
   verified: 1,
   others: 1,
   walk_in: 2,
+  didnt_turn_up: 2,
   shortlisted: 3,
   selected: 4,
   joined: 5,
@@ -176,6 +186,14 @@ const normalizeStatus = (value) => {
     .replace(/[\s-]+/g, "_");
 
   if (normalized === "walkin") return "walk_in";
+  if (
+    normalized === "didnt_turn_up" ||
+    normalized === "did_not_turn_up" ||
+    normalized === "didntturnup" ||
+    normalized === "didn't_turn_up"
+  ) {
+    return "didnt_turn_up";
+  }
   if (normalized === "select") return "selected";
   if (normalized === "pendingjoining" || normalized === "pending_joining") {
     return "shortlisted";
@@ -217,6 +235,7 @@ const getNoteForStatus = (item, statusValue) => {
     verified: item?.verifiedReason || item?.selectionNote,
     others: item?.othersReason || item?.selectionNote,
     walk_in: item?.walkInReason || item?.selectionNote,
+    didnt_turn_up: item?.didntTurnUpReason || item?.didnt_turn_up_reason || item?.selectionNote,
     shortlisted: item?.shortlistedReason || item?.selectionNote,
     selected: item?.selectReason || item?.selectionNote,
     joined: item?.joiningNote || item?.joinedReason || item?.selectionNote,
@@ -489,6 +508,10 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         Array.isArray(statusDrilldown.walk_in) ? statusDrilldown.walk_in : [],
         "walk_in",
       ),
+      didnt_turn_up: buildItems(
+        Array.isArray(statusDrilldown.didnt_turn_up) ? statusDrilldown.didnt_turn_up : [],
+        "didnt_turn_up",
+      ),
       shortlisted: buildItems(
         Array.isArray(statusDrilldown.shortlisted) ? statusDrilldown.shortlisted : [],
         "shortlisted",
@@ -546,6 +569,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       totalVerified: getCount("verified"),
       totalOthers: getCount("others"),
       totalWalkIn: getCount("walk_in"),
+      totalDidntTurnUp: getCount("didnt_turn_up"),
       totalShortlisted: getCount("shortlisted"),
       totalSelected: getCount("selected"),
       totalRejected: getCount("rejected"),
@@ -617,6 +641,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
     const stageDefaultDate =
       (targetStatus === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
+      (targetStatus === "didnt_turn_up" ? (item?.didntTurnUpAt || item?.didnt_turn_up_at) : null) ||
       (targetStatus === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
       toDateStr(new Date());
     setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
@@ -671,6 +696,13 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         payload.note = trimmedReason;
         payload.othersReason = trimmedReason;
         payload.others_reason = trimmedReason;
+      } else if (actionTarget === "didnt_turn_up") {
+        if (trimmedReason) {
+          payload.reason = trimmedReason;
+          payload.note = trimmedReason;
+          payload.didntTurnUpReason = trimmedReason;
+          payload.didnt_turn_up_reason = trimmedReason;
+        }
       } else if (trimmedReason) {
         payload.reason = trimmedReason;
         payload.note = trimmedReason;
@@ -901,7 +933,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                         ? "Verification Date"
                         : selectedStatusKey === "walk_in"
                           ? "Walk-in Date"
-                          : selectedStatusKey === "shortlisted"
+                          : selectedStatusKey === "didnt_turn_up"
+                            ? "Didn't Turn Up Date"
+                            : selectedStatusKey === "shortlisted"
                             ? "Shortlist Date"
                             : selectedStatusKey === "selected"
                               ? "Selection Date"
@@ -987,6 +1021,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                       <td>
                         {formatEventDateOrDateTime(
                           (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                          (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                           (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                           item.eventAt ||
                           (selectedStatusKey === "verified" ? item.verifiedAt : null) ||
@@ -1122,7 +1157,9 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   ? "Verification Date"
                   : actionTarget === "walk_in"
                     ? "Walk-in Date"
-                    : actionTarget === "shortlisted"
+                    : actionTarget === "didnt_turn_up"
+                      ? "Didn't Turn Up Date"
+                      : actionTarget === "shortlisted"
                       ? "Shortlist Date"
                       : actionTarget === "selected"
                         ? "Selection Date"
@@ -1265,7 +1302,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                   </p>
                 )}
               </div>
-            ) : ["rejected", "dropout", "left", "verified", "walk_in", "shortlisted", "billed"].includes(
+            ) : ["rejected", "dropout", "left", "verified", "walk_in", "didnt_turn_up", "shortlisted", "billed"].includes(
                 actionTarget,
               ) ? (
               <div style={{ marginBottom: 10 }}>

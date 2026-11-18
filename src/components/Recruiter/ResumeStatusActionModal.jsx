@@ -63,6 +63,7 @@ export default function ResumeStatusActionModal({
     if (normalized === "verified") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },
+        { value: "didnt_turn_up", label: "Didn't Turn Up", color: "warning" },
         { value: "others", label: "Others", color: "info" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
@@ -70,6 +71,19 @@ export default function ResumeStatusActionModal({
     if (normalized === "others") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },
+        { value: "rejected", label: "Reject", color: "danger" },
+      ];
+    }
+    if (normalized === "walk_in") {
+      return [
+        { value: "didnt_turn_up", label: "Didn't Turn Up", color: "warning" },
+        { value: "rejected", label: "Reject", color: "danger" },
+      ];
+    }
+    if (normalized === "didnt_turn_up") {
+      return [
+        { value: "walk_in", label: "Walk In", color: "success" },
+        { value: "others", label: "Others", color: "info" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }
@@ -85,6 +99,7 @@ export default function ResumeStatusActionModal({
 
   const getReasonFieldLabel = () => {
     if (selectedAction === "walk_in") return "Walk In Reason";
+    if (selectedAction === "didnt_turn_up") return "Didn't Turn Up Reason";
     if (selectedAction === "others") return "Others Reason";
     if (selectedAction === "selected") return "Selection Reason";
     if (selectedAction === "joined") return "Joining Reason";
@@ -102,6 +117,8 @@ export default function ResumeStatusActionModal({
     const todayStr = toDateStr();
     if (actionValue === "walk_in") {
       setCustomDate(resume?.walkInDate || todayStr);
+    } else if (actionValue === "didnt_turn_up") {
+      setCustomDate(resume?.didntTurnUpAt || todayStr);
     } else if (actionValue === "joined") {
       setCustomDate(resume?.joiningDate || todayStr);
       setJoiningDate(resume?.joiningDate || todayStr);
@@ -161,6 +178,12 @@ export default function ResumeStatusActionModal({
                     ? {
                         othersReason: additionalInfo.trim(),
                         others_reason: additionalInfo.trim(),
+                      }
+                    : {}),
+                  ...(selectedAction === "didnt_turn_up"
+                    ? {
+                        didntTurnUpReason: additionalInfo.trim(),
+                        didnt_turn_up_reason: additionalInfo.trim(),
                       }
                     : {}),
                 }
@@ -275,7 +298,9 @@ export default function ResumeStatusActionModal({
                     <label htmlFor="custom-date-input">
                       {selectedAction === "walk_in"
                         ? "Walk In Date"
-                        : selectedAction === "others"
+                        : selectedAction === "didnt_turn_up"
+                          ? "Didn't Turn Up Date"
+                          : selectedAction === "others"
                           ? "Others Date"
                           : selectedAction === "rejected"
                             ? "Rejection Date"

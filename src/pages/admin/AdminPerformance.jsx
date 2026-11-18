@@ -71,6 +71,12 @@ const STATUS_CARDS = [
     tone: "green",
   },
   {
+    key: "didnt_turn_up",
+    label: "Didn't Turn Up",
+    summaryKey: "totalDidntTurnUp",
+    tone: "orange",
+  },
+  {
     key: "shortlisted",
     label: "Shortlisted",
     summaryKey: "totalShortlisted",
@@ -119,6 +125,7 @@ const PERSON_METRIC_CARDS = [
   { key: "verified", label: "Verified", tone: "green" },
   { key: "others", label: "Others", tone: "teal" },
   { key: "walk_in", label: "Verified Walk-in", tone: "green" },
+  { key: "didnt_turn_up", label: "Didn't Turn Up", tone: "orange" },
   { key: "shortlisted", label: "Shortlisted", tone: "blue" },
   { key: "selected", label: "Selected", tone: "purple" },
   { key: "rejected", label: "Rejected", tone: "red" },
@@ -138,6 +145,7 @@ const ADMIN_ACTIONS_BY_STATUS = {
   ],
   verified: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
     { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
@@ -147,6 +155,12 @@ const ADMIN_ACTIONS_BY_STATUS = {
   ],
   walk_in: [
     { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
+  ],
+  didnt_turn_up: [
+    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   shortlisted: [
@@ -173,6 +187,7 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "others",
   "verified",
   "walk_in",
+  "didnt_turn_up",
   "selected",
   "rejected",
   "shortlisted",
@@ -184,9 +199,10 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
 
 const ALLOWED_TRANSITIONS = {
   submitted: ["verified", "others", "rejected"],
-  verified: ["walk_in", "others", "rejected"],
+  verified: ["walk_in", "didnt_turn_up", "others", "rejected"],
   others: ["walk_in", "rejected"],
-  walk_in: ["shortlisted", "rejected"],
+  walk_in: ["shortlisted", "didnt_turn_up", "rejected"],
+  didnt_turn_up: ["walk_in", "others", "rejected"],
   shortlisted: ["selected", "dropout", "rejected"],
   selected: ["joined", "dropout"],
   rejected: ["joined"],
@@ -201,6 +217,7 @@ const resolveRollbackTargetStatus = (item) => {
   if (currentStatus === "walk_in") {
     return item?.othersReason ? "others" : "verified";
   }
+  if (currentStatus === "didnt_turn_up") return "verified";
   if (currentStatus === "verified") return "submitted";
   if (currentStatus === "shortlisted") return "walk_in";
   if (currentStatus === "selected") return "shortlisted";
@@ -426,6 +443,7 @@ function getPerformanceNoteForStatus(item, statusValue) {
     verified: item?.verifiedReason || item?.selectionNote,
     others: item?.othersReason || item?.selectionNote,
     walk_in: item?.walkInReason || item?.selectionNote,
+    didnt_turn_up: item?.didntTurnUpReason || item?.didnt_turn_up_reason || item?.selectionNote,
     shortlisted: item?.shortlistedReason || item?.selectionNote,
     selected: item?.selectReason || item?.selectionNote,
     joined: item?.joiningNote || item?.joinedReason || item?.selectionNote,
@@ -499,6 +517,14 @@ function normalizeStatus(value) {
 
   if (normalized === "walkin") return "walk_in";
   if (normalized === "walk_in") return "walk_in";
+  if (
+    normalized === "didnt_turn_up" ||
+    normalized === "did_not_turn_up" ||
+    normalized === "didntturnup" ||
+    normalized === "didn't_turn_up"
+  ) {
+    return "didnt_turn_up";
+  }
   if (normalized === "select") return "selected";
   if (normalized === "pendingjoining") return "shortlisted";
   if (normalized === "pending_joining") return "shortlisted";
@@ -566,6 +592,7 @@ const STATUS_PROGRESS_RANK = {
   verified: 1,
   others: 1,
   walk_in: 2,
+  didnt_turn_up: 2,
   shortlisted: 3,
   selected: 4,
   joined: 5,
@@ -711,6 +738,13 @@ function hasCandidatePassedStage(item, targetStage) {
           item?.walk_in_date ||
           item?.walkInReason ||
           item?.walk_in_reason
+        );
+      case "didnt_turn_up":
+        return Boolean(
+          item?.didntTurnUpAt ||
+          item?.didnt_turn_up_at ||
+          item?.didntTurnUpReason ||
+          item?.didnt_turn_up_reason
         );
       case "shortlisted":
         return Boolean(
@@ -1798,6 +1832,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       verified: buildItems(statusDrilldown?.verified || [], "verified"),
       others: buildItems(statusDrilldown?.others || [], "others"),
       walk_in: buildItems(statusDrilldown?.walk_in || [], "walk_in"),
+      didnt_turn_up: buildItems(statusDrilldown?.didnt_turn_up || [], "didnt_turn_up"),
       shortlisted: buildItems(statusDrilldown?.shortlisted || [], "shortlisted"),
       selected: buildItems(statusDrilldown?.selected || [], "selected"),
       rejected: buildItems(statusDrilldown?.rejected || [], "rejected"),
@@ -1818,6 +1853,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       verified: 0,
       others: 0,
       walk_in: 0,
+      didnt_turn_up: 0,
       shortlisted: 0,
       selected: 0,
       rejected: 0,
@@ -1867,6 +1903,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     incrementFromBucket("verified", statusItemsByStatus.verified);
     incrementFromBucket("others", statusItemsByStatus.others);
     incrementFromBucket("walk_in", statusItemsByStatus.walk_in);
+    incrementFromBucket("didnt_turn_up", statusItemsByStatus.didnt_turn_up);
     incrementFromBucket("shortlisted", statusItemsByStatus.shortlisted);
     incrementFromBucket("selected", statusItemsByStatus.selected);
     incrementFromBucket("rejected", statusItemsByStatus.rejected);
@@ -1885,6 +1922,7 @@ export default function AdminPerformance({ setCurrentPage }) {
         verified: 0,
         others: 0,
         walk_in: 0,
+        didnt_turn_up: 0,
         shortlisted: 0,
         selected: 0,
         rejected: 0,
@@ -1954,6 +1992,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       totalVerified: getCount("verified"),
       totalOthers: getCount("others"),
       totalWalkIn: getCount("walk_in"),
+      totalDidntTurnUp: getCount("didnt_turn_up"),
       totalShortlisted: getCount("shortlisted"),
       totalSelected: getCount("selected"),
       totalRejected: getCount("rejected"),
@@ -2063,6 +2102,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionError("");
     const stageDefaultDate =
       (targetStatus === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
+      (targetStatus === "didnt_turn_up" ? (item?.didntTurnUpAt || item?.didnt_turn_up_at) : null) ||
       (targetStatus === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
       toDateStr(new Date());
     setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
@@ -2239,6 +2279,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                 reason: normalizedReason || null,
                 ...(actionTarget === "others"
                   ? { othersReason: normalizedReason || null, others_reason: normalizedReason || null }
+                  : {}),
+                ...(actionTarget === "didnt_turn_up"
+                  ? { didntTurnUpReason: normalizedReason || null, didnt_turn_up_reason: normalizedReason || null }
                   : {}),
               }
               : {}),
@@ -2537,7 +2580,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                           ? "Verification Date"
                           : selectedStatusKey === "walk_in"
                             ? "Walk-in Date"
-                            : selectedStatusKey === "shortlisted"
+                            : selectedStatusKey === "didnt_turn_up"
+                              ? "Didn't Turn Up Date"
+                              : selectedStatusKey === "shortlisted"
                               ? "Shortlist Date"
                               : selectedStatusKey === "selected"
                                 ? "Selection Date"
@@ -2633,6 +2678,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           <td>
                             {formatEventDate(
                               (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                              (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                               (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                               (selectedStatusKey === "selected" ? item.selectedAt : null) ||
                               item.eventAt ||
@@ -2986,7 +3032,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                             ? "Verification Date"
                             : selectedStatusKey === "walk_in"
                               ? "Walk-in Date"
-                              : selectedStatusKey === "shortlisted"
+                              : selectedStatusKey === "didnt_turn_up"
+                                ? "Didn't Turn Up Date"
+                                : selectedStatusKey === "shortlisted"
                                 ? "Shortlist Date"
                                 : selectedStatusKey === "selected"
                                   ? "Selection Date"
@@ -3081,6 +3129,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             <td>
                               {formatEventDate(
                                 (selectedStatusKey === "walk_in" ? (item.walkInDate || item.walkInAt) : null) ||
+                                (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                                 (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                                 (selectedStatusKey === "selected" ? item.selectedAt : null) ||
                                 item.eventAt ||
@@ -4314,7 +4363,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                   ? "Verification Date"
                   : actionTarget === "walk_in"
                     ? "Walk-in Date"
-                    : actionTarget === "shortlisted"
+                    : actionTarget === "didnt_turn_up"
+                      ? "Didn't Turn Up Date"
+                      : actionTarget === "shortlisted"
                       ? "Shortlist Date"
                       : actionTarget === "selected"
                         ? "Selection Date"
@@ -4618,7 +4669,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                     ? "Rejection Reason (optional)"
                     : actionTarget === "verified"
                       ? "Verification Note (optional)"
-                      : actionTarget === "shortlisted"
+                      : actionTarget === "didnt_turn_up"
+                        ? "Didn't Turn Up Reason (optional)"
+                        : actionTarget === "shortlisted"
                         ? "Shortlist Reason (optional)"
                         : actionTarget === "selected"
                           ? "Selection Reason (optional)"
@@ -4743,6 +4796,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                   <option value="verified">Verified</option>
                   <option value="others">Others</option>
                   <option value="walk_in">Walk In</option>
+                  <option value="didnt_turn_up">Didn't Turn Up</option>
                   <option value="shortlisted">Shortlisted</option>
                   <option value="selected">Selected</option>
                   <option value="joined">Joined</option>
