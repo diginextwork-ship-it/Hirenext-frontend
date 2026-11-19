@@ -397,6 +397,27 @@ export default function RecruiterDashboard({ recruiterId }) {
     return Array.from(byResId.values()).map(({ resume }) => resume);
   }, [matchesAppliedDateRange, statusResumes]);
 
+  const didntTurnUpResumes = useMemo(() => {
+    const byResId = new Map();
+    for (const resume of Array.isArray(statusResumes) ? statusResumes : []) {
+      const resId = String(
+        resume?.resId ?? resume?.res_id ?? resume?.resumeId ?? resume?.resume_id ?? "",
+      ).trim();
+      const status = normalizeStatusValue(
+        resume?.workflowStatus || resume?.workflow_status || resume?.status,
+      );
+      if (status !== "didnt_turn_up") continue;
+      const eventDate =
+        resume?.didntTurnUpAt ||
+        resume?.didnt_turn_up_at ||
+        resume?.workflowUpdatedAt ||
+        resume?.submittedAt;
+      if (!resId || !matchesAppliedDateRange(eventDate)) continue;
+      byResId.set(resId, resume);
+    }
+    return Array.from(byResId.values());
+  }, [matchesAppliedDateRange, statusResumes]);
+
   const filteredStatusResumes = useMemo(() => {
     const normalizedStatus = normalizeStatusValue(activeStatus);
     if (normalizedStatus === "others") {
@@ -742,7 +763,11 @@ export default function RecruiterDashboard({ recruiterId }) {
             <PerformanceMetricCard
               title="Didn't Turn Up"
               color="orange"
-              value={toDisplay(data.stats?.didnt_turn_up)}
+              value={toDisplay(
+                data.stats?.didnt_turn_up !== undefined && data.stats?.didnt_turn_up !== null
+                  ? data.stats.didnt_turn_up
+                  : didntTurnUpResumes.length
+              )}
               clickable
               onClick={() => handleStatusCardClick("didnt_turn_up")}
             />
