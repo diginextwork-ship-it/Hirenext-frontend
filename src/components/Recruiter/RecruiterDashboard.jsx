@@ -1087,7 +1087,7 @@ export default function RecruiterDashboard({ recruiterId }) {
                           >
                             Take Action
                           </button>
-                          {activeStatus === "others" || activeStatus === "didnt_turn_up" ? (
+                          {activeStatus === "others" || activeStatus === "didnt_turn_up" || activeStatus === "walk_in" ? (
                             <button
                               type="button"
                               className="action-btn action-btn-warning"

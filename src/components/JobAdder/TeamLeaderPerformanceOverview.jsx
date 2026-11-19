@@ -51,7 +51,6 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
   ],
   verified: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
     { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
@@ -66,7 +65,6 @@ const TEAM_LEADER_ACTIONS_BY_STATUS = {
   ],
   didnt_turn_up: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   shortlisted: [

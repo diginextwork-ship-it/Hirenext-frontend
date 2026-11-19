@@ -63,7 +63,6 @@ export default function ResumeStatusActionModal({
     if (normalized === "verified") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },
-        { value: "didnt_turn_up", label: "Didn't Turn Up", color: "warning" },
         { value: "others", label: "Others", color: "info" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
@@ -76,6 +75,7 @@ export default function ResumeStatusActionModal({
     }
     if (normalized === "walk_in") {
       return [
+        { value: "shortlisted", label: "Shortlisted", color: "primary" },
         { value: "didnt_turn_up", label: "Didn't Turn Up", color: "warning" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
@@ -83,7 +83,6 @@ export default function ResumeStatusActionModal({
     if (normalized === "didnt_turn_up") {
       return [
         { value: "walk_in", label: "Walk In", color: "success" },
-        { value: "others", label: "Others", color: "info" },
         { value: "rejected", label: "Reject", color: "danger" },
       ];
     }

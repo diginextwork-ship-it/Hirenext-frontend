@@ -153,7 +153,6 @@ const ADMIN_ACTIONS_BY_STATUS = {
   ],
   verified: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
     { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
@@ -168,7 +167,6 @@ const ADMIN_ACTIONS_BY_STATUS = {
   ],
   didnt_turn_up: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "others", label: "Others", color: "#0d9488" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   shortlisted: [
@@ -214,10 +212,10 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
 
 const ALLOWED_TRANSITIONS = {
   submitted: ["verified", "others", "rejected"],
-  verified: ["walk_in", "didnt_turn_up", "others", "rejected"],
+  verified: ["walk_in", "others", "rejected"],
   others: ["walk_in", "rejected"],
   walk_in: ["shortlisted", "didnt_turn_up", "rejected"],
-  didnt_turn_up: ["walk_in", "others", "rejected"],
+  didnt_turn_up: ["walk_in", "rejected"],
   shortlisted: ["selected", "dropout", "rejected"],
   selected: ["pending", "joined", "dropout"],
   pending: ["joined", "dropout", "rejected"],
@@ -233,7 +231,7 @@ const resolveRollbackTargetStatus = (item) => {
   if (currentStatus === "walk_in") {
     return item?.othersReason ? "others" : "verified";
   }
-  if (currentStatus === "didnt_turn_up") return "verified";
+  if (currentStatus === "didnt_turn_up") return "walk_in";
   if (currentStatus === "verified") return "submitted";
   if (currentStatus === "shortlisted") return "walk_in";
   if (currentStatus === "selected") return "shortlisted";
@@ -730,6 +728,16 @@ function hasCandidatePassedStage(item, targetStage) {
   const currentStatus = normalizeStatus(
     item?.currentStatus || item?.workflowStatus || item?.status,
   );
+
+  // Pending: includes all active candidates who are shortlisted, selected, or pending.
+  // When they move anywhere else (e.g. joined, dropout, rejected, rollback), they leave pending.
+  if (target === "pending") {
+    return (
+      currentStatus === "pending" ||
+      currentStatus === "selected" ||
+      currentStatus === "shortlisted"
+    );
+  }
 
   // If candidate is currently at this stage, they belong in this stage
   if (currentStatus === target) return true;
@@ -1869,7 +1877,33 @@ export default function AdminPerformance({ setCurrentPage }) {
       didnt_turn_up: buildItems(statusDrilldown?.didnt_turn_up || [], "didnt_turn_up"),
       shortlisted: buildItems(statusDrilldown?.shortlisted || [], "shortlisted"),
       selected: buildItems(statusDrilldown?.selected || [], "selected"),
-      pending: buildItems(statusDrilldown?.pending || [], "pending"),
+      pending: buildItems(
+        (() => {
+          const map = new Map();
+          for (const it of statusDrilldown?.pending || []) {
+            const id = getResId(it);
+            if (id) map.set(String(id), it);
+          }
+          for (const it of statusDrilldown?.selected || []) {
+            const id = getResId(it);
+            if (id && !map.has(String(id))) map.set(String(id), it);
+          }
+          for (const it of statusDrilldown?.shortlisted || []) {
+            const id = getResId(it);
+            if (id && !map.has(String(id))) map.set(String(id), it);
+          }
+          return Array.from(map.values()).filter((it) => {
+            const cur = normalizeStatus(
+              statusOverrides[it?.resId] ||
+                it?.currentStatus ||
+                it?.workflowStatus ||
+                it?.status,
+            );
+            return cur === "shortlisted" || cur === "selected" || cur === "pending";
+          });
+        })(),
+        "pending",
+      ),
       rejected: buildItems(statusDrilldown?.rejected || [], "rejected"),
       joined: buildItems(statusDrilldown?.joined || [], "joined"),
       dropout: buildItems(statusDrilldown?.dropout || [], "dropout"),
@@ -2755,7 +2789,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                               (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                               (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                               (selectedStatusKey === "selected" ? item.selectedAt : null) ||
-                              (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at) : null) ||
+                              (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at || item.selectedAt || item.shortlistedAt) : null) ||
                               item.eventAt ||
                               item[`${selectedStatusKey}At`]
                             )}
@@ -3209,7 +3243,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 (selectedStatusKey === "didnt_turn_up" ? (item.didntTurnUpAt || item.didnt_turn_up_at) : null) ||
                                 (selectedStatusKey === "joined" ? (item.joiningDate || item.joinedAt) : null) ||
                                 (selectedStatusKey === "selected" ? item.selectedAt : null) ||
-                                (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at) : null) ||
+                                (selectedStatusKey === "pending" ? (item.pendingAt || item.pending_at || item.selectedAt || item.shortlistedAt) : null) ||
                                 item.eventAt ||
                                 item[`${selectedStatusKey}At`]
                               )}
