@@ -26,7 +26,8 @@ function getPresetDates(preset) {
     }
     case FILTER_PRESETS.THIS_MONTH: {
       const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { startDate: toDateStr(first), endDate: toDateStr(now) };
+      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { startDate: toDateStr(first), endDate: toDateStr(last) };
     }
     case FILTER_PRESETS.LAST_MONTH: {
       const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -51,6 +52,7 @@ export default function EmployeeRankingWidget({
   onSelectTeam,
   layout = "horizontal",
   activeRecruiterRids,
+  defaultPreset = FILTER_PRESETS.THIS_MONTH,
 }) {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function EmployeeRankingWidget({
     setInternalTeam(selectedTeamKey);
   };
 
-  const [filterPreset, setFilterPreset] = useState(FILTER_PRESETS.ALL_TIME);
+  const [filterPreset, setFilterPreset] = useState(defaultPreset);
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
@@ -375,9 +377,9 @@ export default function EmployeeRankingWidget({
 
           <div className="top3-timeline-pills">
             {[
-              { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
               { key: FILTER_PRESETS.THIS_MONTH, label: "This Month" },
               { key: FILTER_PRESETS.TODAY, label: "Today" },
+              { key: FILTER_PRESETS.ALL_TIME, label: "All Time" },
             ].map((p) => (
               <button
                 key={p.key}
