@@ -3007,45 +3007,6 @@ export default function AdminPerformance({ setCurrentPage }) {
         <EmployeeRankingWidget layout="horizontal" activeRecruiterRids={activeRecruiterRids} />
       </div>
 
-      {/* Inactive Recruiters Resumes Section (Directly above timeline filter) */}
-      <div className="perf-inactive-recruiter-bar">
-        <div className="perf-inactive-recruiter-left">
-          <div className="perf-inactive-icon-box">📁</div>
-          <div>
-            <h4 className="perf-inactive-title">Ex-Recruiters / Inactive Staff</h4>
-            <p className="perf-inactive-desc">
-              Review candidate resumes uploaded by recruiters who have left or been deactivated
-            </p>
-          </div>
-        </div>
-        <div className="perf-inactive-recruiter-controls">
-          <select
-            className="perf-inactive-select"
-            value={selectedInactiveRid}
-            onChange={(e) => setSelectedInactiveRid(e.target.value)}
-          >
-            <option value="">
-              {inactiveRecruiters.length === 0
-                ? "No inactive recruiters found"
-                : `-- Select Inactive Recruiter (${inactiveRecruiters.length}) --`}
-            </option>
-            {inactiveRecruiters.map((rec) => (
-              <option key={rec.rid} value={rec.rid}>
-                {rec.name || rec.rid} ({rec.team || "Team BPO"}) — {rec.rid}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="perf-view-resumes-btn"
-            onClick={handleViewInactiveResumes}
-            disabled={!selectedInactiveRid}
-          >
-            📄 View Resumes
-          </button>
-        </div>
-      </div>
-
       {/* Timeline filter */}
       <div className="perf-timeline-bar">
         <div className="perf-timeline-presets">
@@ -4406,6 +4367,45 @@ export default function AdminPerformance({ setCurrentPage }) {
           )}
         </div>
       )}
+
+      {/* Inactive Recruiters Resumes Section (At the bottom of the page) */}
+      <div className="perf-inactive-recruiter-bar" style={{ marginTop: 32, marginBottom: 24 }}>
+        <div className="perf-inactive-recruiter-left">
+          <div className="perf-inactive-icon-box">📁</div>
+          <div>
+            <h4 className="perf-inactive-title">Ex-Recruiters / Inactive Staff</h4>
+            <p className="perf-inactive-desc">
+              Review candidate resumes uploaded by recruiters who have left or been deactivated
+            </p>
+          </div>
+        </div>
+        <div className="perf-inactive-recruiter-controls">
+          <select
+            className="perf-inactive-select"
+            value={selectedInactiveRid}
+            onChange={(e) => setSelectedInactiveRid(e.target.value)}
+          >
+            <option value="">
+              {inactiveRecruiters.length === 0
+                ? "No inactive recruiters found"
+                : `-- Select Inactive Recruiter (${inactiveRecruiters.length}) --`}
+            </option>
+            {inactiveRecruiters.map((rec) => (
+              <option key={rec.rid} value={rec.rid}>
+                {rec.name || rec.rid} ({rec.team || "Team BPO"}) — {rec.rid}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="perf-view-resumes-btn"
+            onClick={handleViewInactiveResumes}
+            disabled={!selectedInactiveRid}
+          >
+            📄 View Resumes
+          </button>
+        </div>
+      </div>
 
       {statusTarget ? (
         <div
