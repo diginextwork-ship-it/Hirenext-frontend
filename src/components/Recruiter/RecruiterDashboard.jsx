@@ -202,8 +202,41 @@ function matchesCandidateSearch(item, searchValue) {
   const candidateName = getResumeCandidateName(item);
   if (
     candidateName !== "N/A" &&
+    candidateName !== "-" &&
     normalizeLookupKey(candidateName).includes(normalizedSearch)
   ) {
+    return true;
+  }
+
+  const companyName = getResumeCompanyName(item);
+  if (
+    companyName !== "N/A" &&
+    companyName !== "-" &&
+    normalizeLookupKey(companyName).includes(normalizedSearch)
+  ) {
+    return true;
+  }
+
+  const cityName = getResumeCityName(item);
+  if (
+    cityName !== "N/A" &&
+    cityName !== "-" &&
+    normalizeLookupKey(cityName).includes(normalizedSearch)
+  ) {
+    return true;
+  }
+
+  const companyValues = [
+    item?.companyName,
+    item?.company_name,
+    item?.company,
+    item?.job?.companyName,
+    item?.job?.company_name,
+    item?.roleName,
+    item?.role_name,
+    item?.jobTitle,
+  ];
+  if (companyValues.some((val) => val && normalizeLookupKey(val).includes(normalizedSearch))) {
     return true;
   }
 
@@ -866,22 +899,54 @@ export default function RecruiterDashboard({ recruiterId }) {
               Close
             </button>
           </div>
-          <div className="perf-inline-search">
+          <div className="perf-inline-search" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <input
               type="text"
               className="perf-search perf-search-wide"
-              placeholder="Search by candidate name or phone..."
+              placeholder="Search by candidate name, phone or company..."
               value={candidateSearch}
               onChange={(event) => setCandidateSearch(event.target.value)}
             />
             {normalizeLookupKey(candidateSearch) ? (
-              <button
-                type="button"
-                className="admin-back-btn"
-                onClick={() => setCandidateSearch("")}
-              >
-                Clear
-              </button>
+              <>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "6px 14px",
+                    borderRadius: "6px",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    backgroundColor:
+                      filteredStatusResumes.length > 0
+                        ? "#ecfdf5"
+                        : "#fef2f2",
+                    color:
+                      filteredStatusResumes.length > 0
+                        ? "#047857"
+                        : "#b91c1c",
+                    border: `1px solid ${
+                      filteredStatusResumes.length > 0
+                        ? "#a7f3d0"
+                        : "#fecaca"
+                    }`,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {filteredStatusResumes.length}{" "}
+                  {filteredStatusResumes.length === 1
+                    ? "record found"
+                    : "records found"}
+                </span>
+                <button
+                  type="button"
+                  className="admin-back-btn"
+                  onClick={() => setCandidateSearch("")}
+                >
+                  Clear
+                </button>
+              </>
             ) : null}
           </div>
           {statusLoading ? (

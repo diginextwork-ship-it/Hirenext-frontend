@@ -567,6 +567,33 @@ function matchesCandidateSearch(item, searchValue) {
     return true;
   }
 
+  const companyDisplay = formatResumeCompanyDisplay(item);
+  if (
+    companyDisplay &&
+    companyDisplay !== "-" &&
+    companyDisplay !== "N/A" &&
+    normalizeLookupKey(companyDisplay).includes(normalizedSearch)
+  ) {
+    return true;
+  }
+
+  const companyValues = [
+    item?.companyName,
+    item?.company_name,
+    item?.company,
+    item?.job?.companyName,
+    item?.job?.company_name,
+    item?.jobTitle,
+    item?.roleName,
+    item?.role_name,
+    item?.officeLocationCity,
+    item?.office_location_city,
+    item?.city,
+  ];
+  if (companyValues.some((val) => val && normalizeLookupKey(val).includes(normalizedSearch))) {
+    return true;
+  }
+
   const digitsOnlySearch = normalizedSearch.replace(/\D/g, "");
   if (digitsOnlySearch) {
     const phones = [item?.candidatePhone, item?.phone].map((p) =>
@@ -3093,22 +3120,54 @@ export default function AdminPerformance({ setCurrentPage }) {
           </div>
 
           <div className="perf-section">
-            <div className="perf-inline-search">
+            <div className="perf-inline-search" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               <input
                 type="text"
                 className="perf-search perf-search-wide"
-                placeholder="Search by candidate name or phone..."
+                placeholder="Search by candidate name, phone or company..."
                 value={recruiterEntrySearch}
                 onChange={(e) => setRecruiterEntrySearch(e.target.value)}
               />
               {normalizeLookupKey(recruiterEntrySearch) ? (
-                <button
-                  type="button"
-                  className="admin-back-btn"
-                  onClick={() => setRecruiterEntrySearch("")}
-                >
-                  Clear
-                </button>
+                <>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      backgroundColor:
+                        filteredSelectedStatusItems.length > 0
+                          ? "#ecfdf5"
+                          : "#fef2f2",
+                      color:
+                        filteredSelectedStatusItems.length > 0
+                          ? "#047857"
+                          : "#b91c1c",
+                      border: `1px solid ${
+                        filteredSelectedStatusItems.length > 0
+                          ? "#a7f3d0"
+                          : "#fecaca"
+                      }`,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {filteredSelectedStatusItems.length}{" "}
+                    {filteredSelectedStatusItems.length === 1
+                      ? "record found"
+                      : "records found"}
+                  </span>
+                  <button
+                    type="button"
+                    className="admin-back-btn"
+                    onClick={() => setRecruiterEntrySearch("")}
+                  >
+                    Clear
+                  </button>
+                </>
               ) : null}
             </div>
             <div
@@ -3126,8 +3185,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                   : `${formatStatusLabel(selectedStatusKey)} Resume List`}
               </h3>
               <span className="admin-muted">
-                {filteredSelectedStatusItems.length} item
-                {filteredSelectedStatusItems.length === 1 ? "" : "s"}
+                {normalizeLookupKey(recruiterEntrySearch)
+                  ? `${filteredSelectedStatusItems.length} record${filteredSelectedStatusItems.length === 1 ? "" : "s"} found`
+                  : `${filteredSelectedStatusItems.length} item${filteredSelectedStatusItems.length === 1 ? "" : "s"}`}
               </span>
             </div>
             {filteredSelectedStatusItems.length > 0 ? (
@@ -3336,7 +3396,7 @@ export default function AdminPerformance({ setCurrentPage }) {
             ) : (
               <p className="admin-chart-empty" style={{ marginTop: "16px" }}>
                 {normalizeLookupKey(recruiterEntrySearch)
-                  ? `No resumes found for recruiter "${recruiterEntrySearch.trim()}" in ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`
+                  ? `No resumes found matching "${recruiterEntrySearch.trim()}" in ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`
                   : `No resumes found for ${selectedStatusKey === "submitted" ? "Resumes Submitted" : formatStatusLabel(selectedStatusKey)}.`}
               </p>
             )}
