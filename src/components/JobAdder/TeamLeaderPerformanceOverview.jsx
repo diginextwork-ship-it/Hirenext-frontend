@@ -499,18 +499,42 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     const getResId = (it) =>
       it?.resId ?? it?.res_id ?? it?.resumeId ?? it?.resume_id;
 
+    const isSubmittedWithinRange = (item) => {
+      if (!dateRange) return true;
+      const rawDate =
+        item?.submittedAt ||
+        item?.submitted_at ||
+        item?.uploadedAt ||
+        item?.uploaded_at ||
+        item?.createdAt ||
+        item?.created_at;
+      if (!rawDate) return false;
+      const str = String(rawDate).trim();
+      const ymd = str.slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        if (dateRange.start && dateRange.end) {
+          return ymd >= dateRange.start && ymd <= dateRange.end;
+        }
+      }
+      const parsed = new Date(str.includes(" ") ? str.replace(" ", "T") : str);
+      if (Number.isNaN(parsed.getTime())) return false;
+      const start = new Date(`${dateRange.start}T00:00:00`);
+      const end = new Date(`${dateRange.end}T23:59:59.999`);
+      return parsed >= start && parsed <= end;
+    };
+
     if (Array.isArray(statusDrilldown.submitted)) {
       for (const it of statusDrilldown.submitted) {
         const id = getResId(it);
         if (id) submittedPoolMap.set(String(id), it);
       }
     }
-    // Every candidate in any statusDrilldown bucket (e.g. rejected, verified, walk_in) was originally submitted
+    // Only include candidates from other buckets if they were actually submitted within the active date range
     for (const [, bucketArr] of Object.entries(statusDrilldown || {})) {
       if (!Array.isArray(bucketArr)) continue;
       for (const it of bucketArr) {
         const id = getResId(it);
-        if (id && !submittedPoolMap.has(String(id))) {
+        if (id && !submittedPoolMap.has(String(id)) && isSubmittedWithinRange(it)) {
           submittedPoolMap.set(String(id), it);
         }
       }
@@ -566,7 +590,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         "left",
       ),
     };
-  }, [latestStatusByResId, statusDrilldown]);
+  }, [dateRange, latestStatusByResId, statusDrilldown]);
   const selectedStatusItems = useMemo(
     () => statusItemsByStatus[selectedStatusKey] || [],
     [selectedStatusKey, statusItemsByStatus],
