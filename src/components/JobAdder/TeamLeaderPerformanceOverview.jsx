@@ -592,10 +592,14 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
 
   const getRowActionState = useCallback(
     (item) => {
-      const effectiveStatus = normalizeStatus(
+      const itemStatus = normalizeStatus(
         item?.currentStatus || item?.status,
       );
-      const effectiveRank = getStatusRank(effectiveStatus);
+      const stageKey =
+        selectedStatusKey && selectedStatusKey !== "submitted" && selectedStatusKey !== "all"
+          ? selectedStatusKey
+          : itemStatus;
+      const effectiveRank = getStatusRank(itemStatus);
       const isPreviousStageView =
         selectedStatusRank >= 0 &&
         effectiveRank >= 0 &&
@@ -604,16 +608,16 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
       if (isPreviousStageView) {
         return {
           availableActions: [],
-          canRollback: ROLLBACKABLE_STATUSES.has(effectiveStatus),
+          canRollback: ROLLBACKABLE_STATUSES.has(itemStatus),
         };
       }
 
       return {
-        availableActions: TEAM_LEADER_ACTIONS_BY_STATUS[effectiveStatus] || [],
-        canRollback: ROLLBACKABLE_STATUSES.has(effectiveStatus),
+        availableActions: TEAM_LEADER_ACTIONS_BY_STATUS[stageKey] || TEAM_LEADER_ACTIONS_BY_STATUS[itemStatus] || [],
+        canRollback: ROLLBACKABLE_STATUSES.has(stageKey) || ROLLBACKABLE_STATUSES.has(itemStatus),
       };
     },
-    [selectedStatusRank],
+    [selectedStatusKey, selectedStatusRank],
   );
 
   const hasAnyRowActions = useMemo(

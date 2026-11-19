@@ -848,11 +848,12 @@ function hasCandidatePassedStage(item, targetStage) {
     }
   };
 
-  if (hasStageRecord(target)) return true;
-
   const targetIndex = LINEAR_STAGES.indexOf(target);
   if (targetIndex !== -1) {
     const currentIndex = LINEAR_STAGES.indexOf(currentStatus);
+    if (currentIndex !== -1 && currentIndex < targetIndex) {
+      return false;
+    }
     if (currentIndex > targetIndex) {
       if (target === "verified" && hasStageRecord("others") && !hasStageRecord("verified")) {
         return false;
@@ -871,10 +872,12 @@ function hasCandidatePassedStage(item, targetStage) {
 
     if (currentStatus === "rejected") {
       if (item?.joiningDate && targetIndex <= 4) return true;
-      if ((item?.walkInDate || item?.walkInReason || item?.walkInAt) && targetIndex <= 2) return true;
+      if ((item?.walkInReason || item?.walkInAt) && targetIndex <= 2) return true;
       if ((item?.verifiedReason || item?.verifiedAt) && targetIndex <= 1) return true;
     }
   }
+
+  if (hasStageRecord(target)) return true;
 
   return false;
 }
@@ -2273,10 +2276,14 @@ export default function AdminPerformance({ setCurrentPage }) {
       actionModalItem.currentStatus || actionModalItem.status,
     );
     const normalizedTarget = normalizeStatus(actionTarget);
-    const allowedTargets = ALLOWED_TRANSITIONS[currentStatus] || [];
+    const activeStage =
+      selectedStatusKey && selectedStatusKey !== "submitted" && selectedStatusKey !== "all"
+        ? selectedStatusKey
+        : currentStatus;
+    const allowedTargets = ALLOWED_TRANSITIONS[activeStage] || ALLOWED_TRANSITIONS[currentStatus] || [];
     if (!allowedTargets.includes(normalizedTarget)) {
       setActionError(
-        `Frontend blocked an invalid transition from '${currentStatus || "unknown"}' to '${normalizedTarget}'. Refresh the table if this row looks stale.`,
+        `Frontend blocked an invalid transition from '${activeStage || currentStatus || "unknown"}' to '${normalizedTarget}'. Refresh the table if this row looks stale.`,
       );
       return;
     }
@@ -2445,10 +2452,14 @@ export default function AdminPerformance({ setCurrentPage }) {
 
   const getRowActionState = useCallback(
     (item) => {
-      const effectiveStatus = normalizeStatus(
+      const itemStatus = normalizeStatus(
         item?.currentStatus || item?.status,
       );
-      const effectiveRank = getStatusRank(effectiveStatus);
+      const stageKey =
+        selectedStatusKey && selectedStatusKey !== "submitted" && selectedStatusKey !== "all"
+          ? selectedStatusKey
+          : itemStatus;
+      const effectiveRank = getStatusRank(itemStatus);
       const isPreviousStageView =
         selectedStatusRank >= 0 &&
         effectiveRank >= 0 &&
@@ -2456,15 +2467,15 @@ export default function AdminPerformance({ setCurrentPage }) {
       if (isPreviousStageView) {
         return {
           availableActions: [],
-          canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
+          canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(itemStatus),
         };
       }
       return {
-        availableActions: ADMIN_ACTIONS_BY_STATUS[effectiveStatus] || [],
-        canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus),
+        availableActions: ADMIN_ACTIONS_BY_STATUS[stageKey] || ADMIN_ACTIONS_BY_STATUS[itemStatus] || [],
+        canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(stageKey) || ROLLBACKABLE_ADMIN_STATUSES.has(itemStatus),
       };
     },
-    [selectedStatusRank],
+    [selectedStatusKey, selectedStatusRank],
   );
 
   const hasAnyRowActions = useMemo(
