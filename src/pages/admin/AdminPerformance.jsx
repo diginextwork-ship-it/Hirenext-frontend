@@ -33,6 +33,7 @@ import {
   formatDateInIndia,
   formatDateTimeInIndia,
   formatEventDateOrDateTime,
+  parseDateTimeValue,
 } from "../../utils/dateTime";
 import "../../styles/admin-panel.css";
 import EmployeeRankingWidget from "../../components/Recruiter/EmployeeRankingWidget";
@@ -547,7 +548,7 @@ function getJoiningMonthName(items) {
         item?.joinedAt ||
         item?.eventAt;
       if (d) {
-        const parsed = parseDateTimeValue(d);
+        const parsed = parseDateTimeValue(d) || new Date(d);
         if (parsed && !Number.isNaN(parsed.getTime())) {
           return parsed.toLocaleString("en-US", { month: "long" });
         }
@@ -567,7 +568,7 @@ function getSelectionMonthName(items) {
         item?.currentJoiningDate ||
         item?.eventAt;
       if (d) {
-        const parsed = parseDateTimeValue(d);
+        const parsed = parseDateTimeValue(d) || new Date(d);
         if (parsed && !Number.isNaN(parsed.getTime())) {
           return parsed.toLocaleString("en-US", { month: "long" });
         }
