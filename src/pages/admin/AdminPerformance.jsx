@@ -2989,7 +2989,20 @@ export default function AdminPerformance({ setCurrentPage }) {
     }
 
     const monthName = getJoiningMonthName(items);
-    const topRow = ["", "", "", "", monthName, "", "", ""];
+    const topRow = ["", "", "", "", monthName, "", "", "", "", "", ""];
+    const headerRow = [
+      "",
+      "S.No",
+      "Date",
+      "Name",
+      "Number",
+      "Company",
+      "Process",
+      "Location",
+      "Recruiter",
+      "Notes",
+      "Amount",
+    ];
 
     const dataRows = items.map((item, idx) => {
       const rev =
@@ -3004,19 +3017,30 @@ export default function AdminPerformance({ setCurrentPage }) {
         item.joinedAt ||
         item.eventAt;
 
+      const noteVal =
+        normalizeNoteText(item.joiningNote) ||
+        normalizeNoteText(item.joinedReason) ||
+        normalizeNoteText(getPerformanceNoteForStatus(item, "joined")) ||
+        normalizeNoteText(item.selectionNote) ||
+        normalizeNoteText(item.note) ||
+        "";
+
       return [
-        rev ? Number(rev) : "",
+        "",
         idx + 1,
         formatJoiningDateForExcel(joiningDateVal),
         getCandidateDisplayName(item),
         item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "",
         formatResumeCompanyDisplay(item) || item.companyName || "-",
+        item.process || item.processName || "",
         item.city || item.job?.city || item.location || "-",
         item.recruiterName || item.recruiter || "-",
+        noteVal,
+        rev ? Number(rev) : "",
       ];
     });
 
-    const ws = XLSX.utils.aoa_to_sheet([topRow, ...dataRows]);
+    const ws = XLSX.utils.aoa_to_sheet([topRow, headerRow, ...dataRows]);
 
     const thinBorder = {
       top: { style: "thin", color: { rgb: "D9D9D9" } },
@@ -3025,7 +3049,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       right: { style: "thin", color: { rgb: "D9D9D9" } },
     };
 
-    const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
 
     // Style top month row
     colLetters.forEach((col) => {
@@ -3046,9 +3070,28 @@ export default function AdminPerformance({ setCurrentPage }) {
       }
     });
 
-    // Style data rows
+    // Style header row (Row 2)
+    colLetters.forEach((col) => {
+      const cellRef = `${col}2`;
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+      ws[cellRef].s = {
+        font: {
+          name: "Calibri",
+          sz: 11,
+          bold: true,
+          color: { rgb: "000000" },
+        },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: thinBorder,
+      };
+      if (col !== "A") {
+        ws[cellRef].s.fill = { fgColor: { rgb: "BDD7EE" } };
+      }
+    });
+
+    // Style data rows (Row 3 onwards)
     items.forEach((item, rowIdx) => {
-      const rowNum = rowIdx + 2;
+      const rowNum = rowIdx + 3;
       colLetters.forEach((col) => {
         const cellRef = `${col}${rowNum}`;
         if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
@@ -3061,14 +3104,17 @@ export default function AdminPerformance({ setCurrentPage }) {
     });
 
     ws["!cols"] = [
-      { wch: 12 }, // Revenue
-      { wch: 8 },  // S.NO
-      { wch: 14 }, // DATE
-      { wch: 28 }, // NAME
-      { wch: 18 }, // CONTACT NUMBER
-      { wch: 22 }, // COMPANY
-      { wch: 20 }, // LOCATION
-      { wch: 18 }, // RECRUITER
+      { wch: 4 },  // A
+      { wch: 8 },  // B: S.No
+      { wch: 12 }, // C: Date
+      { wch: 28 }, // D: Name
+      { wch: 16 }, // E: Number
+      { wch: 30 }, // F: Company
+      { wch: 16 }, // G: Process
+      { wch: 18 }, // H: Location
+      { wch: 22 }, // I: Recruiter
+      { wch: 20 }, // J: Notes
+      { wch: 14 }, // K: Amount
     ];
 
     const wb = XLSX.utils.book_new();
