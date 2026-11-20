@@ -1078,6 +1078,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   const [actionModalItem, setActionModalItem] = useState(null);
   const [actionTarget, setActionTarget] = useState("");
   const [actionReason, setActionReason] = useState("");
+  const [actionProcess, setActionProcess] = useState("");
   const [actionContacted, setActionContacted] = useState("Yes");
   const [actionSituation, setActionSituation] = useState("");
   const [actionJoiningDate, setActionJoiningDate] = useState("");
@@ -2370,6 +2371,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionModalItem(item);
     setActionTarget(targetStatus);
     setActionReason("");
+    setActionProcess(item?.process || item?.selectionProcess || item?.processName || "");
     setActionContacted("Yes");
     setActionSituation("");
     setActionJoiningDate(item?.joiningDate || item?.currentJoiningDate || "");
@@ -2395,6 +2397,7 @@ export default function AdminPerformance({ setCurrentPage }) {
     setActionModalItem(null);
     setActionTarget("");
     setActionReason("");
+    setActionProcess("");
     setActionContacted("Yes");
     setActionSituation("");
     setActionJoiningDate("");
@@ -2562,6 +2565,9 @@ export default function AdminPerformance({ setCurrentPage }) {
           : {
             status: actionTarget,
             custom_date: actionCustomDate || null,
+            ...(actionTarget === "shortlisted" && actionProcess.trim()
+              ? { process: actionProcess.trim(), process_name: actionProcess.trim() }
+              : {}),
             ...buildCandidatePayloadAliases(actionModalItem),
             ...(!["selected"].includes(actionTarget)
               ? {
@@ -2844,6 +2850,134 @@ export default function AdminPerformance({ setCurrentPage }) {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Walk-in");
     const fileName = `Walk_In_Candidates_${toDateStr(new Date())}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  const handleDownloadShortlistedXlsx = (customItems = null) => {
+    const items = customItems || filteredSelectedStatusItems || [];
+    if (!items || items.length === 0) {
+      window.alert("No shortlisted candidate records available to download.");
+      return;
+    }
+
+    const headers = [
+      "S.NO",
+      "DATE",
+      "NAME",
+      "CONTACT NUMBER",
+      "COMPANY",
+      "LOCATION",
+      "PROCESS",
+      "RECRUITER",
+      "STATUS",
+      "NOTE",
+    ];
+
+    const dataRows = items.map((item, idx) => {
+      const shortlistDateVal =
+        item.shortlistedAt ||
+        item.shortlisted_at ||
+        item.eventAt ||
+        item.submittedAt ||
+        item.createdAt;
+
+      const currentStatus = normalizeStatus(item.currentStatus || item.status || "shortlisted");
+      const latestNote =
+        normalizeNoteText(getPerformanceNoteForStatus(item, currentStatus)) ||
+        normalizeNoteText(item.shortlistedReason) ||
+        normalizeNoteText(item.selectionNote) ||
+        normalizeNoteText(item.note) ||
+        normalizeNoteText(item.latestNote) ||
+        "-";
+
+      return [
+        idx + 1,
+        formatWalkInDateForExcel(shortlistDateVal),
+        getCandidateDisplayName(item),
+        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "-",
+        formatResumeCompanyDisplay(item) || item.companyName || "-",
+        item.city || item.job?.city || item.location || "-",
+        item.process || item.processName || "-",
+        item.recruiterName || item.recruiter || "-",
+        formatExcelWalkInStatus(currentStatus),
+        latestNote,
+      ];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+
+    const thinBorder = {
+      top: { style: "thin", color: { rgb: "D9D9D9" } },
+      bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+      left: { style: "thin", color: { rgb: "D9D9D9" } },
+      right: { style: "thin", color: { rgb: "D9D9D9" } },
+    };
+
+    const headerStyle = {
+      fill: { fgColor: { rgb: "BDD7EE" } },
+      font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "000000" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: thinBorder,
+    };
+
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+    colLetters.forEach((col) => {
+      const cellRef = `${col}1`;
+      if (ws[cellRef]) {
+        ws[cellRef].s = headerStyle;
+      }
+    });
+
+    items.forEach((item, rowIdx) => {
+      const rowNum = rowIdx + 2;
+      const rowColor = getStatusRowColor(item.currentStatus || item.status);
+      colLetters.forEach((col, colIdx) => {
+        const cellRef = `${col}${rowNum}`;
+        if (!ws[cellRef]) return;
+        const isCenter =
+          colIdx === 0 ||
+          colIdx === 1 ||
+          colIdx === 3 ||
+          colIdx === 5 ||
+          colIdx === 6 ||
+          colIdx === 7 ||
+          colIdx === 8;
+        const cellStyle = {
+          font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
+          alignment: {
+            horizontal: isCenter ? "center" : "left",
+            vertical: "center",
+            wrapText: colIdx === 9,
+          },
+          border: thinBorder,
+        };
+        if (rowColor) {
+          cellStyle.fill = { fgColor: { rgb: rowColor } };
+        } else {
+          cellStyle.fill = { fgColor: { rgb: "FFFFFF" } };
+        }
+        ws[cellRef].s = cellStyle;
+      });
+    });
+
+    ws["!cols"] = [
+      { wch: 8 },  // S.NO
+      { wch: 14 }, // DATE
+      { wch: 28 }, // NAME
+      { wch: 18 }, // CONTACT NUMBER
+      { wch: 22 }, // COMPANY
+      { wch: 18 }, // LOCATION
+      { wch: 20 }, // PROCESS
+      { wch: 20 }, // RECRUITER
+      { wch: 18 }, // STATUS
+      { wch: 35 }, // NOTE
+    ];
+
+    ws["!autofilter"] = { ref: `A1:J${dataRows.length + 1}` };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Shortlisted");
+    const fileName = `Shortlisted_Candidates_${toDateStr(new Date())}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -3193,12 +3327,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                   ? "Submitted Resume List"
                   : `${formatStatusLabel(selectedStatusKey)} Resume List`}
               </h3>
-              {["walk_in", "selected", "joined"].includes(selectedStatusKey) && (
+              {["walk_in", "shortlisted", "selected", "joined"].includes(selectedStatusKey) && (
                 <button
                   type="button"
                   onClick={() => {
                     if (selectedStatusKey === "joined") handleDownloadJoinedXlsx(personStatusItems);
                     else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx(personStatusItems);
+                    else if (selectedStatusKey === "shortlisted") handleDownloadShortlistedXlsx(personStatusItems);
                     else handleDownloadWalkInXlsx(personStatusItems);
                   }}
                   className="admin-refresh-btn"
@@ -3284,6 +3419,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                                           ? "Exit Date"
                                           : `${formatStatusLabel(selectedStatusKey)} Date`}
                       </th>
+                    )}
+                    {selectedStatusKey === "shortlisted" && (
+                      <th style={{ minWidth: "150px" }}>Process</th>
                     )}
                     {[
                       "dropout",
@@ -3372,6 +3510,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                               item[`${selectedStatusKey}At`]
                             )}
                           </td>
+                        )}
+                        {selectedStatusKey === "shortlisted" && (
+                          <td>{item.process || item.processName || "-"}</td>
                         )}
                         {[
                           "dropout",
@@ -3686,12 +3827,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                     ? "Submitted Resume List"
                     : `${formatStatusLabel(selectedStatusKey)} Resume List`}
                 </h3>
-                {["walk_in", "selected", "joined"].includes(selectedStatusKey) && (
+                {["walk_in", "shortlisted", "selected", "joined"].includes(selectedStatusKey) && (
                   <button
                     type="button"
                     onClick={() => {
                       if (selectedStatusKey === "joined") handleDownloadJoinedXlsx();
                       else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx();
+                      else if (selectedStatusKey === "shortlisted") handleDownloadShortlistedXlsx();
                       else handleDownloadWalkInXlsx();
                     }}
                     className="admin-refresh-btn"
@@ -3777,6 +3919,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                                             ? "Exit Date"
                                             : `${formatStatusLabel(selectedStatusKey)} Date`}
                         </th>
+                      )}
+                      {selectedStatusKey === "shortlisted" && (
+                        <th style={{ minWidth: "150px" }}>Process</th>
                       )}
                       {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
                         <th>{selectedStatusKey === "selected" ? "Tentative Joining Date" : "Joining Date"}</th>
@@ -3864,6 +4009,9 @@ export default function AdminPerformance({ setCurrentPage }) {
                                 item[`${selectedStatusKey}At`]
                               )}
                             </td>
+                          )}
+                          {selectedStatusKey === "shortlisted" && (
+                            <td>{item.process || item.processName || "-"}</td>
                           )}
                           {["selected", "joined", "billed", "left"].includes(selectedStatusKey) && (
                             <td>{item.joiningDate ? formatDate(item.joiningDate) : "-"}</td>
@@ -5423,6 +5571,58 @@ export default function AdminPerformance({ setCurrentPage }) {
                     />
                   </div>
                 )}
+              </>
+            ) : actionTarget === "shortlisted" ? (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Process (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={actionProcess}
+                    onChange={(e) => setActionProcess(e.target.value)}
+                    placeholder="Enter process..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Shortlist Reason (optional)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder="Enter reason..."
+                    disabled={actionSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
               </>
             ) : (
               <div style={{ marginBottom: "10px" }}>
