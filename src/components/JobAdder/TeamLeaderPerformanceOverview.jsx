@@ -711,35 +711,8 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
     setActionError("");
   };
 
-  const switchActionTarget = (newTarget) => {
-    setActionTarget(newTarget);
-    setActionError("");
-    if (newTarget === "rollback") return;
-    const item = actionModalItem;
-    const stageDefaultDate =
-      (newTarget === "walk_in" ? (item?.walkInDate || item?.walk_in_date) : null) ||
-      (newTarget === "didnt_turn_up" ? (item?.didntTurnUpAt || item?.didnt_turn_up_at) : null) ||
-      (newTarget === "joined" ? (item?.joiningDate || item?.currentJoiningDate) : null) ||
-      toDateStr(new Date());
-    setActionCustomDate(stageDefaultDate || toDateStr(new Date()));
-  };
-
-  const openApplyActionModal = (item) => {
-    const rowActionState = getRowActionState(item);
-    const initialTarget =
-      rowActionState.availableActions[0]?.value ||
-      (rowActionState.canRollback ? "rollback" : "");
-    openActionModal(item, initialTarget);
-  };
-
   const handleAdvanceStatus = async () => {
     if (!actionModalItem?.jobJid || !actionModalItem?.resId || !actionTarget) return;
-    if (actionTarget === "rollback") {
-      const itemToRollback = actionModalItem;
-      closeActionModal();
-      await handleRollback(itemToRollback);
-      return;
-    }
 
     setActionSubmitting(true);
     setActionError("");
@@ -1169,23 +1142,35 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                               flexWrap: "wrap",
                             }}
                           >
-                            <button
-                              type="button"
-                              className="admin-refresh-btn"
-                              style={{
-                                backgroundColor: "#2563eb",
-                                color: "#fff",
-                                border: "none",
-                                fontWeight: 600,
-                                padding: "6px 14px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                              }}
-                              onClick={() => openApplyActionModal(item)}
-                            >
-                              Apply Action
-                            </button>
+                            {rowActionState.availableActions.map((action) => (
+                              <button
+                                key={action.value}
+                                type="button"
+                                className="admin-refresh-btn"
+                                style={{
+                                  backgroundColor: action.color,
+                                  color: "#fff",
+                                  border: "none",
+                                }}
+                                onClick={() => openActionModal(item, action.value)}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                            {rowActionState.canRollback ? (
+                              <button
+                                type="button"
+                                className="admin-refresh-btn"
+                                style={{
+                                  backgroundColor: "#111827",
+                                  color: "#fff",
+                                  border: "none",
+                                }}
+                                onClick={() => handleRollback(item)}
+                              >
+                                Rollback
+                              </button>
+                            ) : null}
                             {selectedStatusKey !== "verified" &&
                             selectedStatusKey !== "rejected" ? (
                               <button
@@ -1215,7 +1200,7 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         )}
       </div>
 
-      {actionModalItem ? (
+      {actionModalItem && actionTarget ? (
         <div
           className="admin-modal-overlay"
           role="dialog"
@@ -1224,161 +1209,27 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
         >
           <div
             className="admin-modal-card"
-            style={{ maxWidth: "560px", width: "95%" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", color: "#0f172a" }}>
-                Apply Action
-              </h3>
-              <button
-                type="button"
-                onClick={closeActionModal}
-                disabled={actionSubmitting}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: "1.2rem",
-                  cursor: "pointer",
-                  color: "#64748b",
-                  padding: "4px 8px",
-                }}
-              >
-                ✕
-              </button>
+            <h3 style={{ marginTop: 0, marginBottom: 10 }}>
+              Move to {formatStatusLabel(actionTarget)}
+            </h3>
+            <div style={{ marginBottom: 12 }}>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Candidate:</strong>{" "}
+                {actionModalItem.candidateName ||
+                  actionModalItem.resumeFilename ||
+                  actionModalItem.resId}
+              </p>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Job ID:</strong> {actionModalItem.jobJid ?? "N/A"}
+              </p>
+              <p className="admin-muted" style={{ margin: 0 }}>
+                <strong>Current Status:</strong>{" "}
+                {formatStatusLabel(actionModalItem.status)}
+              </p>
             </div>
 
-            <div
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "16px",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "8px",
-                fontSize: "0.88rem",
-              }}
-            >
-              <div>
-                <span className="admin-muted" style={{ display: "block", fontSize: "0.8rem" }}>Candidate:</span>
-                <strong>{getCandidateDisplayName(actionModalItem)}</strong>
-              </div>
-              <div>
-                <span className="admin-muted" style={{ display: "block", fontSize: "0.8rem" }}>Phone:</span>
-                <strong>{actionModalItem.candidatePhone || actionModalItem.phone || "-"}</strong>
-              </div>
-              <div>
-                <span className="admin-muted" style={{ display: "block", fontSize: "0.8rem" }}>Current Status:</span>
-                <span className="perf-status-pill" style={{ display: "inline-block", padding: "2px 8px", fontSize: "0.78rem" }}>
-                  {formatStatusLabel(actionModalItem.currentStatus || actionModalItem.status)}
-                </span>
-              </div>
-              <div>
-                <span className="admin-muted" style={{ display: "block", fontSize: "0.8rem" }}>Job ID:</span>
-                <strong>{actionModalItem.jobJid ?? "N/A"}</strong>
-              </div>
-            </div>
-
-            {/* Select Action Button Group */}
-            {(() => {
-              const modalRowActionState = getRowActionState(actionModalItem);
-              return (
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      fontSize: "0.95rem",
-                      marginBottom: "8px",
-                      color: "#1e293b",
-                    }}
-                  >
-                    Select Action
-                  </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {modalRowActionState.availableActions.map((action) => {
-                      const isSelected = actionTarget === action.value;
-                      return (
-                        <button
-                          key={action.value}
-                          type="button"
-                          onClick={() => switchActionTarget(action.value)}
-                          disabled={actionSubmitting}
-                          style={{
-                            padding: "8px 18px",
-                            borderRadius: "8px",
-                            fontWeight: 600,
-                            fontSize: "0.9rem",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                            backgroundColor: isSelected ? action.color : "#ffffff",
-                            color: isSelected ? "#ffffff" : action.color,
-                            border: `2px solid ${action.color}`,
-                            boxShadow: isSelected
-                              ? `0 3px 10px ${action.color}40`
-                              : "none",
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
-                    {modalRowActionState.canRollback && (
-                      <button
-                        type="button"
-                        onClick={() => switchActionTarget("rollback")}
-                        disabled={actionSubmitting}
-                        style={{
-                          padding: "8px 18px",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          fontSize: "0.9rem",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                          backgroundColor: actionTarget === "rollback" ? "#111827" : "#ffffff",
-                          color: actionTarget === "rollback" ? "#ffffff" : "#111827",
-                          border: "2px solid #111827",
-                          boxShadow: actionTarget === "rollback"
-                            ? "0 3px 10px rgba(17, 24, 39, 0.35)"
-                            : "none",
-                        }}
-                      >
-                        Rollback
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {actionTarget === "rollback" ? (
-              <div
-                style={{
-                  padding: "14px 16px",
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                }}
-              >
-                <p style={{ margin: 0, color: "#991b1b", fontWeight: 600, fontSize: "0.95rem" }}>
-                  Rollback to Previous Stage
-                </p>
-                <p style={{ margin: "6px 0 0", color: "#7f1d1d", fontSize: "0.9rem", lineHeight: 1.5 }}>
-                  This will rollback <strong>{getCandidateDisplayName(actionModalItem)}</strong> from{" "}
-                  <strong>{formatStatusLabel(actionModalItem.status)}</strong> back to the previous stage.
-                </p>
-              </div>
-            ) : actionTarget ? (
-              <>
             {/* Custom Date Input for Every Stage */}
             <div style={{ marginBottom: 12 }}>
               <label
@@ -1566,8 +1417,6 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 />
               </div>
             ) : null}
-              </>
-            ) : null}
 
             {actionError ? (
               <div
@@ -1593,29 +1442,13 @@ export default function TeamLeaderPerformanceOverview({ refreshKey = 0 }) {
                 onClick={handleAdvanceStatus}
                 disabled={
                   actionSubmitting ||
-                  !actionTarget ||
                   (actionTarget === "others" && !actionReason.trim()) ||
                   (actionTarget === "selected" && !actionJoiningDate.trim())
                 }
-                style={{
-                  backgroundColor:
-                    actionTarget === "rollback"
-                      ? "#111827"
-                      : (getRowActionState(actionModalItem)?.availableActions?.find((a) => a.value === actionTarget)?.color || "#2563eb"),
-                  color: "#fff",
-                  border: "none",
-                  fontWeight: 600,
-                  padding: "8px 18px",
-                  borderRadius: "6px",
-                }}
               >
                 {actionSubmitting
                   ? "Updating..."
-                  : actionTarget === "rollback"
-                    ? "Confirm Rollback"
-                    : actionTarget
-                      ? `Confirm ${formatStatusLabel(actionTarget)}`
-                      : "Confirm Action"}
+                  : `Confirm ${formatStatusLabel(actionTarget)}`}
               </button>
             </div>
           </div>
