@@ -21,7 +21,7 @@ import {
   adminUpdateRecruitersTargetsBulk,
   exportAdminRecruiterTargets,
 } from "./adminApi";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 import { getAuthSession } from "../../auth/session";
 import {
   buildCandidatePayloadAliases,
@@ -145,53 +145,146 @@ const PERSON_METRIC_CARDS = [
   { key: "points", label: "Points", tone: "teal" },
 ];
 
+const ACTION_DEFS = {
+  verified: { value: "verified", label: "Verified", color: "#2563eb" },
+  others: { value: "others", label: "Others", color: "#0d9488" },
+  walk_in: { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+  didnt_turn_up: { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
+  shortlisted: { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+  selected: { value: "selected", label: "Selected", color: "#9333ea" },
+  pending: { value: "pending", label: "Pending", color: "#0284c7" },
+  rejected: { value: "rejected", label: "Rejected", color: "#dc2626" },
+  joined: { value: "joined", label: "Joined", color: "#16a34a" },
+  dropout: { value: "dropout", label: "Dropout", color: "#db2777" },
+  billed: { value: "billed", label: "Billed", color: "#0d9488" },
+  left: { value: "left", label: "Left", color: "#f97316" },
+};
+
 const ADMIN_ACTIONS_BY_STATUS = {
   submitted: [
-    { value: "verified", label: "Verify", color: "#2563eb" },
-    { value: "others", label: "Others", color: "#0d9488" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.verified,
+    ACTION_DEFS.others,
+    ACTION_DEFS.walk_in,
+    ACTION_DEFS.didnt_turn_up,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   verified: [
-    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "others", label: "Others", color: "#0d9488" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.others,
+    ACTION_DEFS.walk_in,
+    ACTION_DEFS.didnt_turn_up,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   others: [
-    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.walk_in,
+    ACTION_DEFS.didnt_turn_up,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   walk_in: [
-    { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
-    { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.others,
+    ACTION_DEFS.didnt_turn_up,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   didnt_turn_up: [
-    { value: "walk_in", label: "Walk In", color: "#ca8a04" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.walk_in,
+    ACTION_DEFS.others,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   shortlisted: [
-    {
-      value: "selected",
-      label: "Selected",
-      color: "#16a34a",
-    },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.rejected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
   ],
   selected: [
-    { value: "pending", label: "Pending", color: "#2563eb" },
-    { value: "joined", label: "Joined", color: "#16a34a" },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
+    ACTION_DEFS.pending,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
+    ACTION_DEFS.rejected,
   ],
   pending: [
-    { value: "joined", label: "Joined", color: "#16a34a" },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
-    { value: "rejected", label: "Reject", color: "#dc2626" },
+    ACTION_DEFS.selected,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
+    ACTION_DEFS.rejected,
   ],
-  rejected: [{ value: "joined", label: "Joined", color: "#16a34a" }],
+  rejected: [
+    ACTION_DEFS.verified,
+    ACTION_DEFS.others,
+    ACTION_DEFS.walk_in,
+    ACTION_DEFS.didnt_turn_up,
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
+  ],
   joined: [
-    { value: "billed", label: "Billed", color: "#16a34a" },
-    { value: "left", label: "Left", color: "#dc2626" },
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
+    ACTION_DEFS.dropout,
+    ACTION_DEFS.rejected,
+  ],
+  dropout: [
+    ACTION_DEFS.shortlisted,
+    ACTION_DEFS.selected,
+    ACTION_DEFS.pending,
+    ACTION_DEFS.joined,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.left,
+    ACTION_DEFS.rejected,
+  ],
+  billed: [
+    ACTION_DEFS.left,
+    ACTION_DEFS.dropout,
+  ],
+  left: [
+    ACTION_DEFS.joined,
+    ACTION_DEFS.billed,
+    ACTION_DEFS.dropout,
   ],
 };
 
@@ -210,18 +303,12 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "dropout",
 ]);
 
-const ALLOWED_TRANSITIONS = {
-  submitted: ["verified", "others", "rejected"],
-  verified: ["walk_in", "others", "rejected"],
-  others: ["walk_in", "rejected"],
-  walk_in: ["shortlisted", "didnt_turn_up", "rejected"],
-  didnt_turn_up: ["walk_in", "rejected"],
-  shortlisted: ["selected", "dropout", "rejected"],
-  selected: ["pending", "joined", "dropout"],
-  pending: ["joined", "dropout", "rejected"],
-  rejected: ["joined"],
-  joined: ["billed", "left"],
-};
+const ALLOWED_TRANSITIONS = Object.fromEntries(
+  Object.entries(ADMIN_ACTIONS_BY_STATUS).map(([statusKey, actions]) => [
+    statusKey,
+    actions.map((act) => act.value),
+  ]),
+);
 
 const resolveRollbackTargetStatus = (item) => {
   const currentStatus = normalizeStatus(item?.currentStatus || item?.status);
@@ -451,6 +538,121 @@ function getCandidateDisplayName(item) {
     item?.fullName ||
     "-"
   );
+}
+
+function formatWalkInDateForExcel(val) {
+  if (!val) return "-";
+  const str = String(val).trim();
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const [, year, month, day] = m;
+    return `${day}/${month}/${year.slice(-2)}`;
+  }
+  const m2 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (m2) {
+    const [, d, mo, y] = m2;
+    return `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y.slice(-2)}`;
+  }
+  const parsed = parseDateTimeValue(val);
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const year = String(parsed.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  }
+  return str;
+}
+
+function formatJoiningDateForExcel(val) {
+  if (!val) return "-";
+  const str = String(val).trim();
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const [, year, month, day] = m;
+    const dNum = parseInt(day, 10);
+    const mNum = parseInt(month, 10);
+    return `${dNum}/${mNum}/${year.slice(-2)}`;
+  }
+  const m2 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (m2) {
+    const [, d, mo, y] = m2;
+    const dNum = parseInt(d, 10);
+    const mNum = parseInt(mo, 10);
+    return `${dNum}/${mNum}/${y.slice(-2)}`;
+  }
+  const parsed = parseDateTimeValue(val);
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    const day = parsed.getDate();
+    const month = parsed.getMonth() + 1;
+    const year = String(parsed.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  }
+  return str;
+}
+
+function getJoiningMonthName(items) {
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      const d =
+        item?.joiningDate ||
+        item?.currentJoiningDate ||
+        item?.joinedAt ||
+        item?.eventAt;
+      if (d) {
+        const parsed = parseDateTimeValue(d);
+        if (parsed && !Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleString("en-US", { month: "long" });
+        }
+      }
+    }
+  }
+  return new Date().toLocaleString("en-US", { month: "long" });
+}
+
+function getSelectionMonthName(items) {
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      const d =
+        item?.selectedAt ||
+        item?.selectionDate ||
+        item?.joiningDate ||
+        item?.currentJoiningDate ||
+        item?.eventAt;
+      if (d) {
+        const parsed = parseDateTimeValue(d);
+        if (parsed && !Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleString("en-US", { month: "long" });
+        }
+      }
+    }
+  }
+  return new Date().toLocaleString("en-US", { month: "long" });
+}
+
+function formatExcelWalkInStatus(status) {
+  const s = String(status || "").toLowerCase().trim();
+  if (s === "didnt_turn_up" || s.includes("turn up") || s.includes("didnt")) return "didnt turn up";
+  if (s === "selected" || s.includes("select")) return "hr selected";
+  if (s === "walk_in" || s === "walkin") return "";
+  if (s === "rejected") return "rejected";
+  if (s === "dropout") return "dropout";
+  if (s === "shortlisted") return "shortlisted";
+  if (!s || s === "submitted" || s === "verified") return "";
+  return formatStatusLabel(status).toLowerCase();
+}
+
+function getStatusRowColor(status) {
+  const s = String(status || "").toLowerCase().trim();
+  if (s.includes("didnt") || s.includes("turn up") || s.includes("select")) {
+    return "FFFF00"; // Yellow
+  }
+  if (s.includes("reject") || s.includes("drop")) {
+    return "FF0000"; // Red
+  }
+  if (s === "walk_in" || s === "walkin" || s.includes("shortlist") || s.includes("join")) {
+    return "70AD47"; // Green
+  }
+  return null;
 }
 
 function getPerformanceNoteForStatus(item, statusValue) {
@@ -2364,7 +2566,10 @@ export default function AdminPerformance({ setCurrentPage }) {
       selectedStatusKey && selectedStatusKey !== "submitted" && selectedStatusKey !== "all"
         ? selectedStatusKey
         : currentStatus;
-    const allowedTargets = ALLOWED_TRANSITIONS[activeStage] || ALLOWED_TRANSITIONS[currentStatus] || [];
+    const allowedTargets =
+      ALLOWED_TRANSITIONS[currentStatus] ||
+      ALLOWED_TRANSITIONS[activeStage] ||
+      [];
     if (!allowedTargets.includes(normalizedTarget)) {
       setActionError(
         `Frontend blocked an invalid transition from '${activeStage || currentStatus || "unknown"}' to '${normalizedTarget}'. Refresh the table if this row looks stale.`,
@@ -2543,23 +2748,18 @@ export default function AdminPerformance({ setCurrentPage }) {
         selectedStatusKey && selectedStatusKey !== "submitted" && selectedStatusKey !== "all"
           ? selectedStatusKey
           : itemStatus;
-      const effectiveRank = getStatusRank(itemStatus);
-      const isPreviousStageView =
-        selectedStatusRank >= 0 &&
-        effectiveRank >= 0 &&
-        selectedStatusRank < effectiveRank;
-      if (isPreviousStageView) {
-        return {
-          availableActions: [],
-          canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(itemStatus),
-        };
-      }
+      const effectiveStatus = itemStatus || stageKey;
       return {
-        availableActions: ADMIN_ACTIONS_BY_STATUS[stageKey] || ADMIN_ACTIONS_BY_STATUS[itemStatus] || [],
-        canRollback: ROLLBACKABLE_ADMIN_STATUSES.has(stageKey) || ROLLBACKABLE_ADMIN_STATUSES.has(itemStatus),
+        availableActions:
+          ADMIN_ACTIONS_BY_STATUS[effectiveStatus] ||
+          ADMIN_ACTIONS_BY_STATUS[stageKey] ||
+          [],
+        canRollback:
+          ROLLBACKABLE_ADMIN_STATUSES.has(effectiveStatus) ||
+          ROLLBACKABLE_ADMIN_STATUSES.has(stageKey),
       };
     },
-    [selectedStatusKey, selectedStatusRank],
+    [selectedStatusKey],
   );
 
   const hasAnyRowActions = useMemo(
@@ -2593,6 +2793,301 @@ export default function AdminPerformance({ setCurrentPage }) {
     } catch (err) {
       window.alert(err.message || "Failed to rollback resume status.");
     }
+  };
+
+  const handleDownloadWalkInXlsx = (customItems = null) => {
+    const items = customItems || filteredSelectedStatusItems || [];
+    if (!items || items.length === 0) {
+      window.alert("No walk-in records available to download.");
+      return;
+    }
+
+    const headers = [
+      "S.NO",
+      "DATE",
+      "NAME",
+      "COMPANY",
+      "LOCATION",
+      "RECRUITER",
+      "Status",
+    ];
+
+    const dataRows = items.map((item, idx) => {
+      const walkInDateVal =
+        item.walkInDate ||
+        item.walk_in_date ||
+        item.walkInAt ||
+        item.walk_in_at ||
+        item.eventAt ||
+        item.submittedAt ||
+        item.createdAt;
+
+      return [
+        idx + 1,
+        formatWalkInDateForExcel(walkInDateVal),
+        getCandidateDisplayName(item),
+        formatResumeCompanyDisplay(item) || item.companyName || "-",
+        item.city || item.job?.city || item.location || "-",
+        item.recruiterName || item.recruiter || "-",
+        formatExcelWalkInStatus(item.currentStatus || item.status),
+      ];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+
+    const thinBorder = {
+      top: { style: "thin", color: { rgb: "D9D9D9" } },
+      bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+      left: { style: "thin", color: { rgb: "D9D9D9" } },
+      right: { style: "thin", color: { rgb: "D9D9D9" } },
+    };
+
+    const headerStyle = {
+      fill: { fgColor: { rgb: "BDD7EE" } },
+      font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "000000" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: thinBorder,
+    };
+
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G"];
+    colLetters.forEach((col) => {
+      const cellRef = `${col}1`;
+      if (ws[cellRef]) {
+        ws[cellRef].s = headerStyle;
+      }
+    });
+
+    items.forEach((item, rowIdx) => {
+      const rowNum = rowIdx + 2;
+      const rowColor = getStatusRowColor(item.currentStatus || item.status);
+      colLetters.forEach((col, colIdx) => {
+        const cellRef = `${col}${rowNum}`;
+        if (!ws[cellRef]) return;
+        const isCenter =
+          colIdx === 0 ||
+          colIdx === 1 ||
+          colIdx === 3 ||
+          colIdx === 4 ||
+          colIdx === 5 ||
+          colIdx === 6;
+        const cellStyle = {
+          font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
+          alignment: {
+            horizontal: isCenter ? "center" : "left",
+            vertical: "center",
+          },
+          border: thinBorder,
+        };
+        if (rowColor) {
+          cellStyle.fill = { fgColor: { rgb: rowColor } };
+        }
+        ws[cellRef].s = cellStyle;
+      });
+    });
+
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 18 },
+    ];
+
+    ws["!autofilter"] = { ref: `A1:G${dataRows.length + 1}` };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Walk-in");
+    const fileName = `Walk_In_Candidates_${toDateStr(new Date())}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  const handleDownloadJoinedXlsx = (customItems = null) => {
+    const items = customItems || filteredSelectedStatusItems || [];
+    if (!items || items.length === 0) {
+      window.alert("No joined candidate records available to download.");
+      return;
+    }
+
+    const monthName = getJoiningMonthName(items);
+    const topRow = ["", "", "", "", monthName, "", "", ""];
+
+    const dataRows = items.map((item, idx) => {
+      const rev =
+        getExistingRevenueAmount(item) ||
+        item.revenue ||
+        item.revenueAmount ||
+        item.amount ||
+        "";
+      const joiningDateVal =
+        item.joiningDate ||
+        item.currentJoiningDate ||
+        item.joinedAt ||
+        item.eventAt;
+
+      return [
+        rev ? Number(rev) : "",
+        idx + 1,
+        formatJoiningDateForExcel(joiningDateVal),
+        getCandidateDisplayName(item),
+        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "",
+        formatResumeCompanyDisplay(item) || item.companyName || "-",
+        item.city || item.job?.city || item.location || "-",
+        item.recruiterName || item.recruiter || "-",
+      ];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([topRow, ...dataRows]);
+
+    const thinBorder = {
+      top: { style: "thin", color: { rgb: "D9D9D9" } },
+      bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+      left: { style: "thin", color: { rgb: "D9D9D9" } },
+      right: { style: "thin", color: { rgb: "D9D9D9" } },
+    };
+
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+    // Style top month row
+    colLetters.forEach((col) => {
+      const cellRef = `${col}1`;
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+      ws[cellRef].s = {
+        font: {
+          name: "Calibri",
+          sz: 11,
+          bold: col === "E",
+          color: { rgb: "000000" },
+        },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: thinBorder,
+      };
+      if (col === "E") {
+        ws[cellRef].s.fill = { fgColor: { rgb: "4DD0E1" } };
+      }
+    });
+
+    // Style data rows
+    items.forEach((item, rowIdx) => {
+      const rowNum = rowIdx + 2;
+      colLetters.forEach((col) => {
+        const cellRef = `${col}${rowNum}`;
+        if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+        ws[cellRef].s = {
+          font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: thinBorder,
+        };
+      });
+    });
+
+    ws["!cols"] = [
+      { wch: 12 }, // Revenue
+      { wch: 8 },  // S.NO
+      { wch: 14 }, // DATE
+      { wch: 28 }, // NAME
+      { wch: 18 }, // CONTACT NUMBER
+      { wch: 22 }, // COMPANY
+      { wch: 20 }, // LOCATION
+      { wch: 18 }, // RECRUITER
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Joining Sheet");
+    const fileName = `Joining_Sheet_${monthName}_${toDateStr(new Date())}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  const handleDownloadSelectedXlsx = (customItems = null) => {
+    const items = customItems || filteredSelectedStatusItems || [];
+    if (!items || items.length === 0) {
+      window.alert("No selected candidate records available to download.");
+      return;
+    }
+
+    const monthName = getSelectionMonthName(items);
+    const topRow = ["", "", "", monthName, "", "", ""];
+
+    const dataRows = items.map((item, idx) => {
+      const selectionDateVal =
+        item.selectedAt ||
+        item.selectionDate ||
+        item.joiningDate ||
+        item.currentJoiningDate ||
+        item.eventAt ||
+        item.submittedAt ||
+        item.createdAt;
+
+      return [
+        idx + 1,
+        formatJoiningDateForExcel(selectionDateVal),
+        getCandidateDisplayName(item),
+        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "",
+        formatResumeCompanyDisplay(item) || item.companyName || "-",
+        item.city || item.job?.city || item.location || "-",
+        item.recruiterName || item.recruiter || "-",
+      ];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([topRow, ...dataRows]);
+
+    const thinBorder = {
+      top: { style: "thin", color: { rgb: "D9D9D9" } },
+      bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+      left: { style: "thin", color: { rgb: "D9D9D9" } },
+      right: { style: "thin", color: { rgb: "D9D9D9" } },
+    };
+
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G"];
+
+    // Style top month row
+    colLetters.forEach((col) => {
+      const cellRef = `${col}1`;
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+      ws[cellRef].s = {
+        font: {
+          name: "Calibri",
+          sz: 11,
+          bold: col === "D",
+          color: { rgb: "000000" },
+        },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: thinBorder,
+      };
+      if (col === "D") {
+        ws[cellRef].s.fill = { fgColor: { rgb: "4DD0E1" } };
+      }
+    });
+
+    // Style data rows
+    items.forEach((item, rowIdx) => {
+      const rowNum = rowIdx + 2;
+      colLetters.forEach((col) => {
+        const cellRef = `${col}${rowNum}`;
+        if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+        ws[cellRef].s = {
+          font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: thinBorder,
+        };
+      });
+    });
+
+    ws["!cols"] = [
+      { wch: 8 },  // S.NO
+      { wch: 14 }, // DATE
+      { wch: 28 }, // NAME
+      { wch: 18 }, // CONTACT NUMBER
+      { wch: 24 }, // COMPANY
+      { wch: 20 }, // LOCATION
+      { wch: 18 }, // RECRUITER
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Selection Sheet");
+    const fileName = `Selection_Sheet_${monthName}_${toDateStr(new Date())}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   const closeDeleteModal = () => {
@@ -2748,11 +3243,55 @@ export default function AdminPerformance({ setCurrentPage }) {
               flexWrap: "wrap",
             }}
           >
-            <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
-              {selectedStatusKey === "submitted"
-                ? "Submitted Resume List"
-                : `${formatStatusLabel(selectedStatusKey)} Resume List`}
-            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+              <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
+                {selectedStatusKey === "submitted"
+                  ? "Submitted Resume List"
+                  : `${formatStatusLabel(selectedStatusKey)} Resume List`}
+              </h3>
+              {["walk_in", "selected", "joined"].includes(selectedStatusKey) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedStatusKey === "joined") handleDownloadJoinedXlsx(personStatusItems);
+                    else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx(personStatusItems);
+                    else handleDownloadWalkInXlsx(personStatusItems);
+                  }}
+                  className="admin-refresh-btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    backgroundColor: "#16a34a",
+                    color: "#ffffff",
+                    border: "none",
+                    padding: "6px 14px",
+                    borderRadius: "6px",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(22, 163, 74, 0.2)",
+                  }}
+                  title={`Download ${formatStatusLabel(selectedStatusKey)} candidates as Excel (.xlsx)`}
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download XLSX
+                </button>
+              )}
+            </div>
             <span className="admin-muted">
               {personStatusItems.length} item
               {personStatusItems.length === 1 ? "" : "s"}
@@ -3177,11 +3716,55 @@ export default function AdminPerformance({ setCurrentPage }) {
                 flexWrap: "wrap",
               }}
             >
-              <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
-                {selectedStatusKey === "submitted"
-                  ? "Submitted Resume List"
-                  : `${formatStatusLabel(selectedStatusKey)} Resume List`}
-              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+                <h3 className="perf-section-title" style={{ marginBottom: 0 }}>
+                  {selectedStatusKey === "submitted"
+                    ? "Submitted Resume List"
+                    : `${formatStatusLabel(selectedStatusKey)} Resume List`}
+                </h3>
+                {["walk_in", "selected", "joined"].includes(selectedStatusKey) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedStatusKey === "joined") handleDownloadJoinedXlsx();
+                      else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx();
+                      else handleDownloadWalkInXlsx();
+                    }}
+                    className="admin-refresh-btn"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      backgroundColor: "#16a34a",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(22, 163, 74, 0.2)",
+                    }}
+                    title={`Download ${formatStatusLabel(selectedStatusKey)} candidates as Excel (.xlsx)`}
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download XLSX
+                  </button>
+                )}
+              </div>
               <span className="admin-muted">
                 {normalizeLookupKey(recruiterEntrySearch)
                   ? `${filteredSelectedStatusItems.length} record${filteredSelectedStatusItems.length === 1 ? "" : "s"} found`
@@ -4609,6 +5192,29 @@ export default function AdminPerformance({ setCurrentPage }) {
                       flexWrap: "wrap",
                     }}
                   >
+                    {modalRowActionState.canRollback && (
+                      <button
+                        type="button"
+                        onClick={() => switchActionTarget("rollback")}
+                        disabled={actionSubmitting}
+                        style={{
+                          padding: "8px 18px",
+                          borderRadius: "8px",
+                          fontWeight: 600,
+                          fontSize: "0.9rem",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          backgroundColor: actionTarget === "rollback" ? "#111827" : "#ffffff",
+                          color: actionTarget === "rollback" ? "#ffffff" : "#111827",
+                          border: "2px solid #111827",
+                          boxShadow: actionTarget === "rollback"
+                            ? "0 3px 10px rgba(17, 24, 39, 0.35)"
+                            : "none",
+                        }}
+                      >
+                        Rollback
+                      </button>
+                    )}
                     {modalRowActionState.availableActions.map((action) => {
                       const isSelected = actionTarget === action.value;
                       return (
@@ -4636,29 +5242,6 @@ export default function AdminPerformance({ setCurrentPage }) {
                         </button>
                       );
                     })}
-                    {modalRowActionState.canRollback && (
-                      <button
-                        type="button"
-                        onClick={() => switchActionTarget("rollback")}
-                        disabled={actionSubmitting}
-                        style={{
-                          padding: "8px 18px",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          fontSize: "0.9rem",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                          backgroundColor: actionTarget === "rollback" ? "#111827" : "#ffffff",
-                          color: actionTarget === "rollback" ? "#ffffff" : "#111827",
-                          border: "2px solid #111827",
-                          boxShadow: actionTarget === "rollback"
-                            ? "0 3px 10px rgba(17, 24, 39, 0.35)"
-                            : "none",
-                        }}
-                      >
-                        Rollback
-                      </button>
-                    )}
                   </div>
                 </div>
               );
