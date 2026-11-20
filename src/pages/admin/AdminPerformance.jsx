@@ -578,28 +578,26 @@ function getSelectionMonthName(items) {
 }
 
 function formatExcelWalkInStatus(status) {
-  const s = String(status || "").toLowerCase().trim();
-  if (s === "didnt_turn_up" || s.includes("turn up") || s.includes("didnt")) return "didnt turn up";
-  if (s === "selected" || s.includes("select")) return "hr selected";
-  if (s === "walk_in" || s === "walkin") return "";
-  if (s === "rejected") return "rejected";
-  if (s === "dropout") return "dropout";
-  if (s === "shortlisted") return "shortlisted";
-  if (!s || s === "submitted" || s === "verified") return "";
-  return formatStatusLabel(status).toLowerCase();
+  const s = normalizeStatus(status);
+  if (!s || s === "walk_in" || s === "walkin") return "Walk In";
+  return formatStatusLabel(s);
 }
 
 function getStatusRowColor(status) {
-  const s = String(status || "").toLowerCase().trim();
-  if (s.includes("didnt") || s.includes("turn up") || s.includes("select")) {
-    return "FFFF00"; // Yellow
-  }
-  if (s.includes("reject") || s.includes("drop")) {
-    return "FF0000"; // Red
-  }
-  if (s === "walk_in" || s === "walkin" || s.includes("shortlist") || s.includes("join")) {
+  const s = normalizeStatus(status);
+  // Selected (green)
+  if (s === "selected" || s === "joined" || s === "billed") {
     return "70AD47"; // Green
   }
+  // Rejected (red)
+  if (s === "rejected" || s === "dropout") {
+    return "FF0000"; // Red
+  }
+  // Pending, shortlisted, didn't turn up (yellow)
+  if (s === "pending" || s === "shortlisted" || s === "didnt_turn_up") {
+    return "FFFF00"; // Yellow
+  }
+  // Rest of the candidate background should be white only
   return null;
 }
 
@@ -2739,7 +2737,8 @@ export default function AdminPerformance({ setCurrentPage }) {
       "COMPANY",
       "LOCATION",
       "RECRUITER",
-      "Status",
+      "STATUS",
+      "NOTE",
     ];
 
     const dataRows = items.map((item, idx) => {
@@ -2752,6 +2751,16 @@ export default function AdminPerformance({ setCurrentPage }) {
         item.submittedAt ||
         item.createdAt;
 
+      const currentStatus = normalizeStatus(item.currentStatus || item.status || "walk_in");
+      const latestNote =
+        normalizeNoteText(getPerformanceNoteForStatus(item, currentStatus)) ||
+        normalizeNoteText(getPerformanceNoteForStatus(item, "walk_in")) ||
+        normalizeNoteText(item.selectionNote) ||
+        normalizeNoteText(item.walkInReason) ||
+        normalizeNoteText(item.note) ||
+        normalizeNoteText(item.latestNote) ||
+        "-";
+
       return [
         idx + 1,
         formatWalkInDateForExcel(walkInDateVal),
@@ -2759,7 +2768,8 @@ export default function AdminPerformance({ setCurrentPage }) {
         formatResumeCompanyDisplay(item) || item.companyName || "-",
         item.city || item.job?.city || item.location || "-",
         item.recruiterName || item.recruiter || "-",
-        formatExcelWalkInStatus(item.currentStatus || item.status),
+        formatExcelWalkInStatus(currentStatus),
+        latestNote,
       ];
     });
 
@@ -2779,7 +2789,7 @@ export default function AdminPerformance({ setCurrentPage }) {
       border: thinBorder,
     };
 
-    const colLetters = ["A", "B", "C", "D", "E", "F", "G"];
+    const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
     colLetters.forEach((col) => {
       const cellRef = `${col}1`;
       if (ws[cellRef]) {
@@ -2796,7 +2806,6 @@ export default function AdminPerformance({ setCurrentPage }) {
         const isCenter =
           colIdx === 0 ||
           colIdx === 1 ||
-          colIdx === 3 ||
           colIdx === 4 ||
           colIdx === 5 ||
           colIdx === 6;
@@ -2805,11 +2814,14 @@ export default function AdminPerformance({ setCurrentPage }) {
           alignment: {
             horizontal: isCenter ? "center" : "left",
             vertical: "center",
+            wrapText: colIdx === 7,
           },
           border: thinBorder,
         };
         if (rowColor) {
           cellStyle.fill = { fgColor: { rgb: rowColor } };
+        } else {
+          cellStyle.fill = { fgColor: { rgb: "FFFFFF" } };
         }
         ws[cellRef].s = cellStyle;
       });
@@ -2819,13 +2831,14 @@ export default function AdminPerformance({ setCurrentPage }) {
       { wch: 8 },
       { wch: 14 },
       { wch: 28 },
-      { wch: 20 },
+      { wch: 22 },
       { wch: 20 },
       { wch: 20 },
       { wch: 18 },
+      { wch: 35 },
     ];
 
-    ws["!autofilter"] = { ref: `A1:G${dataRows.length + 1}` };
+    ws["!autofilter"] = { ref: `A1:H${dataRows.length + 1}` };
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Walk-in");
