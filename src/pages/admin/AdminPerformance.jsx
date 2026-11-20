@@ -161,37 +161,78 @@ const ADMIN_ACTIONS_BY_STATUS = {
     { value: "rejected", label: "Reject", color: "#dc2626" },
   ],
   walk_in: [
-    { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+    { value: "others", label: "Others", color: "#0d9488" },
     { value: "didnt_turn_up", label: "Didn't Turn Up", color: "#ea580c" },
+    { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+    { value: "selected", label: "Selected", color: "#9333ea" },
+    { value: "pending", label: "Pending", color: "#0284c7" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
   ],
   didnt_turn_up: [
     { value: "walk_in", label: "Walk In", color: "#ca8a04" },
+    { value: "others", label: "Others", color: "#0d9488" },
+    { value: "shortlisted", label: "Shortlisted", color: "#2563eb" },
+    { value: "selected", label: "Selected", color: "#9333ea" },
+    { value: "pending", label: "Pending", color: "#0284c7" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
   ],
   shortlisted: [
-    {
-      value: "selected",
-      label: "Selected",
-      color: "#16a34a",
-    },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "selected", label: "Selected", color: "#9333ea" },
+    { value: "pending", label: "Pending", color: "#0284c7" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
   ],
   selected: [
-    { value: "pending", label: "Pending", color: "#2563eb" },
+    { value: "pending", label: "Pending", color: "#0284c7" },
+    { value: "rejected", label: "Reject", color: "#dc2626" },
     { value: "joined", label: "Joined", color: "#16a34a" },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
   ],
   pending: [
-    { value: "joined", label: "Joined", color: "#16a34a" },
-    { value: "dropout", label: "Dropout", color: "#dc2626" },
+    { value: "selected", label: "Selected", color: "#9333ea" },
     { value: "rejected", label: "Reject", color: "#dc2626" },
-  ],
-  rejected: [{ value: "joined", label: "Joined", color: "#16a34a" }],
-  joined: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
     { value: "billed", label: "Billed", color: "#0d9488" },
-    { value: "left", label: "Left", color: "#ea580c" },
+    { value: "left", label: "Left", color: "#f97316" },
+  ],
+  rejected: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
+  ],
+  joined: [
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
+  ],
+  dropout: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "left", label: "Left", color: "#f97316" },
+  ],
+  billed: [
+    { value: "left", label: "Left", color: "#f97316" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
+  ],
+  left: [
+    { value: "joined", label: "Joined", color: "#16a34a" },
+    { value: "billed", label: "Billed", color: "#0d9488" },
+    { value: "dropout", label: "Dropout", color: "#db2777" },
   ],
 };
 
@@ -210,18 +251,12 @@ const ROLLBACKABLE_ADMIN_STATUSES = new Set([
   "dropout",
 ]);
 
-const ALLOWED_TRANSITIONS = {
-  submitted: ["verified", "others", "rejected"],
-  verified: ["walk_in", "others", "rejected"],
-  others: ["walk_in", "rejected"],
-  walk_in: ["shortlisted", "didnt_turn_up", "rejected"],
-  didnt_turn_up: ["walk_in", "rejected"],
-  shortlisted: ["selected", "dropout", "rejected"],
-  selected: ["pending", "joined", "dropout"],
-  pending: ["joined", "dropout", "rejected"],
-  rejected: ["joined"],
-  joined: ["billed", "left"],
-};
+const ALLOWED_TRANSITIONS = Object.fromEntries(
+  Object.entries(ADMIN_ACTIONS_BY_STATUS).map(([statusKey, actions]) => [
+    statusKey,
+    actions.map((act) => act.value),
+  ]),
+);
 
 const resolveRollbackTargetStatus = (item) => {
   const currentStatus = normalizeStatus(item?.currentStatus || item?.status);
@@ -3252,7 +3287,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         </th>
                       )}
                     <th>Note / Reason</th>
-                    {hasAnyRowActions && <th>Actions</th>}
+                    {hasAnyRowActions && <th style={{ minWidth: "240px" }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -3374,7 +3409,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                           )}
                         </td>
                         {hasAnyRowActions && (
-                          <td>
+                          <td style={{ minWidth: "240px" }}>
                             {rowHasActions ? (
                               <div
                                 style={{
@@ -3733,7 +3768,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                         <th>{selectedStatusKey === "selected" ? "Tentative Joining Date" : "Joining Date"}</th>
                       )}
                       <th>Note / Reason</th>
-                      {hasAnyRowActions && <th>Actions</th>}
+                      {hasAnyRowActions && <th style={{ minWidth: "240px" }}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -3827,7 +3862,7 @@ export default function AdminPerformance({ setCurrentPage }) {
                             )}
                           </td>
                           {hasAnyRowActions && (
-                            <td>
+                            <td style={{ minWidth: "240px" }}>
                               {rowHasActions ? (
                                 <div
                                   style={{
