@@ -146,6 +146,20 @@ const PERSON_METRIC_CARDS = [
   { key: "points", label: "Points", tone: "teal" },
 ];
 
+const DOWNLOADABLE_STAGES = [
+  "walk_in",
+  "didnt_turn_up",
+  "shortlisted",
+  "selected",
+  "pending",
+  "rejected",
+  "joined",
+  "dropout",
+  "billed",
+  "left",
+  "on_hold",
+];
+
 const ADMIN_ACTIONS_BY_STATUS = {
   submitted: [
     { value: "verified", label: "Verify", color: "#2563eb" },
@@ -576,6 +590,64 @@ function getSelectionMonthName(items) {
     }
   }
   return new Date().toLocaleString("en-US", { month: "long" });
+}
+
+function getStageMonthName(items, stageKey) {
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      const d = getStageDateVal(item, stageKey);
+      if (d) {
+        const parsed = parseDateTimeValue(d) || new Date(d);
+        if (parsed && !Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleString("en-US", { month: "long" });
+        }
+      }
+    }
+  }
+  return new Date().toLocaleString("en-US", { month: "long" });
+}
+
+function getStageDateVal(item, stageKey) {
+  return (
+    (stageKey === "joined" ? (item?.joiningDate || item?.currentJoiningDate || item?.joinedAt || item?.joined_at) : null) ||
+    (stageKey === "selected" ? (item?.selectedAt || item?.selected_at || item?.selectionDate || item?.selection_date || item?.joiningDate || item?.currentJoiningDate) : null) ||
+    (stageKey === "shortlisted" ? (item?.shortlistedAt || item?.shortlisted_at) : null) ||
+    (stageKey === "didnt_turn_up" ? (item?.didntTurnUpAt || item?.didnt_turn_up_at) : null) ||
+    (stageKey === "pending" ? (item?.pendingAt || item?.pending_at || item?.selectedAt || item?.shortlistedAt) : null) ||
+    (stageKey === "rejected" ? (item?.rejectedAt || item?.rejected_at) : null) ||
+    (stageKey === "dropout" ? (item?.dropoutAt || item?.dropout_at) : null) ||
+    (stageKey === "billed" ? (item?.billedAt || item?.billed_at) : null) ||
+    (stageKey === "left" ? (item?.leftAt || item?.left_at) : null) ||
+    (stageKey === "walk_in" ? (item?.walkInDate || item?.walk_in_date || item?.walkInAt || item?.walk_in_at) : null) ||
+    item?.eventAt ||
+    item?.[`${stageKey}At`] ||
+    item?.[`${stageKey}_at`] ||
+    item?.submittedAt ||
+    item?.uploadedAt ||
+    item?.createdAt
+  );
+}
+
+function getStageNoteVal(item, stageKey) {
+  const currentStatus = normalizeStatus(item?.currentStatus || item?.status || stageKey);
+  return (
+    normalizeNoteText(getPerformanceNoteForStatus(item, stageKey)) ||
+    normalizeNoteText(getPerformanceNoteForStatus(item, currentStatus)) ||
+    normalizeNoteText(item?.joiningNote) ||
+    normalizeNoteText(item?.joinedReason) ||
+    normalizeNoteText(item?.shortlistedReason) ||
+    normalizeNoteText(item?.selectionNote) ||
+    normalizeNoteText(item?.selectReason) ||
+    normalizeNoteText(item?.pendingReason) ||
+    normalizeNoteText(item?.rejectReason) ||
+    normalizeNoteText(item?.dropoutReason) ||
+    normalizeNoteText(item?.didntTurnUpReason) ||
+    normalizeNoteText(item?.billedReason) ||
+    normalizeNoteText(item?.leftReason) ||
+    normalizeNoteText(item?.note) ||
+    normalizeNoteText(item?.latestNote) ||
+    ""
+  );
 }
 
 function formatExcelWalkInStatus(status) {
@@ -2853,58 +2925,53 @@ export default function AdminPerformance({ setCurrentPage }) {
     XLSX.writeFile(wb, fileName);
   };
 
-  const handleDownloadShortlistedXlsx = (customItems = null) => {
+  const handleDownloadStageWithoutSalaryXlsx = (stageKey, customItems = null) => {
     const items = customItems || filteredSelectedStatusItems || [];
     if (!items || items.length === 0) {
-      window.alert("No shortlisted candidate records available to download.");
+      window.alert(`No ${formatStatusLabel(stageKey).toLowerCase()} candidate records available to download.`);
       return;
     }
 
-    const headers = [
-      "S.NO",
-      "DATE",
-      "NAME",
-      "CONTACT NUMBER",
-      "COMPANY",
-      "LOCATION",
-      "PROCESS",
-      "RECRUITER",
-      "STATUS",
-      "NOTE",
+    const monthName = getStageMonthName(items, stageKey);
+    const topRow = ["", "", "", "", monthName, "", "", "", "", ""];
+    const headerRow = [
+      "",
+      "S.No",
+      "Date",
+      "Name",
+      "Number",
+      "Company",
+      "Process",
+      "Location",
+      "Recruiter",
+      "Notes",
     ];
 
     const dataRows = items.map((item, idx) => {
-      const shortlistDateVal =
-        item.shortlistedAt ||
-        item.shortlisted_at ||
-        item.eventAt ||
-        item.submittedAt ||
-        item.createdAt;
-
-      const currentStatus = normalizeStatus(item.currentStatus || item.status || "shortlisted");
-      const latestNote =
-        normalizeNoteText(getPerformanceNoteForStatus(item, currentStatus)) ||
-        normalizeNoteText(item.shortlistedReason) ||
-        normalizeNoteText(item.selectionNote) ||
-        normalizeNoteText(item.note) ||
-        normalizeNoteText(item.latestNote) ||
-        "-";
+      const stageDateVal = getStageDateVal(item, stageKey);
+      const noteVal = getStageNoteVal(item, stageKey);
+      const processVal =
+        item.process ||
+        item.processName ||
+        item.extra_info?.process ||
+        item.extraInfo?.process ||
+        "";
 
       return [
+        "",
         idx + 1,
-        formatWalkInDateForExcel(shortlistDateVal),
+        formatJoiningDateForExcel(stageDateVal),
         getCandidateDisplayName(item),
-        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "-",
+        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "",
         formatResumeCompanyDisplay(item) || item.companyName || "-",
-        item.city || item.job?.city || item.location || "-",
-        item.process || item.processName || "-",
+        processVal,
+        item.city || item.job?.city || item.officeLocationCity || item.location || "-",
         item.recruiterName || item.recruiter || "-",
-        formatExcelWalkInStatus(currentStatus),
-        latestNote,
+        noteVal,
       ];
     });
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+    const ws = XLSX.utils.aoa_to_sheet([topRow, headerRow, ...dataRows]);
 
     const thinBorder = {
       top: { style: "thin", color: { rgb: "D9D9D9" } },
@@ -2913,72 +2980,84 @@ export default function AdminPerformance({ setCurrentPage }) {
       right: { style: "thin", color: { rgb: "D9D9D9" } },
     };
 
-    const headerStyle = {
-      fill: { fgColor: { rgb: "BDD7EE" } },
-      font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "000000" } },
-      alignment: { horizontal: "center", vertical: "center" },
-      border: thinBorder,
-    };
-
     const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+
+    // Style top month row
     colLetters.forEach((col) => {
       const cellRef = `${col}1`;
-      if (ws[cellRef]) {
-        ws[cellRef].s = headerStyle;
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+      ws[cellRef].s = {
+        font: {
+          name: "Calibri",
+          sz: 11,
+          bold: col === "E",
+          color: { rgb: "000000" },
+        },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: thinBorder,
+      };
+      if (col === "E") {
+        ws[cellRef].s.fill = { fgColor: { rgb: "4DD0E1" } };
       }
     });
 
+    // Style header row (Row 2)
+    colLetters.forEach((col) => {
+      const cellRef = `${col}2`;
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+      ws[cellRef].s = {
+        font: {
+          name: "Calibri",
+          sz: 11,
+          bold: true,
+          color: { rgb: "000000" },
+        },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: thinBorder,
+      };
+      if (col !== "A") {
+        ws[cellRef].s.fill = { fgColor: { rgb: "BDD7EE" } };
+      }
+    });
+
+    // Style data rows (Row 3 onwards)
     items.forEach((item, rowIdx) => {
-      const rowNum = rowIdx + 2;
-      const rowColor = getStatusRowColor(item.currentStatus || item.status);
-      colLetters.forEach((col, colIdx) => {
+      const rowNum = rowIdx + 3;
+      colLetters.forEach((col) => {
         const cellRef = `${col}${rowNum}`;
-        if (!ws[cellRef]) return;
-        const isCenter =
-          colIdx === 0 ||
-          colIdx === 1 ||
-          colIdx === 3 ||
-          colIdx === 5 ||
-          colIdx === 6 ||
-          colIdx === 7 ||
-          colIdx === 8;
-        const cellStyle = {
+        if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+        ws[cellRef].s = {
           font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
-          alignment: {
-            horizontal: isCenter ? "center" : "left",
-            vertical: "center",
-            wrapText: colIdx === 9,
-          },
+          alignment: { horizontal: "center", vertical: "center" },
           border: thinBorder,
         };
-        if (rowColor) {
-          cellStyle.fill = { fgColor: { rgb: rowColor } };
-        } else {
-          cellStyle.fill = { fgColor: { rgb: "FFFFFF" } };
-        }
-        ws[cellRef].s = cellStyle;
       });
     });
 
     ws["!cols"] = [
-      { wch: 8 },  // S.NO
-      { wch: 14 }, // DATE
-      { wch: 28 }, // NAME
-      { wch: 18 }, // CONTACT NUMBER
-      { wch: 22 }, // COMPANY
-      { wch: 18 }, // LOCATION
-      { wch: 20 }, // PROCESS
-      { wch: 20 }, // RECRUITER
-      { wch: 18 }, // STATUS
-      { wch: 35 }, // NOTE
+      { wch: 4 },  // A
+      { wch: 8 },  // B: S.No
+      { wch: 12 }, // C: Date
+      { wch: 28 }, // D: Name
+      { wch: 16 }, // E: Number
+      { wch: 30 }, // F: Company
+      { wch: 16 }, // G: Process
+      { wch: 18 }, // H: Location
+      { wch: 22 }, // I: Recruiter
+      { wch: 25 }, // J: Notes
     ];
 
-    ws["!autofilter"] = { ref: `A1:J${dataRows.length + 1}` };
-
+    const label = formatStatusLabel(stageKey);
+    const sheetName = `${label} Sheet`.slice(0, 31);
+    const safeStage = label.replace(/\s+/g, "_");
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Shortlisted");
-    const fileName = `Shortlisted_Candidates_${toDateStr(new Date())}.xlsx`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const fileName = `${safeStage}_Sheet_${monthName}_${toDateStr(new Date())}.xlsx`;
     XLSX.writeFile(wb, fileName);
+  };
+
+  const handleDownloadShortlistedXlsx = (customItems = null) => {
+    handleDownloadStageWithoutSalaryXlsx("shortlisted", customItems);
   };
 
   const handleDownloadJoinedXlsx = (customItems = null) => {
@@ -3124,94 +3203,7 @@ export default function AdminPerformance({ setCurrentPage }) {
   };
 
   const handleDownloadSelectedXlsx = (customItems = null) => {
-    const items = customItems || filteredSelectedStatusItems || [];
-    if (!items || items.length === 0) {
-      window.alert("No selected candidate records available to download.");
-      return;
-    }
-
-    const monthName = getSelectionMonthName(items);
-    const topRow = ["", "", "", monthName, "", "", ""];
-
-    const dataRows = items.map((item, idx) => {
-      const selectionDateVal =
-        item.selectedAt ||
-        item.selectionDate ||
-        item.joiningDate ||
-        item.currentJoiningDate ||
-        item.eventAt ||
-        item.submittedAt ||
-        item.createdAt;
-
-      return [
-        idx + 1,
-        formatJoiningDateForExcel(selectionDateVal),
-        getCandidateDisplayName(item),
-        item.candidatePhone || item.phone || item.contactNumber || item.contact_number || "",
-        formatResumeCompanyDisplay(item) || item.companyName || "-",
-        item.city || item.job?.city || item.location || "-",
-        item.recruiterName || item.recruiter || "-",
-      ];
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet([topRow, ...dataRows]);
-
-    const thinBorder = {
-      top: { style: "thin", color: { rgb: "D9D9D9" } },
-      bottom: { style: "thin", color: { rgb: "D9D9D9" } },
-      left: { style: "thin", color: { rgb: "D9D9D9" } },
-      right: { style: "thin", color: { rgb: "D9D9D9" } },
-    };
-
-    const colLetters = ["A", "B", "C", "D", "E", "F", "G"];
-
-    // Style top month row
-    colLetters.forEach((col) => {
-      const cellRef = `${col}1`;
-      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
-      ws[cellRef].s = {
-        font: {
-          name: "Calibri",
-          sz: 11,
-          bold: col === "D",
-          color: { rgb: "000000" },
-        },
-        alignment: { horizontal: "center", vertical: "center" },
-        border: thinBorder,
-      };
-      if (col === "D") {
-        ws[cellRef].s.fill = { fgColor: { rgb: "4DD0E1" } };
-      }
-    });
-
-    // Style data rows
-    items.forEach((item, rowIdx) => {
-      const rowNum = rowIdx + 2;
-      colLetters.forEach((col) => {
-        const cellRef = `${col}${rowNum}`;
-        if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
-        ws[cellRef].s = {
-          font: { name: "Calibri", sz: 11, color: { rgb: "000000" } },
-          alignment: { horizontal: "center", vertical: "center" },
-          border: thinBorder,
-        };
-      });
-    });
-
-    ws["!cols"] = [
-      { wch: 8 },  // S.NO
-      { wch: 14 }, // DATE
-      { wch: 28 }, // NAME
-      { wch: 18 }, // CONTACT NUMBER
-      { wch: 24 }, // COMPANY
-      { wch: 20 }, // LOCATION
-      { wch: 18 }, // RECRUITER
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Selection Sheet");
-    const fileName = `Selection_Sheet_${monthName}_${toDateStr(new Date())}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    handleDownloadStageWithoutSalaryXlsx("selected", customItems);
   };
 
   const closeDeleteModal = () => {
@@ -3373,14 +3365,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                   ? "Submitted Resume List"
                   : `${formatStatusLabel(selectedStatusKey)} Resume List`}
               </h3>
-              {["walk_in", "shortlisted", "selected", "joined"].includes(selectedStatusKey) && (
+              {DOWNLOADABLE_STAGES.includes(selectedStatusKey) && (
                 <button
                   type="button"
                   onClick={() => {
                     if (selectedStatusKey === "joined") handleDownloadJoinedXlsx(personStatusItems);
-                    else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx(personStatusItems);
-                    else if (selectedStatusKey === "shortlisted") handleDownloadShortlistedXlsx(personStatusItems);
-                    else handleDownloadWalkInXlsx(personStatusItems);
+                    else if (selectedStatusKey === "walk_in") handleDownloadWalkInXlsx(personStatusItems);
+                    else handleDownloadStageWithoutSalaryXlsx(selectedStatusKey, personStatusItems);
                   }}
                   className="admin-refresh-btn"
                   style={{
@@ -3873,14 +3864,13 @@ export default function AdminPerformance({ setCurrentPage }) {
                     ? "Submitted Resume List"
                     : `${formatStatusLabel(selectedStatusKey)} Resume List`}
                 </h3>
-                {["walk_in", "shortlisted", "selected", "joined"].includes(selectedStatusKey) && (
+                {DOWNLOADABLE_STAGES.includes(selectedStatusKey) && (
                   <button
                     type="button"
                     onClick={() => {
                       if (selectedStatusKey === "joined") handleDownloadJoinedXlsx();
-                      else if (selectedStatusKey === "selected") handleDownloadSelectedXlsx();
-                      else if (selectedStatusKey === "shortlisted") handleDownloadShortlistedXlsx();
-                      else handleDownloadWalkInXlsx();
+                      else if (selectedStatusKey === "walk_in") handleDownloadWalkInXlsx();
+                      else handleDownloadStageWithoutSalaryXlsx(selectedStatusKey);
                     }}
                     className="admin-refresh-btn"
                     style={{
