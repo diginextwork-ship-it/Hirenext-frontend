@@ -23,6 +23,7 @@ const formatPostedLabel = (postedAt) => {
   if (Number.isNaN(parsed.getTime())) return "Recently posted";
 
   return `Posted on ${parsed.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "numeric",
     month: "short",
     year: "numeric",

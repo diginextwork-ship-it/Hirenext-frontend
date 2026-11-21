@@ -16,11 +16,18 @@ export const parseDateTimeValue = (value) => {
   const normalized = String(value).trim();
   if (!normalized) return null;
 
+  // If it has timezone offset or 'Z', parse directly as an ISO string
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(normalized)) {
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  // If it's a SQL datetime string like "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss"
   const sqlDateTimeMatch = normalized.match(
     /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?$/,
   );
 
-  if (sqlDateTimeMatch && !/[zZ]|[+-]\d{2}:\d{2}$/.test(normalized)) {
+  if (sqlDateTimeMatch) {
     const [
       ,
       year,
@@ -38,6 +45,7 @@ export const parseDateTimeValue = (value) => {
         .padEnd(3, "0"),
     );
 
+    // Treat as Indian Standard Time (UTC+5:30)
     const utcValue =
       Date.UTC(
         Number(year),
@@ -57,9 +65,6 @@ export const parseDateTimeValue = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const stripTimeZoneSuffix = (value) =>
-  String(value || "").replace(/([zZ]|[+-]\d{2}:\d{2})$/, "");
-
 export const formatDateTimeInIndia = (
   value,
   fallback = "N/A",
@@ -67,20 +72,16 @@ export const formatDateTimeInIndia = (
 ) => {
   if (!value) return fallback;
 
-  const normalizedValue =
-    options?.treatAsWallTime && typeof value === "string"
-      ? stripTimeZoneSuffix(value)
-      : value;
-
-  const parsed = parseDateTimeValue(normalizedValue);
+  const parsed = parseDateTimeValue(value);
   if (!parsed) return String(value);
 
   return parsed.toLocaleString(INDIA_LOCALE, {
     timeZone: INDIA_TIME_ZONE,
+    ...options,
   });
 };
 
-export const formatDateInIndia = (value, fallback = "N/A") => {
+export const formatDateInIndia = (value, fallback = "N/A", options = {}) => {
   if (!value) return fallback;
 
   const str = String(value).trim();
@@ -95,6 +96,7 @@ export const formatDateInIndia = (value, fallback = "N/A") => {
 
   return parsed.toLocaleDateString(INDIA_LOCALE, {
     timeZone: INDIA_TIME_ZONE,
+    ...options,
   });
 };
 
@@ -104,5 +106,5 @@ export const formatEventDateOrDateTime = (value, fallback = "-") => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
     return formatDateInIndia(str, fallback);
   }
-  return formatDateTimeInIndia(str, fallback, { treatAsWallTime: true });
+  return formatDateTimeInIndia(str, fallback);
 };

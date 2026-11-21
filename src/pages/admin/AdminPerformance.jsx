@@ -318,11 +318,18 @@ const resolveRollbackTargetStatus = (item) => {
   return null;
 };
 
+const INDIA_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 function toDateStr(d) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  if (!d) return "";
+  const safeDate = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(safeDate.getTime())) return "";
+  return INDIA_DATE_FORMATTER.format(safeDate);
 }
 
 function getPerformanceRating(pct) {
@@ -495,7 +502,7 @@ function formatDate(value) {
 }
 
 function formatDateTime(value) {
-  return formatDateTimeInIndia(value, "-", { treatAsWallTime: true });
+  return formatDateTimeInIndia(value, "-");
 }
 
 function formatEventDate(value) {
@@ -525,52 +532,50 @@ function getCandidateDisplayName(item) {
 
 function formatWalkInDateForExcel(val) {
   if (!val) return "-";
+  const parsed = parseDateTimeValue(val);
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    const parts = new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }).formatToParts(parsed).reduce((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return `${parts.day}/${parts.month}/${parts.year}`;
+  }
   const str = String(val).trim();
   const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) {
     const [, year, month, day] = m;
     return `${day}/${month}/${year.slice(-2)}`;
   }
-  const m2 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (m2) {
-    const [, d, mo, y] = m2;
-    return `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y.slice(-2)}`;
-  }
-  const parsed = parseDateTimeValue(val);
-  if (parsed && !Number.isNaN(parsed.getTime())) {
-    const day = String(parsed.getDate()).padStart(2, "0");
-    const month = String(parsed.getMonth() + 1).padStart(2, "0");
-    const year = String(parsed.getFullYear()).slice(-2);
-    return `${day}/${month}/${year}`;
-  }
-  return str;
+  return str || "-";
 }
 
 function formatJoiningDateForExcel(val) {
   if (!val) return "-";
+  const parsed = parseDateTimeValue(val);
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    const parts = new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "numeric",
+      year: "2-digit",
+    }).formatToParts(parsed).reduce((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return `${parts.day}/${parts.month}/${parts.year}`;
+  }
   const str = String(val).trim();
   const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) {
     const [, year, month, day] = m;
-    const dNum = parseInt(day, 10);
-    const mNum = parseInt(month, 10);
-    return `${dNum}/${mNum}/${year.slice(-2)}`;
+    return `${parseInt(day, 10)}/${parseInt(month, 10)}/${year.slice(-2)}`;
   }
-  const m2 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (m2) {
-    const [, d, mo, y] = m2;
-    const dNum = parseInt(d, 10);
-    const mNum = parseInt(mo, 10);
-    return `${dNum}/${mNum}/${y.slice(-2)}`;
-  }
-  const parsed = parseDateTimeValue(val);
-  if (parsed && !Number.isNaN(parsed.getTime())) {
-    const day = parsed.getDate();
-    const month = parsed.getMonth() + 1;
-    const year = String(parsed.getFullYear()).slice(-2);
-    return `${day}/${month}/${year}`;
-  }
-  return str;
+  return str || "-";
 }
 
 function getJoiningMonthName(items) {
@@ -584,12 +589,12 @@ function getJoiningMonthName(items) {
       if (d) {
         const parsed = parseDateTimeValue(d) || new Date(d);
         if (parsed && !Number.isNaN(parsed.getTime())) {
-          return parsed.toLocaleString("en-US", { month: "long" });
+          return parsed.toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
         }
       }
     }
   }
-  return new Date().toLocaleString("en-US", { month: "long" });
+  return new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
 }
 
 function getSelectionMonthName(items) {
@@ -604,12 +609,12 @@ function getSelectionMonthName(items) {
       if (d) {
         const parsed = parseDateTimeValue(d) || new Date(d);
         if (parsed && !Number.isNaN(parsed.getTime())) {
-          return parsed.toLocaleString("en-US", { month: "long" });
+          return parsed.toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
         }
       }
     }
   }
-  return new Date().toLocaleString("en-US", { month: "long" });
+  return new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
 }
 
 function getStageMonthName(items, stageKey) {
@@ -619,12 +624,12 @@ function getStageMonthName(items, stageKey) {
       if (d) {
         const parsed = parseDateTimeValue(d) || new Date(d);
         if (parsed && !Number.isNaN(parsed.getTime())) {
-          return parsed.toLocaleString("en-US", { month: "long" });
+          return parsed.toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
         }
       }
     }
   }
-  return new Date().toLocaleString("en-US", { month: "long" });
+  return new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", month: "long" });
 }
 
 function getStageDateVal(item, stageKey) {
